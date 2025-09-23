@@ -1,0 +1,71 @@
+/* Estilos específicos para la app termas */
+
+.terma-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    border: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.terma-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.terma-info {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid #007bff;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+}
+
+.info-item i {
+    width: 20px;
+    margin-right: 8px;
+}
+
+.badge {
+    font-size: 0.75rem;
+}
+
+/* Colores específicos para tipos de termas */
+.badge.bg-info {
+    background-color: #17a2b8 !important;
+}
+
+/* Animaciones */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.terma-card {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .terma-info {
+        padding: 10px;
+    }
+    
+    .info-item {
+        font-size: 0.8rem;
+    }
+}
+
+/* Estados de disponibilidad */
+.disponible {
+    border-left-color: #28a745;
+}
+
+.no-disponible {
+    border-left-color: #dc3545;
+    opacity: 0.7;
+}

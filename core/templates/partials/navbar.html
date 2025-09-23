@@ -1,0 +1,29 @@
+{% load static %}
+
+<!-- Navbar -->
+<nav id="navbar" class="fixed top-0 left-0 right-0 z-50 bg-blue-900/90 backdrop-blur-md text-white shadow-md transition-transform duration-300 ease-in-out">
+    <div class="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center py-4">
+        
+        <!-- Logo -->
+        <a href="{% url 'core:home' %}" class="flex items-center space-x-3">
+            <img src="{% static 'img/logo.png' %}" alt="MiTerma Logo" class="w-16 h-16 md:w-20 md:h-20">
+            <span class="text-2xl md:text-3xl font-bold">MiTerma</span>
+        </a>
+
+        <!-- Enlaces -->
+        <ul class="flex flex-col md:flex-row md:space-x-6 mt-4 md:mt-0 text-white font-medium">
+            <li>
+                <a href="#" class="px-3 py-2 rounded-md hover:bg-blue-800/80 transition-colors duration-300">Termas</a>
+            </li>
+            <li>
+                <a href="#" class="px-3 py-2 rounded-md hover:bg-blue-800/80 transition-colors duration-300">Sobre Nosotros</a>
+            </li>
+            <li>
+                <a href="#" onclick="openLoginModal()" class="px-3 py-2 rounded-md hover:bg-blue-800/80 transition-colors duration-300">Iniciar Sesión</a>
+            </li>
+            <li>
+                <a href="#" onclick="openRegisterModal()" class="px-3 py-2 rounded-md hover:bg-blue-800/80 transition-colors duration-300">Registrarme</a>
+            </li>
+        </ul>
+    </div>
+</nav>

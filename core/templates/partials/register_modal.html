@@ -1,0 +1,173 @@
+<!-- Modal de Registro -->
+<div id="registerModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl transform transition-all duration-300 scale-95 opacity-0" id="registerModalContent">
+        <!-- Header del Modal -->
+        <div class="bg-gradient-to-r from-green-600 to-green-700 rounded-t-2xl p-6 text-center">
+            <h2 class="text-2xl font-bold text-white mb-2">Crear Cuenta</h2>
+            <p class="text-green-100">Únete a la familia MiTerma</p>
+            <!-- Botón cerrar -->
+            <button onclick="closeRegisterModal()" class="absolute top-4 right-4 text-white hover:text-green-200 transition-colors duration-200">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <!-- Contenido del Modal -->
+        <div class="p-6 max-h-96 overflow-y-auto">
+            <form action="{% url 'usuarios:registro' %}" method="POST" class="space-y-4">
+                {% csrf_token %}
+                
+                <!-- Nombre y Apellido -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="register_nombre" class="block text-sm font-medium text-gray-700 mb-2">
+                            <svg class="w-4 h-4 inline mr-2 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                            </svg>
+                            Nombre *
+                        </label>
+                        <input 
+                            type="text" 
+                            id="register_nombre" 
+                            name="nombre" 
+                            required 
+                            maxlength="50"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300 bg-gray-50 focus:bg-white" 
+                            placeholder="Tu nombre"
+                        >
+                    </div>
+                    <div>
+                        <label for="register_apellido" class="block text-sm font-medium text-gray-700 mb-2">
+                            <svg class="w-4 h-4 inline mr-2 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                            </svg>
+                            Apellido *
+                        </label>
+                        <input 
+                            type="text" 
+                            id="register_apellido" 
+                            name="apellido" 
+                            required 
+                            maxlength="50"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300 bg-gray-50 focus:bg-white" 
+                            placeholder="Tu apellido"
+                        >
+                    </div>
+                </div>
+                
+                <!-- Email -->
+                <div>
+                    <label for="register_email" class="block text-sm font-medium text-gray-700 mb-2">
+                        <svg class="w-4 h-4 inline mr-2 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path>
+                            <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path>
+                        </svg>
+                        Email *
+                    </label>
+                    <input 
+                        type="email" 
+                        id="register_email" 
+                        name="email" 
+                        required 
+                        maxlength="100"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300 bg-gray-50 focus:bg-white" 
+                        placeholder="tu@email.com"
+                    >
+                </div>
+                
+                <!-- Teléfono -->
+                <div>
+                    <label for="register_telefono" class="block text-sm font-medium text-gray-700 mb-2">
+                        <svg class="w-4 h-4 inline mr-2 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"></path>
+                        </svg>
+                        Teléfono (opcional)
+                    </label>
+                    <input 
+                        type="tel" 
+                        id="register_telefono" 
+                        name="telefono" 
+                        maxlength="20"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300 bg-gray-50 focus:bg-white" 
+                        placeholder="+56 9 1234 5678"
+                    >
+                </div>
+                
+                <!-- Contraseña -->
+                <div>
+                    <label for="register_password" class="block text-sm font-medium text-gray-700 mb-2">
+                        <svg class="w-4 h-4 inline mr-2 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
+                        </svg>
+                        Contraseña *
+                    </label>
+                    <div class="relative">
+                        <input 
+                            type="password" 
+                            id="register_password" 
+                            name="password" 
+                            required 
+                            minlength="8"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300 bg-gray-50 focus:bg-white pr-12" 
+                            placeholder="Mínimo 8 caracteres"
+                        >
+                        <button type="button" onclick="toggleRegisterPassword()" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors duration-200">
+                            <svg id="registerEyeIcon" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"></path>
+                                <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Debe contener al menos 8 caracteres</p>
+                </div>
+                
+                <!-- Confirmar Contraseña -->
+                <div>
+                    <label for="register_password_confirm" class="block text-sm font-medium text-gray-700 mb-2">
+                        <svg class="w-4 h-4 inline mr-2 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
+                        </svg>
+                        Confirmar Contraseña *
+                    </label>
+                    <input 
+                        type="password" 
+                        id="register_password_confirm" 
+                        name="password_confirm" 
+                        required 
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all duration-300 bg-gray-50 focus:bg-white" 
+                        placeholder="Repite tu contraseña"
+                    >
+                </div>
+                
+                <!-- Botón de envío -->
+                <button 
+                    type="submit" 
+                    class="w-full bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white py-3 rounded-lg font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                >
+                    <span class="flex items-center justify-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z"></path>
+                        </svg>
+                        Crear Cuenta
+                    </span>
+                </button>
+            </form>
+            
+            <!-- Divider -->
+            <div class="my-6 flex items-center">
+                <div class="flex-grow border-t border-gray-300"></div>
+                <span class="px-4 text-sm text-gray-500">o</span>
+                <div class="flex-grow border-t border-gray-300"></div>
+            </div>
+            
+            <!-- Login -->
+            <div class="text-center">
+                <p class="text-gray-600">¿Ya tienes cuenta?</p>
+                <a href="#" onclick="closeRegisterModal(); openLoginModal();" class="text-green-600 hover:text-green-700 font-semibold transition-colors duration-200">
+                    Inicia sesión aquí
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
