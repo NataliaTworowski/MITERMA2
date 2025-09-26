@@ -135,7 +135,7 @@ STATICFILES_DIRS = [
 
 # Media files (uploads)
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Session configuration
 SESSION_COOKIE_AGE = 3600  # 1 hora 

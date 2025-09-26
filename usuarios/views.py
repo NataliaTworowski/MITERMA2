@@ -4,6 +4,8 @@ from django.contrib import messages
 from django.contrib.auth.hashers import make_password, check_password
 from .models import Usuario, Rol
 import re
+import os
+from django.conf import settings
 
 def login_usuario(request):
     """Vista para iniciar sesión."""
@@ -30,7 +32,15 @@ def login_usuario(request):
                 request.session['usuario_rol'] = usuario.rol.id
                 
                 messages.success(request, f'¡Bienvenid@ {usuario.nombre}!')
-                return redirect('usuarios:inicio')
+                # Redirigir según el rol del usuario
+                if usuario.rol.id == 2:  # Administrador de termas
+                    return redirect('usuarios:adm_termas')
+                elif usuario.rol.id == 3:  # Rol 3
+                    return redirect('usuarios:rol_tres')
+                elif usuario.rol.id == 4:  # Rol 4
+                    return redirect('usuarios:rol_cuatro')
+                else:  # Usuario normal (rol 1 u otros)
+                    return redirect('usuarios:inicio')
             else:
                 messages.error(request, 'Email o contraseña incorrectos.')
                 return redirect('core:home')
@@ -41,8 +51,7 @@ def login_usuario(request):
         except Exception as e:
             messages.error(request, f'Error al iniciar sesión: {str(e)}')
             return redirect('core:home')
-    
-    # Si es GET, redirigir al home
+        
     return redirect('core:home')
 
 def inicio(request):
@@ -57,7 +66,7 @@ def inicio(request):
     region = request.GET.get('region', '').strip()
     ciudad = request.GET.get('ciudad', '').strip()
     
-    if busqueda or region or ciudad:  # Solo si tienen contenido
+    if busqueda or region or ciudad:  
         from django.urls import reverse
         params = request.GET.urlencode()
         url = reverse('termas:buscar')
@@ -65,11 +74,7 @@ def inicio(request):
     
     try:
         usuario = Usuario.objects.get(id=request.session['usuario_id'])
-        
-        # Importar aquí para evitar import circular
         from termas.models import Region, Ciudad
-        
-        # Obtener regiones y ciudades para los selectores
         regiones = Region.objects.all().order_by('nombre')
         ciudades = Ciudad.objects.all().select_related('region').order_by('region__nombre', 'nombre')
         
@@ -87,17 +92,13 @@ def inicio(request):
 def registro_usuario(request):
     """Vista para registrar nuevos usuarios."""
     if request.method == 'POST':
-        # Obtener datos del formulario
         nombre = request.POST.get('nombre', '').strip()
         apellido = request.POST.get('apellido', '').strip()
         email = request.POST.get('email', '').strip().lower()
         telefono = request.POST.get('telefono', '').strip()
         password = request.POST.get('password', '')
         password_confirm = request.POST.get('password_confirm', '')
-        
-        # Validaciones
         errors = []
-        
         # Validar campos requeridos
         if not nombre:
             errors.append('El nombre es requerido.')
@@ -170,4 +171,38 @@ def registro_usuario(request):
             return redirect('core:home')
     
     return redirect('core:home')
+
+def adm_termas(request):
+    """Vista para mostrar la página de administración de termas."""
+    # Verificar si el usuario está logueado
+    if 'usuario_id' not in request.session:
+        messages.error(request, 'Debes iniciar sesión para acceder.')
+        return redirect('core:home')
+    
+    # Verificar si el usuario tiene el rol correcto (ID=2)
+    if request.session.get('usuario_rol') != 2:
+        messages.error(request, 'No tienes permisos para acceder a esta sección.')
+        return redirect('usuarios:inicio')
+    
+    try:
+        usuario = Usuario.objects.get(id=request.session['usuario_id'])
+        
+        context = {
+            'title': 'Administración de Termas - MiTerma',
+            'usuario': usuario,
+            'terma': usuario.terma,
+        }
+        return render(request, 'adm_termas.html', context)
+    except Usuario.DoesNotExist:
+        messages.error(request, 'Sesión inválida.')
+        return redirect('core:home')
+
+def logout_usuario(request):
+    """Vista para cerrar sesión del usuario."""
+    # Limpiar todas las variables de sesión
+    request.session.flush()
+    
+    messages.success(request, 'Has cerrado sesión correctamente.')
+    return redirect('core:home')
+
 

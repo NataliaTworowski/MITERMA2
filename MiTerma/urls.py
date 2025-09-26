@@ -26,5 +26,4 @@ urlpatterns = [
     path('termas/', include('termas.urls')),
     path('ventas/', include('ventas.urls')),
     path('reservas/', include('entradas.urls')),
-]
-
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
