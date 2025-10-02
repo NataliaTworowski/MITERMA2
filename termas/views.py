@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.db.models import Q
 from django.contrib import messages
-from .models import Terma, Region, Ciudad, ImagenTerma
+from .models import Terma, Region, Comuna, ImagenTerma
 import os
 
 def lista_termas(request):
@@ -37,37 +37,37 @@ def buscar_termas(request):
         
         # Obtener regiones y ciudades para los selectores
         regiones = Region.objects.all().order_by('nombre')
-        ciudades = Ciudad.objects.all().select_related('region').order_by('region__nombre', 'nombre')
+        comunas = Comuna.objects.all().select_related('region').order_by('region__nombre', 'nombre')
         
         # Manejar búsqueda de termas
         busqueda = request.GET.get('busqueda', '').strip()
         region_id = request.GET.get('region', '')
-        ciudad_id = request.GET.get('ciudad', '')
+        comuna_id = request.GET.get('comuna', '')
         
         # Construir query de búsqueda
         query = Q(estado_suscripcion='activa')
         
         # Aplicar filtros si hay criterios de búsqueda
-        if busqueda or region_id or ciudad_id:
+        if busqueda or region_id or comuna_id:
             # Filtro por texto de búsqueda
             if busqueda:
                 query &= (
                     Q(nombre_terma__icontains=busqueda) |
                     Q(descripcion_terma__icontains=busqueda) |
-                    Q(ciudad__nombre__icontains=busqueda) |
-                    Q(ciudad__region__nombre__icontains=busqueda)
+                    Q(comuna__nombre__icontains=busqueda) |
+                    Q(comuna__region__nombre__icontains=busqueda)
                 )
             
             # Filtro por región
             if region_id:
-                query &= Q(ciudad__region__id=region_id)
+                query &= Q(comuna__region__id=region_id)
             
             # Filtro por ciudad
-            if ciudad_id:
-                query &= Q(ciudad__id=ciudad_id)
+            if comuna_id:
+                query &= Q(comuna__id=comuna_id)
         
         # Ejecutar la consulta
-        termas = Terma.objects.filter(query).select_related('ciudad', 'ciudad__region')
+        termas = Terma.objects.filter(query).select_related('comuna', 'comuna__region')
         
         context = {
             'title': 'Inicio - MiTerma',
@@ -75,9 +75,9 @@ def buscar_termas(request):
             'termas': termas,
             'busqueda': busqueda,
             'region_seleccionada': region_id,
-            'ciudad_seleccionada': ciudad_id,
+            'comuna_seleccionada': comuna_id,
             'regiones': regiones,
-            'ciudades': ciudades,
+            'comuna': comunas,
             'total_resultados': len(termas)
         }
         
