@@ -10,7 +10,7 @@ class Terma(models.Model):
     nombre_terma = models.CharField(max_length=100)
     descripcion_terma = models.TextField(null=True, blank=True)
     direccion_terma = models.TextField(null=True, blank=True)
-    ciudad = models.ForeignKey('Ciudad', on_delete=models.SET_NULL, null=True, blank=True)
+    comuna = models.ForeignKey('Comuna', on_delete=models.SET_NULL, null=True, blank=True)
     telefono_terma = models.CharField(max_length=20, null=True, blank=True)
     email_terma = models.EmailField(max_length=100, null=True, blank=True)
     estado_suscripcion = models.CharField(max_length=20, choices=ESTADOS, default='inactiva')
@@ -55,9 +55,9 @@ class Region(models.Model):
         return self.nombre
 
 
-class Ciudad(models.Model):
+class Comuna(models.Model):
     nombre = models.CharField(max_length=100)
-    region = models.ForeignKey(Region, on_delete=models.CASCADE, related_name="ciudades")
+    region = models.ForeignKey(Region, on_delete=models.CASCADE, related_name="comunas")
 
     def __str__(self):
         return self.nombre

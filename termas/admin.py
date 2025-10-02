@@ -3,15 +3,15 @@ from .models import Terma, Calificacion, ImagenTerma, ServicioTerma, SolicitudTe
 
 @admin.register(Terma)
 class TermaAdmin(admin.ModelAdmin):
-    list_display = ['nombre_terma', 'ciudad', 'estado_suscripcion', 'calificacion_promedio', 'administrador']
-    list_filter = ['estado_suscripcion', 'ciudad', 'fecha_suscripcion']
+    list_display = ['nombre_terma', 'comuna', 'estado_suscripcion', 'calificacion_promedio', 'administrador']
+    list_filter = ['estado_suscripcion', 'comuna', 'fecha_suscripcion']
     search_fields = ['nombre_terma', 'descripcion_terma', 'direccion_terma', 'email_terma']
     list_editable = ['estado_suscripcion']
     ordering = ['nombre_terma']
     
     fieldsets = (
         ('Información Básica', {
-            'fields': ('nombre_terma', 'descripcion_terma', 'direccion_terma', 'ciudad')
+            'fields': ('nombre_terma', 'descripcion_terma', 'direccion_terma', 'comuna')
         }),
         ('Contacto', {
             'fields': ('telefono_terma', 'email_terma')
