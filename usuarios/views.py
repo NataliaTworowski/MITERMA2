@@ -74,15 +74,18 @@ def inicio(request):
     
     try:
         usuario = Usuario.objects.get(id=request.session['usuario_id'])
-        from termas.models import Region, Ciudad
+        from termas.models import Region, Comuna
         regiones = Region.objects.all().order_by('nombre')
-        ciudades = Ciudad.objects.all().select_related('region').order_by('region__nombre', 'nombre')
+        comunas = Comuna.objects.all().select_related('region').order_by('region__nombre', 'nombre')
         
         context = {
             'title': 'Inicio - MiTerma',
             'usuario': usuario,
             'regiones': regiones,
-            'ciudades': ciudades,
+            'comunas': comunas,
+            'region_seleccionada': request.GET.get('region', ''),
+            'comuna_seleccionada': request.GET.get('comuna', ''),
+            'busqueda': request.GET.get('busqueda', ''),
         }
         return render(request, 'Inicio.html', context)
     except Usuario.DoesNotExist:

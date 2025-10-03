@@ -1,29 +1,58 @@
 {% load static %}
 
 <!-- Navbar -->
-<nav id="navbar" class="fixed top-0 left-0 right-0 z-50 bg-blue-900/90 backdrop-blur-md text-white shadow-md transition-transform duration-300 ease-in-out">
-    <div class="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center py-4">
-        
-        <!-- Logo -->
-        <a href="{% url 'core:home' %}" class="flex items-center space-x-3">
-            <img src="{% static 'img/logo.png' %}" alt="MiTerma Logo" class="w-16 h-16 md:w-20 md:h-20">
-            <span class="text-2xl md:text-3xl font-bold">MiTerma</span>
-        </a>
+<nav id="navbar" class="fixed top-0 left-0 right-0 z-50 bg-transparent text-white transition-transform duration-300 ease-in-out">
+    <div class="container mx-auto px-6">
+        <div class="flex justify-between items-center py-4">
+            
+            <!-- Logo -->
+            <a href="{% url 'core:home' %}" class="flex items-center space-x-3">
+                <img src="{% static 'img/logo.png' %}" alt="MiTerma Logo" class="w-12 h-12 md:w-16 md:h-16 lg:w-20 lg:h-20">
+                <span class="text-xl md:text-xl lg:text-2xl font-bold">MiTerma</span>
+            </a>
 
-        <!-- Enlaces -->
-        <ul class="flex flex-col md:flex-row md:space-x-6 mt-4 md:mt-0 text-white font-medium">
-            <li>
-                <a href="#" class="px-3 py-2 rounded-md hover:bg-blue-800/80 transition-colors duration-300">Termas</a>
-            </li>
-            <li>
-                <a href="#" class="px-3 py-2 rounded-md hover:bg-blue-800/80 transition-colors duration-300">Sobre Nosotros</a>
-            </li>
-            <li>
-                <a href="#" onclick="openLoginModal()" class="px-3 py-2 rounded-md hover:bg-blue-800/80 transition-colors duration-300">Iniciar Sesión</a>
-            </li>
-            <li>
-                <a href="#" onclick="openRegisterModal()" class="px-3 py-2 rounded-md hover:bg-blue-800/80 transition-colors duration-300">Registrarme</a>
-            </li>
-        </ul>
+            <!-- Botón hamburguesa (para movil) -->
+            <button id="mobile-menu-btn" class="md:hidden flex flex-col space-y-1 p-2">
+                <span class="w-6 h-0.5 bg-white transition-transform duration-300"></span>
+                <span class="w-6 h-0.5 bg-white transition-opacity duration-300"></span>
+                <span class="w-6 h-0.5 bg-white transition-transform duration-300"></span>
+            </button>
+
+            <!-- Enlaces (pantalla grande) -->
+            <ul class="hidden md:flex md:space-x-6 text-white font-medium">
+                <li>
+                    <a href="#termas" class="px-3 py-2 rounded-md hover:bg-white/20 transition-colors duration-300">Termas</a>
+                </li>
+                <li>
+                    <a href="#objetivos" class="px-3 py-2 rounded-md hover:bg-white/20 transition-colors duration-300">Objetivos</a>
+                </li>
+                <li>
+                    <a href="#" onclick="openLoginModal()" class="px-3 py-2 rounded-md hover:bg-white/20 transition-colors duration-300">Iniciar Sesión</a>
+                </li>
+                <li>
+                    <a href="#" onclick="openRegisterModal()" class="px-3 py-2 rounded-md hover:bg-white/20 transition-colors duration-300">Registrarme</a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Menú móvil -->
+        <div id="mobile-menu" class="md:hidden hidden bg-black/90 backdrop-blur-sm rounded-lg mt-2 py-4">
+            <ul class="flex flex-col space-y-2 px-4">
+                <li>
+                    <a href="#termas" class="block px-3 py-2 rounded-md hover:bg-white/20 transition-colors duration-300">Termas</a>
+                </li>
+                <li>
+                    <a href="#objetivos" class="block px-3 py-2 rounded-md hover:bg-white/20 transition-colors duration-300">Objetivos</a>
+                </li>
+                <li>
+                    <a href="#" onclick="openLoginModal()" class="block px-3 py-2 rounded-md hover:bg-white/20 transition-colors duration-300">Iniciar Sesión</a>
+                </li>
+                <li>
+                    <a href="#" onclick="openRegisterModal()" class="block px-3 py-2 rounded-md hover:bg-white/20 transition-colors duration-300">Registrarme</a>
+                </li>
+            </ul>
+        </div>
     </div>
 </nav>
+
+<script src="{% static 'js/navbar.js' %}"></script>

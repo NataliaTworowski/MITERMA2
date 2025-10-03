@@ -20,6 +20,31 @@ class Terma(models.Model):
 
     def __str__(self):
         return self.nombre_terma
+    
+    # Método para obtener el precio mínimo desde EntradaTipo
+    def precio_minimo(self):
+        entrada_minima = self.entradatipo_set.filter(estado=True).order_by('precio').first()
+        return entrada_minima.precio if entrada_minima else None
+    
+    # Método para obtener todos los tipos de entrada activos
+    def get_tipos_entrada(self):
+        return self.entradatipo_set.filter(estado=True).order_by('precio')
+    
+    # Método para verificar si tiene tipos de entrada
+    def tiene_precios(self):
+        return self.entradatipo_set.filter(estado=True).exists()
+    
+    #para calcualr el promedio de calificacion 
+    def promedio_calificacion(self):
+        """Calcula el promedio de las puntuaciones de calificación"""
+        from django.db.models import Avg
+        resultado = self.calificacion_set.aggregate(promedio=Avg('puntuacion'))
+        return resultado['promedio'] if resultado['promedio'] else None
+
+    #para obtener el nuemro de calificaciones
+    def total_calificaciones(self):
+        """Retorna el número total de calificaciones"""
+        return self.calificacion_set.count()
 
 
 class Calificacion(models.Model):
@@ -28,6 +53,33 @@ class Calificacion(models.Model):
     puntuacion = models.IntegerField()
     comentario = models.TextField(null=True, blank=True)
     fecha = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        """Sobrescribir save para actualizar calificacion_promedio de la terma."""
+        super().save(*args, **kwargs)
+        self.actualizar_promedio_terma()
+    
+    def delete(self, *args, **kwargs):
+        """Sobrescribir delete para actualizar calificacion_promedio de la terma."""
+        terma = self.terma
+        super().delete(*args, **kwargs)
+        self.actualizar_promedio_terma_manual(terma)
+    
+    def actualizar_promedio_terma(self):
+        """Actualiza el promedio de calificación de la terma asociada."""
+        from django.db.models import Avg
+        promedio = self.terma.calificacion_set.aggregate(promedio=Avg('puntuacion'))['promedio']
+        self.terma.calificacion_promedio = promedio
+        self.terma.save(update_fields=['calificacion_promedio'])
+    
+    @staticmethod
+    def actualizar_promedio_terma_manual(terma):
+        """Actualiza el promedio de calificación para una terma específica."""
+        from django.db.models import Avg
+        promedio = terma.calificacion_set.aggregate(promedio=Avg('puntuacion'))['promedio']
+        terma.calificacion_promedio = promedio
+        terma.save(update_fields=['calificacion_promedio'])
+
 
 
 class ImagenTerma(models.Model):

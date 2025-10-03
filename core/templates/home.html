@@ -52,29 +52,31 @@
     {% endif %}
 
     <!-- Contenido principal -->
-    <main class="flex-grow pt-20">
+    <main class="flex-grow">
 
 <!-- Hero Section -->
 <section class="relative min-h-screen flex items-center justify-center overflow-hidden">
     <div class="absolute inset-0 z-0">
-        <img src="{% static 'img/hero.png' %}" alt="Aguas termales" class="w-full h-full object-cover">
-        <div class="absolute inset-0 bg-black/20"></div>
-        <div class="absolute inset-0 bg-gradient-to-br from-blue-900/20 to-cyan-800/20"></div>
+        <img src="{% static 'img/hero1.png' %}" alt="Aguas termales" class="w-full h-full object-cover">
+        <div class="absolute inset-0 bg-black/40"></div>
+        <div class="absolute inset-0 bg-gradient-to-br from-blue-900/40 to-cyan-800/40"></div>
     </div>
     
     <div class="container mx-auto px-6 relative z-10 text-center">
-        <h1 class="text-4xl md:text-6xl lg:text-7xl font-bold text-white mb-6 drop-shadow-lg">
-            Bienvenido a <span class="text-cyan-300">MiTerma</span>
+        <div class="mb-1">
+            <img src="{% static 'img/logo.png' %}" alt="MiTerma Logo" class="w-28 h-28 md:w-36 md:h-36 lg:w-44 lg:h-44 mx-auto drop-shadow-2xl">
+        </div>
+        <h1 class="text-3xl md:text-5xl lg:text-6xl font-bold text-white mb-6 drop-shadow-lg">
+            <span class="text-white">MiTerma</span>
         </h1>
-        <p class="text-xl md:text-2xl text-white/90 mb-8 max-w-3xl mx-auto leading-relaxed drop-shadow-md">
-            Descubre el bienestar y la relajación en las mejores aguas termales de Chile. 
-            Una experiencia única que renueva tu cuerpo y espíritu.
+        <p class="text-xl md:text-xl text-yellow-300 mb-8 max-w-3xl mx-auto leading-relaxed drop-shadow-md">
+            Tu tradición termal, con visión digital.
         </p>
         <div class="space-x-4 flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="#termas" class="bg-white/90 text-blue-900 px-8 py-4 rounded-lg font-semibold hover:bg-white transition-colors duration-300 inline-block shadow-xl backdrop-blur-sm">
+            <a href="#termas" class="bg-white/90 text-blue-900 px-6 py-3 rounded-lg font-semibold hover:bg-white transition-colors duration-300 inline-block shadow-xl backdrop-blur-sm">
                 Explorar Termas
             </a>
-            <a href="#contacto" class="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white hover:text-blue-900 transition-colors duration-300 inline-block backdrop-blur-sm">
+            <a href="#contacto" class="border-2 border-white text-white px-6 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-900 transition-colors duration-300 inline-block backdrop-blur-sm">
                 Contactar
             </a>
         </div>
@@ -82,97 +84,277 @@
     
 </section>
 
-<!-- Sección Termas -->
-<section id="termas" class="py-20 bg-white">
+<!-- una plataforma completa -->
+<section id="plataforma " class="py-20 bg-gray-100">
     <div class="container mx-auto px-6">
         <div class="text-center mb-16">
-            <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">Nuestras Termas</h2>
+            <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">Una Plataforma Completa</h2>
             <p class="text-lg text-gray-600 max-w-2xl mx-auto">
-                Aguas termales naturales con propiedades terapéuticas únicas, 
-                rodeadas de paisajes espectaculares y servicios de primera clase.
+                Todo lo que necesitas para descubrir y disfrutar de las mejores termas de Chile
             </p>
+        </div>
+        
+        <!-- Cajas-->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <!-- Búsqueda Avanzada -->
+            <div class="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-shadow duration-300 text-center">
+                <div class="w-16 h-16 bg-slate-700 rounded-lg flex items-center justify-center mx-auto mb-6">
+                    <svg class="w-8 h-8 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-slate-700 mb-4">Búsqueda Avanzada</h3>
+                <p class="text-gray-600 leading-relaxed">
+                    Encuentra la terma perfecta con filtros por ubicación, servicios y precios.
+                </p>
+            </div>
+            
+            <!-- Mapa Interactivo -->
+            <div class="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-shadow duration-300 text-center">
+                <div class="w-16 h-16 bg-slate-700 rounded-lg flex items-center justify-center mx-auto mb-6">
+                    <svg class="w-8 h-8 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-slate-700 mb-4">Mapa Interactivo</h3>
+                <p class="text-gray-600 leading-relaxed">
+                    Explora todas las termas de Chile en un mapa fácil de usar.
+                </p>
+            </div>
+            
+            <!-- Reseñas Verificadas -->
+            <div class="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-shadow duration-300 text-center">
+                <div class="w-16 h-16 bg-slate-700 rounded-lg flex items-center justify-center mx-auto mb-6">
+                    <svg class="w-8 h-8 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-slate-700 mb-4">Reseñas Verificadas</h3>
+                <p class="text-gray-600 leading-relaxed">
+                    Lee opiniones reales de visitantes y toma la mejor decisión.
+                </p>
+            </div>
+            
+            <!-- Reservas Seguras -->
+            <div class="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-shadow duration-300 text-center">
+                <div class="w-16 h-16 bg-slate-700 rounded-lg flex items-center justify-center mx-auto mb-6">
+                    <svg class="w-8 h-8 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-slate-700 mb-4">Reservas Seguras</h3>
+                <p class="text-gray-600 leading-relaxed">
+                    Sistema de reservas confiable y protegido para tu tranquilidad.
+                </p>
+            </div>
         </div>
     </div>
 </section>
 
-<!-- Sección Sobre Nosotros -->
-<section id="sobre-nosotros" class="py-20 relative overflow-hidden">
-    <div class="absolute inset-0 z-0">
-        <img src="{% static 'img/sobre_nosotros.png' %}" alt="Sobre nosotros" class="w-full h-full object-cover">
-    </div>
-    <div class="container mx-auto px-6 relative z-10">
-        <div class="text-center mb-16">
-            <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">Sobre Nosotros</h2>
+<!-- Sección Objetivos -->
+<section id="objetivos" class="py-20 bg-sky-900">
+    <div class="container mx-auto px-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div class="text-white">
+                <h2 class="text-4xl md:text-5xl font-bold text-white mb-8">OBJETIVOS</h2>
+                <div class="mb-8">
+                    <p class="text-lg text-yellow-300 leading-relaxed">
+                        Digitalizar y dar visibilidad al mercado de termas en Chile, facilitando la 
+                        gestión y promoción de centros termales, especialmente los pequeños, a 
+                        través de una plataforma centralizada y accesible.
+                    </p>
+                </div>
+                <div class="space-y-6">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 mr-4 mt-1">
+                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <!-- Flor principal -->
+                                <circle cx="12" cy="8" r="2"/>
+                                <ellipse cx="12" cy="5" rx="1.5" ry="2.5"/>
+                                <ellipse cx="12" cy="11" rx="1.5" ry="2.5"/>
+                                <ellipse cx="9" cy="8" rx="2.5" ry="1.5"/>
+                                <ellipse cx="15" cy="8" rx="2.5" ry="1.5"/>
+                                <!-- Tallo -->
+                                <rect x="11.5" y="12" width="1" height="8" rx="0.5"/>
+                                <!-- Hojas -->
+                                <ellipse cx="9" cy="15" rx="1.5" ry="3" transform="rotate(-30 9 15)" opacity="0.8"/>
+                                <ellipse cx="15" cy="17" rx="1.5" ry="2.5" transform="rotate(30 15 17)" opacity="0.8"/>
+                            </svg>
+                        </div>
+                        <p class="text-yellow-300 leading-relaxed">
+                            Aumentar la visibilidad de los centros termales pequeños y medianos que 
+                            hoy solo dependen de redes sociales o WhatsApp.
+                        </p>
+                    </div>
+                    
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 mr-4 mt-1">
+                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <!-- Flor principal -->
+                                <circle cx="12" cy="8" r="2"/>
+                                <ellipse cx="12" cy="5" rx="1.5" ry="2.5"/>
+                                <ellipse cx="12" cy="11" rx="1.5" ry="2.5"/>
+                                <ellipse cx="9" cy="8" rx="2.5" ry="1.5"/>
+                                <ellipse cx="15" cy="8" rx="2.5" ry="1.5"/>
+                                <!-- Tallo -->
+                                <rect x="11.5" y="12" width="1" height="8" rx="0.5"/>
+                                <!-- Hojas -->
+                                <ellipse cx="9" cy="15" rx="1.5" ry="3" transform="rotate(-30 9 15)" opacity="0.8"/>
+                                <ellipse cx="15" cy="17" rx="1.5" ry="2.5" transform="rotate(30 15 17)" opacity="0.8"/>
+                            </svg>
+                        </div>
+                        <p class="text-yellow-300 leading-relaxed">
+                            Crear un mercado más competitivo y justo, donde los usuarios puedan 
+                            comparar distintas opciones en un mismo lugar.
+                        </p>
+                    </div>
+                    
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 mr-4 mt-1">
+                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <!-- Flor principal -->
+                                <circle cx="12" cy="8" r="2"/>
+                                <ellipse cx="12" cy="5" rx="1.5" ry="2.5"/>
+                                <ellipse cx="12" cy="11" rx="1.5" ry="2.5"/>
+                                <ellipse cx="9" cy="8" rx="2.5" ry="1.5"/>
+                                <ellipse cx="15" cy="8" rx="2.5" ry="1.5"/>
+                                <!-- Tallo -->
+                                <rect x="11.5" y="12" width="1" height="8" rx="0.5"/>
+                                <!-- Hojas -->
+                                <ellipse cx="9" cy="15" rx="1.5" ry="3" transform="rotate(-30 9 15)" opacity="0.8"/>
+                                <ellipse cx="15" cy="17" rx="1.5" ry="2.5" transform="rotate(30 15 17)" opacity="0.8"/>
+                            </svg>
+                        </div>
+                        <p class="text-yellow-300 leading-relaxed">
+                            Facilitar el acceso a los turistas nacionales e internacionales mediante 
+                            una plataforma con buscador y filtros de servicios.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="flex justify-center lg:justify-end">
+                <div class="w-full max-w-md">
+                    <img src="{% static 'img/objetivos.png' %}" 
+                         alt="Mariposa en aguas termales" 
+                         class="w-full h-auto rounded-lg shadow-2xl">
+                </div>
+            </div>
         </div>
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
-            <!-- Misión -->
-            <div class="bg-slate-900 rounded-xl p-8 shadow-lg hover:shadow-xl transition-shadow duration-300">
-                <div class="flex items-center mb-6">
-                    <div class="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center mr-4">
-                        <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"></path>
+    </div>
+</section>
+
+<!-- Sección Termas -->
+<section id="termas" class="py-20 bg-gray-100">
+    <div class="container mx-auto px-6">
+        <div class="text-center mb-16">
+            <h2 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4">Descubre las Mejores Termas</h2>
+            <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+                Explora una selección de las termas más destacadas de Chile
+            </p>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+            {% for terma in termas_destacadas %}
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
+                <!-- Imagen -->
+                <div class="relative h-48 bg-gradient-to-br from-blue-400 to-blue-600">
+                    {% if terma.imagenes.first %}
+                        <img src="{{ terma.imagenes.first.url_imagen }}" 
+                             alt="{{ terma.nombre_terma }}" 
+                             class="w-full h-full object-cover">
+                    {% else %}
+                        <div class="w-full h-full flex items-center justify-center">
+                            <span class="text-white text-2xl font-bold">{{ terma.nombre_terma|slice:":2"|upper }}</span>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Calificación -->
+                    <div class="absolute top-4 right-4 bg-white rounded-full px-3 py-1 flex items-center">
+                        <svg class="w-4 h-4 text-yellow-400 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                         </svg>
+                        <span class="text-sm font-semibold text-gray-800">
+                            {% if terma.calificacion_promedio %}
+                                {{ terma.calificacion_promedio|floatformat:1 }}
+                            {% else %}
+                                Sin calificar
+                            {% endif %}
+                        </span>
                     </div>
-                    <h3 class="text-2xl font-bold text-white">Nuestra Misión</h3>
                 </div>
-                <p class="text-gray-200 leading-relaxed text-lg">
-                    Ofrecer experiencias de bienestar únicas en las mejores aguas termales de Chile.
-                </p>
-            </div>
-            
-            <!-- Visión -->
-            <div class="bg-slate-900 rounded-xl p-8 shadow-lg hover:shadow-xl transition-shadow duration-300">
-                <div class="flex items-center mb-6">
-                    <div class="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center mr-4">
-                        <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M12 2L2 7v10c0 5.55 3.84 9.74 9 11 5.16-1.26 9-5.45 9-11V7l-10-5z"/>
+                
+                <!-- Contenido -->
+                <div class="p-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">{{ terma.nombre_terma }}</h3>
+                    
+                    <!-- Ubicación -->
+                    <div class="flex items-center text-gray-600 mb-3">
+                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
                         </svg>
+                        <span class="text-sm">
+                            {% if terma.comuna %}
+                                {{ terma.comuna.nombre }}, {{ terma.comuna.region.nombre }}
+                            {% else %}
+                                Ubicación no especificada
+                            {% endif %}
+                        </span>
                     </div>
-                    <h3 class="text-2xl font-bold text-white">Nuestra Visión</h3>
+                    
+                    <!-- TIPOS DE ENTRADA -->
+                    {% if terma.get_tipos_entrada %}
+                        <div class="mb-4">
+                            <div class="space-y-1">
+                                {% for entrada in terma.get_tipos_entrada|slice:":3" %}
+                                    <div class="flex justify-between items-center text-sm">
+                                        <span class="text-gray-600">{{ entrada.nombre }}</span>
+                                        <span class="font-semibold text-gray-800">${{ entrada.precio|floatformat:0 }}</span>
+                                    </div>
+                                {% endfor %}
+                                {% if terma.get_tipos_entrada.count > 3 %}
+                                    <div class="text-xs text-gray-500 italic">
+                                        +{{ terma.get_tipos_entrada.count|add:"-3" }} tipo(s) más
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Precio y boton de ver la terma -->
+                    <div class="flex justify-between items-center pt-3 border-t border-gray-100">
+                        <div class="text-orange-500 font-bold text-lg">
+                            {% if terma.precio_minimo %}
+                                Desde ${{ terma.precio_minimo|floatformat:0 }}
+                            {% else %}
+                                Consultar precio
+                            {% endif %}
+                        </div>
+                        <a href="#" 
+                           class="bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors duration-300">
+                            Ver Detalles
+                        </a>
+                    </div>
                 </div>
-                <p class="text-gray-200 leading-relaxed text-lg">
-                    Ser el líder en turismo termal sustentable, destacando por la excelencia en el servicio.
-                </p>
             </div>
+            {% empty %}
+            <div class="col-span-full text-center py-12">
+                <p class="text-gray-600 text-lg">No hay termas disponibles en este momento.</p>
+            </div>
+            {% endfor %}
         </div>
 
-        <!-- Valores principales -->
-        <div class="bg-slate-900 rounded-xl p-8 shadow-lg">
-            <h3 class="text-3xl font-bold text-white text-center mb-8">¿Por qué elegirnos?</h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div class="text-center">
-                    <div class="w-16 h-16 bg-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"></path>
-                        </svg>
-                    </div>
-                    <h4 class="text-xl font-semibold text-white">Atención Personalizada</h4>
-                </div>
-                
-                <div class="text-center">
-                    <div class="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                        </svg>
-                    </div>
-                    <h4 class="text-xl font-semibold text-white">Calidad Garantizada</h4>
-                </div>
-                
-                <div class="text-center">
-                    <div class="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path fill-rule="evenodd" d="M3 6a3 3 0 013-3h10a1 1 0 01.8 1.6L14.25 8l2.55 3.4A1 1 0 0116 13H6a1 1 0 00-1 1v3a1 1 0 11-2 0V6z" clip-rule="evenodd"></path>
-                        </svg>
-                    </div>
-                    <h4 class="text-xl font-semibold text-white">Sustentabilidad</h4>
-                </div>
-            </div>
+        <!-- boton para ver todas las termas -->
+        <div class="text-center">
+            <a href="#" 
+               class="bg-orange-500 text-white px-8 py-3 rounded-lg font-semibold hover:bg-orange-600 transition-colors duration-300 inline-block">
+                Ver Todas las Termas
+            </a>
         </div>
     </div>
 </section>
 
 <!-- Sección Contacto -->
-<section id="contacto" class="py-20 bg-gradient-to-br from-gray-800 to-gray-900">
+<section id="contacto" class="py-20 bg-sky-900">
     <div class="container mx-auto px-6">
         <div class="text-center mb-16">
             <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">Contacto</h2>
