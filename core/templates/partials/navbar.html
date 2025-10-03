@@ -1,7 +1,15 @@
 {% load static %}
 
 <!-- Navbar -->
-<nav id="navbar" class="fixed top-0 left-0 right-0 z-50 bg-transparent text-white transition-transform duration-300 ease-in-out">
+<nav id="navbar" class="fixed top-0 left-0 right-0 z-50 bg-transparent text-white transition-all duration-300 ease-in-out transform navbar-visible">
+    <style>
+        .navbar-hidden {
+            transform: translateY(-100%);
+        }
+        .navbar-visible {
+            transform: translateY(0);
+        }
+    </style>
     <div class="container mx-auto px-6">
         <div class="flex justify-between items-center py-4">
             
