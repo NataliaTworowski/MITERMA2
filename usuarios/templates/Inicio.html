@@ -79,7 +79,7 @@
                                 <option value="">Todas las comunas</option>
                                 {% for comuna in comunas %}
                                     <option value="{{ comuna.id }}" data-region="{{ comuna.region.id }}" {% if comuna.id|stringformat:"s" == comuna_seleccionada %}selected{% endif %}>
-                                        {{ comuna.nombre }} ({{ comuna.region.nombre }})
+                                        {{ comuna.nombre }} 
                                     </option>
                                 {% endfor %}
                             </select>

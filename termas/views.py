@@ -77,7 +77,7 @@ def buscar_termas(request):
             'region_seleccionada': region_id,
             'comuna_seleccionada': comuna_id,
             'regiones': regiones,
-            'comuna': comunas,
+            'comunas': comunas,
             'total_resultados': len(termas)
         }
         

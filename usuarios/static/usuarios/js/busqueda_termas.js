@@ -1,45 +1,55 @@
-// Funcionalidad para el filtro de búsqueda de termas
 document.addEventListener('DOMContentLoaded', function() {
     const regionSelect = document.getElementById('region');
-    const ciudadSelect = document.getElementById('ciudad');
+    const comunaSelect = document.getElementById('comuna');
     
     // Verificar que los elementos existen antes de proceder
-    if (!regionSelect || !ciudadSelect) {
+    if (!regionSelect || !comunaSelect) {
+        console.log('No se encontraron los selectores necesarios');
         return;
     }
     
-    const originalCiudades = Array.from(ciudadSelect.options);
+    // Guardar todas las opciones originales de comunas
+    const originalComunas = Array.from(comunaSelect.options);
     
-    // Función para filtrar ciudades según región seleccionada
-    function filterCiudades() {
-        const selectedRegion = regionSelect.value;
+    // Función para filtrar comunas según región seleccionada
+    function filtrarComunas() {
+        const regionSeleccionada = regionSelect.value;
         
         // Limpiar opciones actuales (excepto la primera)
-        ciudadSelect.innerHTML = '<option value="">Todas las ciudades</option>';
+        comunaSelect.innerHTML = '<option value="">Todas las comunas</option>';
         
-        // Agregar ciudades filtradas
-        originalCiudades.slice(1).forEach(option => {
-            if (!selectedRegion || option.dataset.region === selectedRegion) {
-                ciudadSelect.appendChild(option.cloneNode(true));
-            }
-        });
-        
-        // Si se selecciona una región específica, cambiar el texto de la primera opción
-        if (selectedRegion) {
-            ciudadSelect.options[0].textContent = 'Todas las ciudades de esta región';
+        if (!regionSeleccionada) {
+            // Si no hay región seleccionada, mostrar todas las comunas
+            originalComunas.forEach(option => {
+                if (option.value !== '') {  // Excluir la opción "Todas las comunas"
+                    comunaSelect.appendChild(option.cloneNode(true));
+                }
+            });
+        } else {
+            // Filtrar y agregar solo las comunas de la región seleccionada
+            originalComunas.forEach(option => {
+                if (option.value !== '' && option.dataset.region === regionSeleccionada) {
+                    comunaSelect.appendChild(option.cloneNode(true));
+                }
+            });
         }
+        
+        // Actualizar el texto de la primera opción
+        comunaSelect.options[0].text = regionSeleccionada 
+            ? 'Todas las comunas de esta región' 
+            : 'Todas las comunas';
     }
     
     // Event listener para cambio de región
     regionSelect.addEventListener('change', function() {
-        filterCiudades();
-        // Reset ciudad seleccionada cuando cambia la región
-        ciudadSelect.value = '';
+        filtrarComunas();
+        // Reset comuna seleccionada cuando cambia la región
+        comunaSelect.value = '';
     });
     
-    // Filtrar ciudades al cargar la página si hay región seleccionada
+    // Filtrar comunas al cargar la página si hay región seleccionada
     if (regionSelect.value) {
-        filterCiudades();
+        filtrarComunas();
     }
     
     // Agregar botón de limpiar filtros
@@ -51,17 +61,22 @@ document.addEventListener('DOMContentLoaded', function() {
         clearButton.innerHTML = 'Limpiar filtros';
         
         clearButton.addEventListener('click', function() {
+            // Limpiar el formulario
             form.reset();
-            ciudadSelect.innerHTML = '<option value="">Todas las ciudades</option>';
-            originalCiudades.slice(1).forEach(option => {
-                ciudadSelect.appendChild(option.cloneNode(true));
+            
+            // Restaurar todas las comunas
+            comunaSelect.innerHTML = '<option value="">Todas las comunas</option>';
+            originalComunas.forEach(option => {
+                if (option.value !== '') {
+                    comunaSelect.appendChild(option.cloneNode(true));
+                }
             });
         });
         
         // Insertar botón de limpiar al lado del botón de búsqueda
-        const submitButton = form.querySelector('button[type="submit"]');
-        if (submitButton && submitButton.parentNode) {
-            submitButton.parentNode.appendChild(clearButton);
+        const submitButton = form.querySelector('button[type="submit"]').parentNode;
+        if (submitButton) {
+            submitButton.appendChild(clearButton);
         }
     }
 });
