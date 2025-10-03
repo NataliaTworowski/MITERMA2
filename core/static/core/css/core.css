@@ -16,3 +16,28 @@
     color: #333;
     font-weight: 600;
 }
+
+/* Estilos para el navbar con scroll */
+#navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    transition: transform 0.3s ease-in-out;
+    transform: translateY(0);
+}
+
+/* Asegurar que el contenido no se superponga con el navbar fijo */
+body {
+    padding-top: 80px; /* Ajusta según la altura de tu navbar */
+}
+
+/* Animación suave para el navbar */
+.navbar-hidden {
+    transform: translateY(-100%) !important;
+}
+
+.navbar-visible {
+    transform: translateY(0) !important;
+}

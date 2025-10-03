@@ -20,12 +20,14 @@
 
             <!-- Enlaces (pantalla grande) -->
             <ul class="hidden md:flex md:space-x-6 text-white font-medium">
+                {% if navbar_mode != 'termas_only' %}
                 <li>
                     <a href="#termas" class="px-3 py-2 rounded-md hover:bg-white/20 transition-colors duration-300">Termas</a>
                 </li>
                 <li>
                     <a href="#objetivos" class="px-3 py-2 rounded-md hover:bg-white/20 transition-colors duration-300">Objetivos</a>
                 </li>
+                {% endif %}
                 <li>
                     <a href="#" onclick="openLoginModal()" class="px-3 py-2 rounded-md hover:bg-white/20 transition-colors duration-300">Iniciar Sesión</a>
                 </li>
@@ -38,12 +40,14 @@
         <!-- Menú móvil -->
         <div id="mobile-menu" class="md:hidden hidden bg-black/90 backdrop-blur-sm rounded-lg mt-2 py-4">
             <ul class="flex flex-col space-y-2 px-4">
+                {% if navbar_mode != 'termas_only' %}
                 <li>
                     <a href="#termas" class="block px-3 py-2 rounded-md hover:bg-white/20 transition-colors duration-300">Termas</a>
                 </li>
                 <li>
                     <a href="#objetivos" class="block px-3 py-2 rounded-md hover:bg-white/20 transition-colors duration-300">Objetivos</a>
                 </li>
+                {% endif %}
                 <li>
                     <a href="#" onclick="openLoginModal()" class="block px-3 py-2 rounded-md hover:bg-white/20 transition-colors duration-300">Iniciar Sesión</a>
                 </li>

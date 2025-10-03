@@ -1,0 +1,136 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Termas Asociadas - MiTerma</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- CSS personalizado -->
+    <link rel="stylesheet" href="{% static 'core/css/core.css' %}">
+    
+    <style>
+        .termas-page #navbar {
+            background-color: #0c4a6e !important; 
+        }
+        .termas-page #mobile-menu {
+            background-color: rgba(12, 74, 110, 0.9) !important; 
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen font-sans bg-white termas-page">
+    <!-- Navbar -->
+    {% include 'partials/navbar.html' with navbar_mode='termas_only' %}
+
+    <!-- Modales -->
+    {% include 'partials/login_modal.html' %}
+    {% include 'partials/register_modal.html' %}
+
+    <!-- Contenido Principal -->
+    <main class="flex-grow container mx-auto px-4 py-20 mt-16">
+        <h1 class="text-4xl font-bold mb-6 text-center">Nuestras Termas Asociadas</h1>
+        <p class="text-xl text-gray-600 max-w-3xl mx-auto mb-8 text-center">
+            Explora una selección de las termas más destacadas de Chile
+        </p>
+        <!--termas que se van a mostrar -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {% for terma in termas %}
+            <div class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300 max-w-md mx-auto">
+                <!-- Imagen -->
+                <div class="relative h-56 bg-gradient-to-br from-blue-400 to-blue-600">
+                    {% if terma.imagenes.first %}
+                        <img src="{{ terma.imagenes.first.url_imagen }}" 
+                             alt="{{ terma.nombre_terma }}" 
+                             class="w-full h-full object-cover">
+                    {% else %}
+                        <div class="w-full h-full flex items-center justify-center">
+                            <span class="text-white text-2xl font-bold">{{ terma.nombre_terma|slice:":2"|upper }}</span>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Calificación -->
+                    <div class="absolute top-4 right-4 bg-white rounded-full px-3 py-1 flex items-center">
+                        <svg class="w-4 h-4 text-yellow-400 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                        </svg>
+                        <span class="text-sm font-semibold text-gray-800">
+                            {% if terma.calificacion_promedio %}
+                                {{ terma.calificacion_promedio|floatformat:1 }}
+                            {% else %}
+                                Sin calificar
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+                
+                <!-- Contenido -->
+                <div class="p-6">
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">{{ terma.nombre_terma }}</h3>
+                    
+                    <!-- Ubicación -->
+                    <div class="flex items-center text-gray-600 mb-3">
+                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                        </svg>
+                        <span class="text-sm">
+                            {% if terma.comuna %}
+                                {{ terma.comuna.nombre }}, {{ terma.comuna.region.nombre }}
+                            {% else %}
+                                Ubicación no especificada
+                            {% endif %}
+                        </span>
+                    </div>
+                    
+                    <!-- TIPOS DE ENTRADA -->
+                    {% if terma.get_tipos_entrada %}
+                        <div class="mb-4">
+                            <div class="space-y-1">
+                                {% for entrada in terma.get_tipos_entrada|slice:":3" %}
+                                    <div class="flex justify-between items-center text-sm">
+                                        <span class="text-gray-600">{{ entrada.nombre }}</span>
+                                        <span class="font-semibold text-gray-800">${{ entrada.precio|floatformat:0 }}</span>
+                                    </div>
+                                {% endfor %}
+                                {% if terma.get_tipos_entrada.count > 3 %}
+                                    <div class="text-xs text-gray-500 italic">
+                                        +{{ terma.get_tipos_entrada.count|add:"-3" }} tipo(s) más
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Precio y boton de ver la terma -->
+                    <div class="flex justify-between items-center pt-3 border-t border-gray-100">
+                        <div class="text-orange-500 font-bold text-lg">
+                            {% if terma.precio_minimo %}
+                                Desde ${{ terma.precio_minimo|floatformat:0 }}
+                            {% else %}
+                                Consultar precio
+                            {% endif %}
+                        </div>
+                        <a href="#" 
+                           class="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition-colors duration-300">
+                            Ver Detalles
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-span-full text-center py-12">
+                <p class="text-gray-600 text-lg">No hay termas disponibles en este momento.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </main>
+
+    <!-- Footer -->
+    {% include 'partials/footer.html' %}
+    <!-- Scripts -->
+    <script src="{% static 'js/navbar.js' %}"></script>
+    <script src="{% static 'js/mostrar_termas.js' %}"></script>
+</body>
+</html>

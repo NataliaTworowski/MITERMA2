@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from termas.models import Terma
-from entradas.models import EntradaTipo
+
 
 def home(request):
     """Vista principal del sitio."""
@@ -15,3 +15,11 @@ def home(request):
         'termas_destacadas': termas_destacadas
     }
     return render(request, 'home.html', context)
+
+def mostrar_termas(request):
+    termas = Terma.objects.all()
+    context = {
+        'termas' : termas,
+        'navbar_mode': 'termas_only'
+    }
+    return render(request, 'mostrar_termas.html', context)
