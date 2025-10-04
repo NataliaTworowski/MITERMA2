@@ -1,6 +1,8 @@
 document.addEventListener('DOMContentLoaded', function() {
     const regionSelect = document.getElementById('region');
     const comunaSelect = document.getElementById('comuna');
+    const searchInput = document.getElementById('searchInput');
+    const limpiarFiltrosBtn = document.getElementById('limpiarFiltros');
     
     // Verificar que los elementos existen antes de proceder
     if (!regionSelect || !comunaSelect) {
@@ -40,6 +42,25 @@ document.addEventListener('DOMContentLoaded', function() {
             : 'Todas las comunas';
     }
     
+    // Función para limpiar todos los filtros
+    function limpiarFiltros() {
+        // Limpiar región
+        regionSelect.value = '';
+        
+        // Limpiar y restaurar comunas
+        comunaSelect.innerHTML = '<option value="">Todas las comunas</option>';
+        originalComunas.forEach(option => {
+            if (option.value !== '') {
+                comunaSelect.appendChild(option.cloneNode(true));
+            }
+        });
+        
+        // Limpiar búsqueda
+        if (searchInput) {
+            searchInput.value = '';
+        }
+    }
+    
     // Event listener para cambio de región
     regionSelect.addEventListener('change', function() {
         filtrarComunas();
@@ -47,36 +68,13 @@ document.addEventListener('DOMContentLoaded', function() {
         comunaSelect.value = '';
     });
     
+    // Event listener para limpiar filtros
+    if (limpiarFiltrosBtn) {
+        limpiarFiltrosBtn.addEventListener('click', limpiarFiltros);
+    }
+    
     // Filtrar comunas al cargar la página si hay región seleccionada
     if (regionSelect.value) {
         filtrarComunas();
-    }
-    
-    // Agregar botón de limpiar filtros
-    const form = document.querySelector('form');
-    if (form) {
-        const clearButton = document.createElement('button');
-        clearButton.type = 'button';
-        clearButton.className = 'bg-gray-500 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg text-lg transition-colors duration-200 ml-4';
-        clearButton.innerHTML = 'Limpiar filtros';
-        
-        clearButton.addEventListener('click', function() {
-            // Limpiar el formulario
-            form.reset();
-            
-            // Restaurar todas las comunas
-            comunaSelect.innerHTML = '<option value="">Todas las comunas</option>';
-            originalComunas.forEach(option => {
-                if (option.value !== '') {
-                    comunaSelect.appendChild(option.cloneNode(true));
-                }
-            });
-        });
-        
-        // Insertar botón de limpiar al lado del botón de búsqueda
-        const submitButton = form.querySelector('button[type="submit"]').parentNode;
-        if (submitButton) {
-            submitButton.appendChild(clearButton);
-        }
     }
 });
