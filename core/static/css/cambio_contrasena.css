@@ -1,0 +1,46 @@
+/* Ocultar completamente el ícono de mostrar/ocultar contraseña del navegador */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+
+input[type="password"]::-webkit-credentials-auto-fill-button,
+input[type="password"]::-webkit-strong-password-auto-fill-button,
+input[type="password"]::-webkit-textfield-decoration-container {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    width: 0 !important;
+    height: 0 !important;
+}
+
+/* Para Chrome, Safari, Edge - ocultar todos los decoradores */
+input[type="password"]::-webkit-inner-spin-button,
+input[type="password"]::-webkit-outer-spin-button {
+    -webkit-appearance: none !important;
+    margin: 0 !important;
+    display: none !important;
+}
+
+/* Asegurar que no hay espacio reservado para el ícono */
+input[type="password"] {
+    -webkit-appearance: none !important;
+    -moz-appearance: textfield !important;
+    appearance: none !important;
+}
+
+/* Específicamente para el input de contraseña */
+#new_password::-webkit-credentials-auto-fill-button,
+#confirm_password::-webkit-credentials-auto-fill-button,
+#new_password::-ms-reveal,
+#confirm_password::-ms-reveal {
+    display: none !important;
+    visibility: hidden !important;
+}
+
+/* NO aplicar text-security cuando el campo es de tipo text */
+input[type="text"].password-visible {
+    -webkit-text-security: none !important;
+}
