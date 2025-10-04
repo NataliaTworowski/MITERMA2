@@ -2,6 +2,7 @@ from django.shortcuts import render
 from termas.models import Terma
 
 
+
 def home(request):
     """Vista principal del sitio."""
     termas_destacadas = Terma.objects.prefetch_related(
@@ -23,3 +24,6 @@ def mostrar_termas(request):
         'navbar_mode': 'termas_only'
     }
     return render(request, 'mostrar_termas.html', context)
+
+
+

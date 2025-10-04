@@ -4,8 +4,7 @@ from django.contrib import messages
 from django.contrib.auth.hashers import make_password, check_password
 from .models import Usuario, Rol
 import re
-import os
-from django.conf import settings
+from .utils import enviar_email_confirmacion
 
 def login_usuario(request):
     """Vista para iniciar sesión."""
@@ -164,6 +163,18 @@ def registro_usuario(request):
             request.session['usuario_rol'] = nuevo_usuario.rol.id
             
             messages.success(request, f'¡Bienvenid@ {nombre}! Tu cuenta ha sido creada exitosamente.')
+            
+            # Enviar email de confirmación
+            email_enviado = enviar_email_confirmacion(
+                usuario_email=nuevo_usuario.email,
+                nombre_usuario=nuevo_usuario.nombre
+            )
+            
+            if email_enviado:
+                messages.success(request, 'Registro exitoso. Te hemos enviado un email de confirmación.')
+            else:
+                messages.warning(request, 'Registro exitoso, pero hubo un problema enviando el email.')
+            
             return redirect('usuarios:inicio')  
             
         except Rol.DoesNotExist:
@@ -174,6 +185,7 @@ def registro_usuario(request):
             return redirect('core:home')
     
     return redirect('core:home')
+
 
 def adm_termas(request):
     """Vista para mostrar la página de administración de termas."""
