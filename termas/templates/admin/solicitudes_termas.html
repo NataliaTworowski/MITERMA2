@@ -1,0 +1,47 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<div class="module">
+    <table>
+        <thead>
+            <tr>
+                <th>Nombre Terma</th>
+                <th>Correo Institucional</th>
+                <th>Fecha Solicitud</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for solicitud in solicitudes %}
+            <tr>
+                <td>{{ solicitud.nombre_terma }}</td>
+                <td>{{ solicitud.correo_institucional }}</td>
+                <td>{{ solicitud.fecha_solicitud|date:"d/m/Y H:i" }}</td>
+                <td>{{ solicitud.get_estado_display }}</td>
+                <td>
+                    {% if solicitud.estado == 'pendiente' %}
+                    <form method="post" style="display: inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="solicitud_id" value="{{ solicitud.id }}">
+                        <input type="hidden" name="action" value="aprobar">
+                        <button type="submit" class="button">Aprobar</button>
+                    </form>
+                    <form method="post" style="display: inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="solicitud_id" value="{{ solicitud.id }}">
+                        <input type="hidden" name="action" value="rechazar">
+                        <textarea name="motivo_rechazo" placeholder="Motivo del rechazo" required></textarea>
+                        <button type="submit" class="button" style="background: #ba2121;">Rechazar</button>
+                    </form>
+                    {% else %}
+                    {{ solicitud.get_estado_display }}
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

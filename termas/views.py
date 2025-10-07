@@ -6,7 +6,7 @@ import os
 
 def lista_termas(request):
     """Vista para mostrar lista de termas."""
-    termas = Terma.objects.filter(estado_suscripcion='activa').select_related('ciudad', 'ciudad__region')
+    termas = Terma.objects.filter(estado_suscripcion='true').select_related('ciudad', 'ciudad__region')
     context = {
         'title': 'Termas Disponibles - MiTerma',
         'termas': termas
@@ -15,7 +15,7 @@ def lista_termas(request):
 
 def detalle_terma(request, pk):
     """Vista para mostrar detalle de una terma."""
-    terma = get_object_or_404(Terma, pk=pk, estado_suscripcion='activa')
+    terma = get_object_or_404(Terma, pk=pk, estado_suscripcion='true')
     context = {
         'title': f'Terma {terma.nombre_terma} - MiTerma',
         'terma': terma
@@ -45,44 +45,36 @@ def buscar_termas(request):
         comuna_id = request.GET.get('comuna', '')
         
         # Construir query de búsqueda
-        query = Q(estado_suscripcion='activa')
-        
-        # Aplicar filtros si hay criterios de búsqueda
-        if busqueda or region_id or comuna_id:
-            # Filtro por texto de búsqueda
-            if busqueda:
-                query &= (
-                    Q(nombre_terma__icontains=busqueda) |
-                    Q(descripcion_terma__icontains=busqueda) |
-                    Q(comuna__nombre__icontains=busqueda) |
-                    Q(comuna__region__nombre__icontains=busqueda)
-                )
-            
-            # Filtro por región
-            if region_id:
-                query &= Q(comuna__region__id=region_id)
-            
-            # Filtro por ciudad
-            if comuna_id:
-                query &= Q(comuna__id=comuna_id)
-        
-        # Ejecutar la consulta
-        termas = Terma.objects.filter(query).select_related('comuna', 'comuna__region')
-        
+        query = Q(estado_suscripcion='true')
+
+        # Si hay filtros, agregarlos al query
+        if busqueda:
+            query &= (
+                Q(nombre_terma__icontains=busqueda) |
+                Q(descripcion_terma__icontains=busqueda) |
+                Q(comuna__nombre__icontains=busqueda) |
+                Q(comuna__region__nombre__icontains=busqueda)
+            )
+        if region_id:
+            query &= Q(comuna__region__id=region_id)
+        if comuna_id:
+            query &= Q(comuna__id=comuna_id)
+
+        # Ejecutar la consulta (si no hay filtros, muestra todas las termas activas)
+        termas_destacadas = Terma.objects.filter(query).select_related('comuna', 'comuna__region')
         context = {
             'title': 'Inicio - MiTerma',
             'usuario': usuario,
-            'termas': termas,
+            'termas_destacadas': termas_destacadas,
             'busqueda': busqueda,
             'region_seleccionada': region_id,
             'comuna_seleccionada': comuna_id,
             'regiones': regiones,
             'comunas': comunas,
-            'total_resultados': len(termas)
+            'total_resultados': len(termas_destacadas)
         }
-        
         # Renderizar el template de usuarios con los resultados
-        return render(request, 'Inicio.html', context)
+        return render(request, 'Inicio_cliente.html', context)
         
     except Usuario.DoesNotExist:
         messages.error(request, 'Sesión inválida.')

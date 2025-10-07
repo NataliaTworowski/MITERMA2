@@ -1,0 +1,194 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>Panel de Administración General - MiTerma</title>
+    {% include 'partials/head.html' %}
+</head>
+<body class="flex flex-col min-h-screen font-sans bg-sky-100">
+    {% csrf_token %}
+
+    <!-- Navbar -->
+    {% include 'partials/navbar.html' with navbar_mode=None %}
+
+    <!-- Mensajes -->
+    {% if messages %}
+        <div class="fixed top-24 right-4 z-50 space-y-2">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} bg-white border-l-4 {% if message.tags == 'success' %}border-green-500{% elif message.tags == 'error' %}border-red-500{% else %}border-blue-500{% endif %} text-gray-700 p-4 rounded-lg shadow-lg max-w-md">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            {% if message.tags == 'success' %}
+                                <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                </svg>
+                            {% elif message.tags == 'error' %}
+                                <svg class="w-5 h-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                                </svg>
+                            {% else %}
+                                <svg class="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                                </svg>
+                            {% endif %}
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium">{{ message }}</p>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Contenido principal -->
+    <main class="flex-grow container mx-auto px-6 py-8">
+        <div class="max-w-7xl mx-auto">
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h1 class="text-3xl font-bold text-gray-800 mb-8">Panel de Administración General</h1>
+                
+                <!-- Solicitudes Pendientes -->
+                <div class="mb-8">
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-6">Solicitudes Pendientes</h2>
+                    
+                    {% if solicitudes %}
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white border border-gray-200">
+                            <thead>
+                                <tr class="bg-gray-50">
+                                    <th class="px-6 py-3 border-b text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Terma</th>
+                                    <th class="px-6 py-3 border-b text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ubicación</th>
+                                    <th class="px-6 py-3 border-b text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contacto</th>
+                                    <th class="px-6 py-3 border-b text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                                    <th class="px-6 py-3 border-b text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-200">
+                                {% for solicitud in solicitudes %}
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4">
+                                        <div class="text-sm font-medium text-gray-900">{{ solicitud.nombre_terma }}</div>
+                                        <div class="text-sm text-gray-500">{{ solicitud.descripcion|truncatechars:100 }}</div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="text-sm text-gray-900">
+                                            {{ solicitud.comuna.nombre }}, {{ solicitud.region.nombre }}
+                                        </div>
+                                        <div class="text-sm text-gray-500">{{ solicitud.direccion }}</div>
+                                    </td>
+                                    <td class="px-6 py-4">
+                                        <div class="text-sm text-gray-900">{{ solicitud.correo_institucional }}</div>
+                                        <div class="text-sm text-gray-500">{{ solicitud.telefono_contacto }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-500">
+                                        {{ solicitud.fecha_solicitud|date:"d/m/Y H:i" }}
+                                    </td>
+                                    <td class="px-6 py-4 text-sm font-medium">
+                                        <div class="flex space-x-2">
+                                            <button onclick="mostrarDetalles({{ solicitud.id }})" 
+                                                    class="inline-flex items-center px-3 py-1.5 border border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                                </svg>
+                                                Ver
+                                            </button>
+                                            <button onclick="aprobarSolicitud({{ solicitud.id }})"
+                                                    class="inline-flex items-center px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                                                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                                </svg>
+                                                Aprobar
+                                            </button>
+                                            <button onclick="rechazarSolicitud({{ solicitud.id }})"
+                                                    class="inline-flex items-center px-3 py-1.5 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                                                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                                </svg>
+                                                Rechazar
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-8 bg-gray-50 rounded-lg">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                        <h3 class="mt-2 text-sm font-medium text-gray-900">No hay solicitudes pendientes</h3>
+                        <p class="mt-1 text-sm text-gray-500">No hay nuevas solicitudes para revisar en este momento.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Modal de Detalles -->
+    <div id="modal-detalles" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50">
+        <div class="min-h-screen px-4 text-center">
+            <div class="fixed inset-0 transition-opacity" aria-hidden="true">
+                <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+            <span class="inline-block h-screen align-middle" aria-hidden="true">&#8203;</span>
+            <div class="inline-block w-full max-w-3xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl">
+                <div id="modal-content">
+                    <!-- El contenido se llenará dinámicamente -->
+                </div>
+                <div class="mt-4 flex justify-end">
+                    <button type="button" onclick="cerrarModal()"
+                            class="inline-flex items-center px-4 py-2 bg-gray-800 text-white rounded-md hover:bg-gray-700">
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal de Rechazo -->
+    <div id="modal-rechazo" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50">
+        <div class="min-h-screen px-4 text-center">
+            <div class="fixed inset-0 transition-opacity" aria-hidden="true">
+                <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+            <span class="inline-block h-screen align-middle" aria-hidden="true">&#8203;</span>
+            <div class="inline-block w-full max-w-md p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-2xl">
+                <div class="mb-4">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Motivo del Rechazo</h3>
+                    <p class="text-sm text-gray-600 mb-4">Por favor, proporcione una explicación detallada del motivo por el cual se rechaza esta solicitud:</p>
+                    <textarea 
+                        id="motivo-rechazo-textarea" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none" 
+                        rows="4" 
+                        placeholder="Ingrese el motivo del rechazo..."></textarea>
+                    <div class="text-xs text-gray-500 mt-1">Tip: Presiona Ctrl+Enter para enviar rápidamente</div>
+                    <div id="error-motivo" class="text-red-600 text-sm mt-2 hidden">El motivo del rechazo es obligatorio.</div>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" onclick="cerrarModalRechazo()"
+                            class="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                        Cancelar
+                    </button>
+                    <button type="button" onclick="confirmarRechazo()"
+                            class="inline-flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                        Rechazar Solicitud
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    {% include 'partials/footer.html' %}
+
+    <!-- Scripts -->
+    <script src="{% static 'js/admin_general.js' %}?v=1.1"></script>
+</body>
+</html>

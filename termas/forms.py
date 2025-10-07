@@ -1,14 +1,39 @@
 from django import forms
+from .models import SolicitudTerma
+
+class SolicitudTermaForm(forms.ModelForm):
+    class Meta:
+        model = SolicitudTerma
+        fields = [
+            'nombre_terma',
+            'descripcion',
+            'correo_institucional',
+            'telefono_contacto',
+            'region',
+            'comuna',
+            'direccion',
+        ]
+        widgets = {
+            'descripcion': forms.Textarea(attrs={'rows': 3}),
+            'direccion': forms.Textarea(attrs={'rows': 2}),
+        }
+from django import forms
 from .models import Terma
 
 class TermaForm(forms.ModelForm):
     """Formulario para gestión de termas."""
     class Meta:
         model = Terma
-        fields = ['nombre', 'descripcion', 'tipo', 'capacidad_personas', 
-                 'precio_por_hora', 'temperatura_agua', 'disponible', 'ubicacion']
+        fields = [
+            'nombre_terma',
+            'descripcion_terma',
+            'direccion_terma',
+            'comuna',
+            'telefono_terma',
+            'email_terma',
+            'estado_suscripcion'
+        ]
         widgets = {
-            'descripcion': forms.Textarea(attrs={'rows': 4}),
-            'precio_por_hora': forms.NumberInput(attrs={'step': '0.01'}),
-            'temperatura_agua': forms.NumberInput(attrs={'min': '20', 'max': '50'}),
+            'descripcion_terma': forms.Textarea(attrs={'rows': 4}),
+            'direccion_terma': forms.Textarea(attrs={'rows': 3}),
         }

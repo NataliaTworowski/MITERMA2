@@ -94,11 +94,20 @@ class ServicioTerma(models.Model):
 
 
 class SolicitudTerma(models.Model):
-    usuario = models.ForeignKey("usuarios.Usuario", on_delete=models.CASCADE)  
+    usuario = models.ForeignKey("usuarios.Usuario", on_delete=models.CASCADE, null=True, blank=True)  
     nombre_terma = models.CharField(max_length=100)
     descripcion = models.TextField(null=True, blank=True)
+    correo_institucional = models.EmailField(null=True, blank=True)
+    telefono_contacto = models.CharField(max_length=20, null=True, blank=True)
+    region = models.ForeignKey('Region', on_delete=models.SET_NULL, null=True, blank=True)
+    comuna = models.ForeignKey('Comuna', on_delete=models.SET_NULL, null=True, blank=True)
+    direccion = models.TextField(null=True, blank=True)
     estado = models.CharField(max_length=20, choices=[('pendiente', 'Pendiente'), ('aceptada', 'Aceptada'), ('rechazada', 'Rechazada')], default='pendiente')
     fecha_solicitud = models.DateTimeField(auto_now_add=True)
+    terma = models.OneToOneField('Terma', on_delete=models.SET_NULL, null=True, blank=True)
+    motivo_rechazo = models.TextField(null=True, blank=True)
+    observaciones_admin = models.TextField(null=True, blank=True)
+    fecha_respuesta = models.DateTimeField(null=True, blank=True)
 
 class Region(models.Model):
     nombre = models.CharField(max_length=100)

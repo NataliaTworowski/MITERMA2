@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Solicitud de Terma Rechazada</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #e74c3c;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px;
+        }
+        .content {
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .message {
+            background: #fff;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Actualización de tu Solicitud</h1>
+    </div>
+    
+    <div class="content">
+        <h2>Solicitud para {{ nombre_terma }}</h2>
+        
+        <div class="message">
+            <p>Estimado/a solicitante,</p>
+            
+            <p>Lamentamos informarte que tu solicitud para registrar {{ nombre_terma }} en nuestra plataforma no ha sido aprobada.</p>
+            
+            {% if motivo_rechazo %}
+            <p><strong>Motivo:</strong></p>
+            <p>{{ motivo_rechazo }}</p>
+            {% endif %}
+        </div>
+        
+        <p>Si tienes alguna pregunta o deseas realizar una nueva solicitud con la información actualizada, no dudes en contactarnos.</p>
+        
+        <p>Gracias por tu interés en MiTerma.</p>
+        
+        <p>Saludos cordiales,<br>
+        El equipo de MiTerma</p>
+    </div>
+</body>
+</html>

@@ -1,7 +1,13 @@
 {% load static %}
 
 <!-- Navbar -->
-<nav id="navbar" class="fixed top-0 left-0 right-0 z-50 bg-transparent text-white transition-all duration-300 ease-in-out transform navbar-visible">
+<nav id="navbar" class="fixed top-0 left-0 right-0 z-50
+    {% if navbar_mode == 'planes' %}
+        bg-gradient-to-r from-blue-900 via-blue-800 to-cyan-700 shadow-lg backdrop-blur-md bg-opacity-95
+    {% else %}
+        bg-transparent shadow-none backdrop-blur-none bg-opacity-100
+    {% endif %}
+    text-white transition-all duration-300 ease-in-out transform navbar-visible">
     <style>
         .navbar-hidden {
             transform: translateY(-100%);
@@ -25,25 +31,22 @@
                 <span class="w-6 h-0.5 bg-white transition-opacity duration-300"></span>
                 <span class="w-6 h-0.5 bg-white transition-transform duration-300"></span>
             </button>
-
-            <!-- Enlaces (pantalla grande) -->
-            <ul class="hidden md:flex md:space-x-6 text-white font-medium">
-                {% if navbar_mode != 'termas_only' %}
-                <li>
-                    <a href="#termas" class="px-3 py-2 rounded-md hover:bg-white/20 transition-colors duration-300">Termas</a>
-                </li>
-                <li>
-                    <a href="#objetivos" class="px-3 py-2 rounded-md hover:bg-white/20 transition-colors duration-300">Objetivos</a>
-                </li>
-                {% endif %}
-                <li>
-                    <a href="#" onclick="openLoginModal()" class="px-3 py-2 rounded-md hover:bg-white/20 transition-colors duration-300">Iniciar Sesión</a>
-                </li>
-                <li>
-                    <a href="#" onclick="openRegisterModal()" class="px-3 py-2 rounded-md hover:bg-white/20 transition-colors duration-300">Registrarme</a>
-                </li>
-            </ul>
-        </div>
+        <ul class="hidden md:flex md:space-x-6 text-white font-medium">
+            {% if navbar_mode != 'termas_only' %}
+            <li>
+                <a href="#termas" class="px-3 py-2 rounded-md hover:bg-white/20 transition-colors duration-300">Termas</a>
+            </li>
+            <li>
+                <a href="#objetivos" class="px-3 py-2 rounded-md hover:bg-white/20 transition-colors duration-300">Objetivos</a>
+            </li>
+            {% endif %}
+            <li>
+                <a href="#" onclick="openLoginModal()" class="px-3 py-2 rounded-md hover:bg-white/20 transition-colors duration-300">Iniciar Sesión</a>
+            </li>
+            <li>
+                <a href="#" onclick="openRegisterModal()" class="px-3 py-2 rounded-md hover:bg-white/20 transition-colors duration-300">Registrarme</a>
+            </li>
+        </ul>
 
         <!-- Menú móvil -->
         <div id="mobile-menu" class="md:hidden hidden bg-black/90 backdrop-blur-sm rounded-lg mt-2 py-4">

@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
+    'widget_tweaks',
     
     # Apps locales
     'core',
@@ -140,6 +141,11 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Session configuration
 SESSION_COOKIE_AGE = 3600  # 1 hora 
+
+# Login/Logout URLs
+LOGIN_URL = '/usuarios/login/'
+LOGIN_REDIRECT_URL = '/'
+LOGOUT_REDIRECT_URL = '/' 
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

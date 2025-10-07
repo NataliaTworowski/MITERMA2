@@ -8,7 +8,7 @@
 <body class="flex flex-col min-h-screen font-sans bg-sky-100">
 
     <!-- Navbar -->
-    {% include 'partials/navbar.html' %}
+    {% include 'partials/navbar.html' with navbar_mode=None %}
 
     <!-- Modales -->
     {% include 'partials/login_modal.html' %}
@@ -350,6 +350,22 @@
                 Ver Todas las Termas
             </a>
         </div>
+    </div>
+</section>
+
+<section id="plataforma" class="relative py-20 min-h-[500px] flex items-center justify-center overflow-hidden">
+    <div class="absolute inset-0 z-0">
+        <img src="{% static 'img/Problematica.png' %}" alt="Trabaja con nosotros" class="w-full h-full object-cover object-center">
+        <div class="absolute inset-0 bg-gradient-to-br from-black/70 via-black/60 to-orange-900/60"></div>
+    </div>
+    <div class="container mx-auto px-6 relative z-10 flex flex-col items-center justify-center min-h-[500px] text-center">
+        <h2 class="text-3xl md:text-4xl font-bold mb-4 drop-shadow-lg bg-gradient-to-r from-orange-500 via-pink-500 to-purple-600 bg-clip-text text-transparent">Trabaja Con Nosotros</h2>
+        <p class="text-lg text-white max-w-2xl mx-auto mb-6 drop-shadow-md">
+            ¿Tienes un centro termal? Únete a MiTerma y potencia tu negocio.<br>
+        </p>
+        <a href="{% url 'core:planes' %}" class="mt-4 inline-block bg-gradient-to-r from-orange-400 via-pink-500 to-purple-600 text-white px-8 py-3 rounded-lg font-semibold hover:from-pink-600 hover:to-orange-500 transition-colors duration-300 shadow-lg drop-shadow-lg">
+            Descubre Nuestros Planes
+        </a>
     </div>
 </section>
 

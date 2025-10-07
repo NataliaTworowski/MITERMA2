@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Solicitud de Terma Aprobada</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #4a90e2;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px;
+        }
+        .content {
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .credentials {
+            background: #fff;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #4a90e2;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>¡Felicitaciones!</h1>
+        <p>Tu solicitud para {{ nombre_terma }} ha sido aprobada</p>
+    </div>
+    
+    <div class="content">
+        <p>Estimado/a administrador/a de {{ nombre_terma }},</p>
+        
+        <p>Nos complace informarte que tu solicitud para registrar tu terma en nuestra plataforma ha sido aprobada. 
+           Hemos creado una cuenta de administrador para que puedas gestionar tu terma.</p>
+        
+        <div class="credentials">
+            <h3>Tus credenciales de acceso:</h3>
+            <p><strong>Email:</strong> {{ email }}</p>
+            <p><strong>Contraseña temporal:</strong> {{ password }}</p>
+        </div>
+        
+        <p><strong>Importante:</strong> Por seguridad, te recomendamos cambiar tu contraseña después del primer inicio de sesión.</p>
+        
+        <a href="{{ login_url }}" class="button">Iniciar Sesión</a>
+        
+        <p>Si tienes alguna pregunta o necesitas ayuda, no dudes en contactarnos.</p>
+        
+        <p>¡Bienvenido/a a MiTerma!</p>
+        
+        <p>Saludos cordiales,<br>
+        El equipo de MiTerma</p>
+    </div>
+</body>
+</html>
