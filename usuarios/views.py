@@ -2,9 +2,9 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth.hashers import make_password, check_password
-from .models import Usuario, Rol
+from .models import Usuario, Rol, TokenRestablecerContrasena  # Agregar esta importación
 import re
-from .utils import enviar_email_confirmacion
+from .utils import enviar_email_confirmacion, enviar_email_reset_password  # Agregar enviar_email_reset_password
 
 def login_usuario(request):
     """Vista para iniciar sesión."""
@@ -250,6 +250,92 @@ def logout_usuario(request):
     request.session.flush()
     
     messages.success(request, 'Has cerrado sesión correctamente.')
+    return redirect('core:home')
+
+def reset_password(request):
+    """Vista para solicitar código de verificación"""
+    if request.method == 'POST':
+        email = request.POST.get('email', '').strip().lower()
+        
+        if not email:
+            messages.error(request, 'Por favor ingresa tu email.')
+            return redirect('core:home')
+        
+        try:
+            usuario = Usuario.objects.get(email=email)
+            
+            # Crear token con código
+            reset_token = TokenRestablecerContrasena.objects.create(usuario=usuario)
+            
+            # Enviar email con código - CORREGIR AQUÍ
+            email_enviado = enviar_email_reset_password(
+                usuario_email=usuario.email,
+                codigo_verificacion=reset_token.codigo,  # Usar 'codigo_verificacion'
+                nombre_usuario=usuario.nombre
+            )
+            
+            if email_enviado:
+                messages.success(request, f'Te hemos enviado un código de verificación a tu email.')
+            else:
+                messages.error(request, 'Hubo un problema enviando el email.')
+                
+        except Usuario.DoesNotExist:
+            messages.success(request, 'Si el email existe, te hemos enviado un código.')
+        except Exception as e:
+            messages.error(request, f'Error: {str(e)}')
+        
+        return redirect('core:home')
+    
+    return render(request, 'usuarios/reset_password.html')
+
+def reset_password_confirm(request):
+    """Vista para verificar código y cambiar contraseña"""
+    if request.method == 'POST':
+        codigo = request.POST.get('codigo', '').strip()
+        new_password = request.POST.get('new_password', '')
+        confirm_password = request.POST.get('confirm_password', '')
+        
+        if not codigo or not new_password or not confirm_password:
+            messages.error(request, 'Todos los campos son requeridos.')
+            return redirect('core:home')
+        
+        try:
+            # Buscar token válido
+            reset_token = TokenRestablecerContrasena.objects.get(
+                codigo=codigo,
+                usado=False
+            )
+            
+            if not reset_token.es_valido():
+                messages.error(request, 'El código ha expirado. Solicita uno nuevo.')
+                return redirect('core:home')
+            
+            if len(new_password) < 8:
+                messages.error(request, 'La contraseña debe tener al menos 8 caracteres.')
+                return redirect('core:home')
+            
+            if new_password == confirm_password:
+                # Cambiar contraseña
+                usuario = reset_token.usuario
+                usuario.password = make_password(new_password)
+                usuario.save()
+                
+                # Marcar código como usado
+                reset_token.usado = True
+                reset_token.save()
+                
+                messages.success(request, 'Tu contraseña ha sido cambiada exitosamente.')
+                return redirect('core:home')
+            else:
+                messages.error(request, 'Las contraseñas no coinciden.')
+        
+        except TokenRestablecerContrasena.DoesNotExist:
+            messages.error(request, 'Código inválido o expirado.')
+        except Exception as e:
+            messages.error(request, f'Error al procesar la solicitud: {str(e)}')
+        
+        return redirect('core:home')
+    
     return redirect('core:home')
 
 
