@@ -12,4 +12,5 @@ urlpatterns = [
     path('reset-password/', views.reset_password, name='reset_password'),
     path('reset-password-confirm/', views.reset_password_confirm, name='reset_password_confirm'),  # Sin token
     path('admin_general/', views.admin_general, name='admin_general'),
+    path('solicitudes_pendientes/', views.solicitudes_pendientes, name='solicitudes_pendientes'),
 ]

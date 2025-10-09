@@ -5,6 +5,12 @@ from .models import SolicitudTerma, Terma
 from usuarios.models import Usuario, Rol
 import json
 from django.utils import timezone
+from django.template.loader import render_to_string
+from django.core.mail import send_mail
+from django.conf import settings
+import random
+import string
+from django.contrib.auth.hashers import make_password
 
 def verificar_admin_general(view_func):
     """Decorador personalizado para verificar si el usuario es administrador general."""
@@ -53,19 +59,65 @@ def aprobar_solicitud(request, solicitud_id):
         )
         print(f"[DEBUG] Terma creada con ID: {terma.id}")
 
-        # Si la solicitud tiene un usuario asociado, asignarle el rol de administrador
+        # Gestión del usuario administrador
+        usuario_admin = None
+        password_temporal = None  
+        
         if solicitud.usuario:
+            # Ya existe un usuario asociado a la solicitud
+            usuario_admin = solicitud.usuario
+            print(f"[DEBUG] Usuario existente encontrado: {usuario_admin.email}")
+        else:
+            # No hay usuario asociado, verificar si existe un usuario con el correo institucional
+            try:
+                usuario_admin = Usuario.objects.get(email=solicitud.correo_institucional)
+                print(f"[DEBUG] Usuario encontrado por correo institucional: {usuario_admin.email}")
+            except Usuario.DoesNotExist:
+                # No existe usuario, crear uno nuevo
+                try:
+                    rol_admin = Rol.objects.get(id=2)  # ID 2 = Administrador
+                    
+                    # Generar contraseña temporal
+                    password_temporal = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
+                    
+                    # Crear el nuevo usuario
+                    usuario_admin = Usuario.objects.create(
+                        email=solicitud.correo_institucional,
+                        password=make_password(password_temporal),
+                        nombre="Administrador",  
+                        apellido="Terma",
+                        telefono=solicitud.telefono_contacto,
+                        rol=rol_admin,
+                        estado=True,
+                        terma=terma
+                    )
+                    print(f"[DEBUG] Nuevo usuario creado: {usuario_admin.email} con contraseña temporal")
+                    
+                except Rol.DoesNotExist:
+                    print("[DEBUG] Error: Rol de administrador no encontrado")
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Error: Rol de administrador no encontrado en el sistema.'
+                    }, status=500)
+
+        # Asignar el rol de administrador y la terma al usuario
+        if usuario_admin:
             try:
                 rol_admin = Rol.objects.get(id=2)  # ID 2 = Administrador
-                solicitud.usuario.rol = rol_admin
-                solicitud.usuario.terma = terma  # Asignar la terma al usuario
-                solicitud.usuario.save()
-                print(f"[DEBUG] Usuario {solicitud.usuario.email} actualizado con rol admin")
+                usuario_admin.rol = rol_admin
+                usuario_admin.terma = terma
+                usuario_admin.save()
+                print(f"[DEBUG] Usuario {usuario_admin.email} actualizado con rol admin y terma asignada")
                 
                 # Asignar el usuario como administrador de la terma
-                terma.administrador = solicitud.usuario
+                terma.administrador = usuario_admin
                 terma.save()
                 print(f"[DEBUG] Usuario asignado como administrador de la terma")
+                
+                # Actualizar la solicitud para vincular el usuario si no estaba vinculado
+                if not solicitud.usuario:
+                    solicitud.usuario = usuario_admin
+                    
             except Rol.DoesNotExist:
                 print("[DEBUG] Error: Rol de administrador no encontrado")
                 return JsonResponse({
@@ -73,7 +125,7 @@ def aprobar_solicitud(request, solicitud_id):
                     'message': 'Error: Rol de administrador no encontrado en el sistema.'
                 }, status=500)
         else:
-            print("[DEBUG] Solicitud sin usuario asociado - terma creada sin administrador específico")
+            print("[DEBUG] Error: No se pudo crear o encontrar usuario administrador")
 
         # Actualizar la solicitud
         solicitud.estado = 'aceptada'
@@ -81,6 +133,38 @@ def aprobar_solicitud(request, solicitud_id):
         solicitud.fecha_respuesta = timezone.now()
         solicitud.save()
         print(f"[DEBUG] Solicitud actualizada a estado: {solicitud.estado}")
+
+        # Enviar correo de aprobación
+        try:
+            contexto_email = {
+                'nombre_terma': solicitud.nombre_terma,
+                'direccion': solicitud.direccion,
+                'comuna': solicitud.comuna.nombre if solicitud.comuna else '',
+                'telefono': solicitud.telefono_contacto,
+                'email': solicitud.correo_institucional,
+                'usuario_nombre': f"{usuario_admin.nombre} {usuario_admin.apellido}" if usuario_admin else "Administrador",
+                'password': password_temporal,  # Agregar contraseña temporal
+                'login_url': request.build_absolute_uri('/usuarios/login/')  # URL de login
+            }
+            
+            mensaje_html = render_to_string('emails/solicitud_aprobada.html', contexto_email)
+            
+            # Determinar el destinatario del correo
+            email_destinatario = usuario_admin.email if usuario_admin else solicitud.correo_institucional
+            
+            send_mail(
+                subject='Solicitud de Terma Aprobada - MiTerma',
+                message='',  # Mensaje en texto plano vacío
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[email_destinatario],
+                html_message=mensaje_html,
+                fail_silently=False,
+            )
+            print(f"[DEBUG] Correo de aprobación enviado a: {email_destinatario}")
+            
+        except Exception as e:
+            print(f"[DEBUG] Error al enviar correo de aprobación: {str(e)}")
+            # No retornamos error porque la solicitud ya fue aprobada exitosamente
 
         return JsonResponse({
             'success': True,
@@ -117,6 +201,33 @@ def rechazar_solicitud(request, solicitud_id):
         solicitud.fecha_respuesta = timezone.now()
         solicitud.save()
 
+        # Enviar correo de rechazo
+        try:
+            contexto_email = {
+                'nombre_terma': solicitud.nombre_terma,
+                'motivo_rechazo': motivo_rechazo,
+                'usuario_nombre': f"{solicitud.usuario.nombre} {solicitud.usuario.apellido}" if solicitud.usuario else "Solicitante"
+            }
+            
+            mensaje_html = render_to_string('emails/solicitud_rechazada.html', contexto_email)
+            
+            # Determinar el destinatario del correo
+            email_destinatario = solicitud.usuario.email if solicitud.usuario else solicitud.correo_institucional
+            
+            send_mail(
+                subject='Solicitud de Terma Rechazada - MiTerma',
+                message='',  # Mensaje en texto plano vacío
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[email_destinatario],
+                html_message=mensaje_html,
+                fail_silently=False,
+            )
+            print(f"[DEBUG] Correo de rechazo enviado a: {email_destinatario}")
+            
+        except Exception as e:
+            print(f"[DEBUG] Error al enviar correo de rechazo: {str(e)}")
+            # No retornamos error porque el rechazo ya fue procesado exitosamente
+
         return JsonResponse({
             'success': True,
             'message': 'Solicitud rechazada correctamente.'
@@ -140,6 +251,7 @@ def detalles_solicitud(request, solicitud_id):
             'id': solicitud.id,
             'nombre_terma': solicitud.nombre_terma,
             'descripcion': solicitud.descripcion,
+            'rut_empresa': solicitud.rut_empresa,
             'correo_institucional': solicitud.correo_institucional,
             'telefono_contacto': solicitud.telefono_contacto,
             'region': solicitud.region.nombre if solicitud.region else None,

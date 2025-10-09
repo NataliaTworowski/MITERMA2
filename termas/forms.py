@@ -7,6 +7,7 @@ class SolicitudTermaForm(forms.ModelForm):
         fields = [
             'nombre_terma',
             'descripcion',
+            'rut_empresa',
             'correo_institucional',
             'telefono_contacto',
             'region',

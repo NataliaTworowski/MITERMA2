@@ -74,7 +74,7 @@ def buscar_termas(request):
             'total_resultados': len(termas_destacadas)
         }
         # Renderizar el template de usuarios con los resultados
-        return render(request, 'Inicio_cliente.html', context)
+        return render(request, 'clientes/Inicio_cliente.html', context)
         
     except Usuario.DoesNotExist:
         messages.error(request, 'Sesión inválida.')
@@ -162,7 +162,7 @@ def subir_fotos(request):
             'terma': usuario.terma,
             'fotos': fotos,
         }
-        return render(request, 'subir_fotos.html', context)
+        return render(request, 'administrador_termas/subir_fotos.html', context)
         
     except Usuario.DoesNotExist:
         messages.error(request, 'Sesión inválida.')

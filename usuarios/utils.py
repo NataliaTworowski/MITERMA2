@@ -11,7 +11,7 @@ def enviar_email_confirmacion(usuario_email, nombre_usuario):
     asunto = "¡Bienvenido a MITERMA! 🌊"
     
     # Renderizar template HTML
-    mensaje_html = render_to_string('correo_confirmacion.html', {
+    mensaje_html = render_to_string('correo/correo_confirmacion.html', {
         'nombre_usuario': nombre_usuario,
         'usuario_email': usuario_email,
     })
@@ -53,7 +53,7 @@ def enviar_email_reset_password(usuario_email, codigo_verificacion, nombre_usuar
     asunto = "Código de verificación - MITERMA 🔐"
     
     # Renderizar template HTML
-    mensaje_html = render_to_string('correo_reset_password.html', {
+    mensaje_html = render_to_string('correo/correo_reset_password.html', {
         'nombre_usuario': nombre_usuario,
         'usuario_email': usuario_email,
         'codigo_verificacion': codigo_verificacion,  # Asegúrate que sea este nombre

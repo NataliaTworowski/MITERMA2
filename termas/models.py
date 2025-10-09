@@ -16,6 +16,7 @@ class Terma(models.Model):
     estado_suscripcion = models.CharField(max_length=20, choices=ESTADOS, default='inactiva')
     fecha_suscripcion = models.DateField(null=True, blank=True)
     calificacion_promedio = models.DecimalField(max_digits=3, decimal_places=2, null=True, blank=True)
+    rut_empresa = models.CharField(max_length=12, null=True, blank=True, help_text="RUT de la empresa (ej: 12.345.678-9)")
     administrador = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, blank=True, related_name='termas_administradas')
 
     def __str__(self):
@@ -97,6 +98,7 @@ class SolicitudTerma(models.Model):
     usuario = models.ForeignKey("usuarios.Usuario", on_delete=models.CASCADE, null=True, blank=True)  
     nombre_terma = models.CharField(max_length=100)
     descripcion = models.TextField(null=True, blank=True)
+    rut_empresa = models.CharField(max_length=12, null=True, blank=True, help_text="RUT de la empresa (ej: 12.345.678-9)")
     correo_institucional = models.EmailField(null=True, blank=True)
     telefono_contacto = models.CharField(max_length=20, null=True, blank=True)
     region = models.ForeignKey('Region', on_delete=models.SET_NULL, null=True, blank=True)

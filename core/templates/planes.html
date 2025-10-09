@@ -74,16 +74,26 @@
         </section>
         </main>
     </div>
+    {% include 'partials/footer.html' %}
+    
     <!-- Modal SolicitudTerma -->
-    <div id="solicitudModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm hidden">
-        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-lg relative">
-            <button onclick="closeSolicitudModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-2xl">&times;</button>
-            <h2 class="text-2xl font-bold mb-4 text-blue-900">Solicita tu Plan</h2>
+    <div id="solicitudModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm hidden p-2 sm:p-4">
+        <div class="bg-white rounded-lg shadow-2xl w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl max-h-[95vh] overflow-y-auto relative">
+            <button onclick="closeSolicitudModal()" class="absolute top-2 right-2 sm:top-3 sm:right-3 text-gray-400 hover:text-gray-700 text-xl sm:text-2xl z-10 bg-white bg-opacity-90 rounded-full w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center shadow-lg">&times;</button>
+            
+            <!-- Header del modal -->
+            <div class="bg-gradient-to-r from-blue-600 to-blue-700 rounded-t-lg p-4 sm:p-6 text-center">
+                <h2 class="text-xl sm:text-2xl font-bold text-white mb-2">Solicita tu Plan</h2>
+                <p class="text-blue-100 text-sm sm:text-base">Únete a nuestra plataforma</p>
+            </div>
+            
+            <!-- Contenido del modal -->
+            <div class="p-3 sm:p-6 lg:p-8">
             
             {% if messages %}
-            <div class="mb-4">
+            <div class="mb-3 sm:mb-4">
                 {% for message in messages %}
-                    <div class="p-4 mb-4 rounded-lg {% if message.tags == 'success' %}bg-green-100 text-green-700 border border-green-400{% elif message.tags == 'error' %}bg-red-100 text-red-700 border border-red-400{% else %}bg-blue-100 text-blue-700 border border-blue-400{% endif %}">
+                    <div class="p-2 sm:p-3 mb-3 sm:mb-4 rounded-lg text-xs sm:text-sm {% if message.tags == 'success' %}bg-green-100 text-green-700 border border-green-400{% elif message.tags == 'error' %}bg-red-100 text-red-700 border border-red-400{% else %}bg-blue-100 text-blue-700 border border-blue-400{% endif %}">
                         {{ message }}
                     </div>
                 {% endfor %}
@@ -91,51 +101,66 @@
             {% endif %}
 
             {% if solicitud_enviada %}
-                <div class="text-center py-8">
-                    <svg class="w-16 h-16 text-green-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="text-center py-6 sm:py-8">
+                    <svg class="w-12 h-12 sm:w-16 sm:h-16 text-green-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
-                    <h3 class="text-xl font-bold text-gray-900 mb-2">¡Solicitud Enviada!</h3>
-                    <p class="text-gray-600">Tu solicitud ha sido recibida y será procesada pronto.</p>
-                    <button onclick="closeSolicitudModal()" class="mt-6 bg-blue-700 text-white px-6 py-2 rounded-lg hover:bg-blue-800 transition-colors">
+                    <h3 class="text-lg sm:text-xl font-bold text-gray-900 mb-2">¡Solicitud Enviada!</h3>
+                    <p class="text-gray-600 text-sm sm:text-base">Tu solicitud ha sido recibida y será procesada pronto.</p>
+                    <button onclick="closeSolicitudModal()" class="mt-4 sm:mt-6 bg-blue-700 text-white px-6 py-2 rounded-lg hover:bg-blue-800 transition-colors text-sm sm:text-base">
                         Cerrar
                     </button>
                 </div>
             {% else %}
-            <form method="post" action="{% url 'core:solicitud_terma' %}" class="space-y-4">
+            <form method="post" action="{% url 'core:solicitud_terma' %}" class="space-y-3 sm:space-y-4">
                 {% csrf_token %}
+                
+                <!-- Grid responsivo para campos -->
                 {% for field in form %}
-                <div class="mb-4">
-                    <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">
+                <div class="{% if field.name == 'region' or field.name == 'comuna' %}col-span-full sm:col-span-1{% else %}col-span-full{% endif %}">
+                    <label for="{{ field.id_for_label }}" class="block text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-2">
                         {{ field.label }}
+                        {% if field.field.required %}<span class="text-red-500">*</span>{% endif %}
                     </label>
+                    
                     {% if field.name == 'region' %}
-                        {% render_field field class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" %}
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 col-span-full">
+                            <div>
+                                {% render_field field class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" %}
+                            </div>
                     {% elif field.name == 'comuna' %}
-                        {% render_field field class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" disabled=True %}
+                            <div>
+                                {% render_field field class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" disabled=True %}
+                            </div>
+                        </div>
                     {% elif 'descripcion' in field.name or 'direccion' in field.name %}
-                        {% render_field field class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="3" %}
+                        {% render_field field class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none" rows="3" %}
                     {% else %}
-                        {% render_field field class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" %}
+                        {% render_field field class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" %}
                     {% endif %}
+                    
                     {% if field.help_text %}
-                        <p class="mt-1 text-sm text-gray-500">{{ field.help_text }}</p>
+                        <p class="mt-1 text-xs sm:text-sm text-gray-500">{{ field.help_text }}</p>
                     {% endif %}
                     {% if field.errors %}
                         {% for error in field.errors %}
-                            <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                            <p class="mt-1 text-xs sm:text-sm text-red-600">{{ error }}</p>
                         {% endfor %}
                     {% endif %}
                 </div>
                 {% endfor %}
-                <button type="submit" class="w-full bg-blue-700 text-white py-3 rounded-lg font-semibold hover:bg-blue-800 transition-all duration-300 shadow-lg">
-                    Enviar Solicitud
-                </button>
+                
+                <!-- Botón de envío -->
+                <div class="pt-4">
+                    <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-2 sm:py-3 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-300 shadow-lg text-sm sm:text-base">
+                        Enviar Solicitud
+                    </button>
+                </div>
             </form>
             {% endif %}
         </div>
     </div>
+    
     <script src="{% static 'js/base.js' %}"></script>
-    {% include 'partials/footer.html' %}
 </body>
 </html>

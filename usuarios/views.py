@@ -32,7 +32,7 @@ def login_usuario(request):
                 
                 messages.success(request, f'¡Bienvenid@ {usuario.nombre}!')
                 # Redirigir según el rol del usuario
-                if usuario.rol.nombre == 'Administrador':
+                if usuario.rol.nombre == 'administrador_terma':
                     return redirect('usuarios:adm_termas')
                 elif usuario.rol.nombre == 'administrador_general':
                     return redirect('usuarios:admin_general')
@@ -87,7 +87,7 @@ def inicio(request):
             'busqueda': request.GET.get('busqueda', ''),
             'termas_destacadas': termas_destacadas,
         }
-        return render(request, 'Inicio_cliente.html', context)
+        return render(request, 'clientes/Inicio_cliente.html', context)
     except Usuario.DoesNotExist:
         messages.error(request, 'Sesión inválida.')
         return redirect('core:home')
@@ -208,13 +208,48 @@ def adm_termas(request):
             'usuario': usuario,
             'terma': usuario.terma,
         }
-        return render(request, 'adm_termas.html', context)
+        return render(request, 'administrador_termas/adm_termas.html', context)
     except Usuario.DoesNotExist:
         messages.error(request, 'Sesión inválida.')
         return redirect('core:home')
 
 def admin_general(request):
     """Vista para mostrar la página de administración general del sistema."""
+    # Verificar si el usuario está logueado
+    if 'usuario_id' not in request.session:
+        messages.error(request, 'Debes iniciar sesión para acceder.')
+        return redirect('core:home')
+    
+    # Verificar si el usuario tiene el rol correcto (ID=4 para administrador_general)
+    if request.session.get('usuario_rol') != 4:
+        messages.error(request, 'No tienes permisos para acceder a esta sección.')
+        return redirect('usuarios:inicio')
+    
+    try:
+        from termas.models import SolicitudTerma, Terma
+        usuario = Usuario.objects.get(id=request.session['usuario_id'])
+        
+        # Obtener estadísticas para el dashboard
+        total_termas = Terma.objects.count()
+        solicitudes_pendientes = SolicitudTerma.objects.filter(estado='pendiente').count()
+        total_usuarios = Usuario.objects.count()
+        
+        context = {
+            'title': 'Administración General - MiTerma',
+            'usuario': usuario,
+            'stats': {
+                'total_termas': total_termas,
+                'solicitudes_pendientes': solicitudes_pendientes,
+                'total_usuarios': total_usuarios,
+            }
+        }
+        return render(request, 'administrador_general/admin_general.html', context)
+    except Usuario.DoesNotExist:
+        messages.error(request, 'Sesión inválida.')
+        return redirect('core:home')
+
+def solicitudes_pendientes(request):
+    """Vista para mostrar las solicitudes pendientes."""
     # Verificar si el usuario está logueado
     if 'usuario_id' not in request.session:
         messages.error(request, 'Debes iniciar sesión para acceder.')
@@ -235,11 +270,11 @@ def admin_general(request):
         ).order_by('-fecha_solicitud')
         
         context = {
-            'title': 'Administración General - MiTerma',
+            'title': 'Solicitudes Pendientes - MiTerma',
             'usuario': usuario,
             'solicitudes': solicitudes_pendientes,
         }
-        return render(request, 'admin_general.html', context)
+        return render(request, 'administrador_termas/solicitudes_pendientes.html', context)
     except Usuario.DoesNotExist:
         messages.error(request, 'Sesión inválida.')
         return redirect('core:home')

@@ -18,7 +18,8 @@ function mostrarDetalles(solicitudId) {
                         <h3 class="text-2xl font-bold text-gray-800">${solicitud.nombre_terma}</h3>
                         
                         <div class="bg-gray-50 p-4 rounded-lg">
-                            <h4 class="font-semibold text-gray-700 mb-2">Información de Contacto</h4>
+                            <h4 class="font-semibold text-gray-700 mb-2">Información de la Empresa</h4>
+                            <p><span class="font-medium">RUT Empresa:</span> ${solicitud.rut_empresa || 'No especificado'}</p>
                             <p><span class="font-medium">Email:</span> ${solicitud.correo_institucional}</p>
                             <p><span class="font-medium">Teléfono:</span> ${solicitud.telefono_contacto || 'No especificado'}</p>
                         </div>

@@ -1,0 +1,167 @@
+{% load static %}
+
+<!-- Sidebar -->
+<aside id="sidebar" class="sidebar fixed md:static inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white shadow-lg">
+    <!-- Header del Sidebar -->
+    <div class="flex items-center justify-between p-6 border-b border-slate-700">
+        <div class="flex items-center space-x-3">
+            <img src="{% static 'img/logo.png' %}" alt="MiTerma Logo" class="w-10 h-10">
+            <span class="text-xl font-bold">MiTerma Admin</span>
+        </div>
+        <!-- Botón cerrar en móvil -->
+        <button id="closeSidebar" class="md:hidden text-white hover:text-slate-300">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+    </div>
+
+    <!-- Información del usuario -->
+    <div class="p-6 border-b border-slate-700">
+        <div class="flex items-center space-x-3">
+            <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center">
+                <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                </svg>
+            </div>
+            <div>
+                <p class="font-semibold">{{ user.nombre|default:user.username }}</p>
+                <p class="text-sm text-slate-300">Administrador General</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navegación -->
+    <nav class="flex-1 p-4">
+        <ul class="space-y-2">
+            <!-- Dashboard -->
+            <li>
+                <a href="{% url 'usuarios:admin_general' %}" class="flex items-center space-x-3 px-4 py-3 rounded-lg {% if request.resolver_match.url_name == 'admin_general' %}bg-blue-600 text-white font-medium{% else %}hover:bg-slate-800 transition-colors duration-200{% endif %}">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"></path>
+                    </svg>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+
+            <!-- Solicitudes -->
+            <li>
+                <a href="{% url 'usuarios:solicitudes_pendientes' %}" class="flex items-center space-x-3 px-4 py-3 rounded-lg {% if request.resolver_match.url_name == 'solicitudes_pendientes' %}bg-blue-600 text-white font-medium{% else %}hover:bg-slate-800 transition-colors duration-200{% endif %}">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span>Solicitudes</span>
+                    <span class="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full">{{ solicitudes_count|default:0 }}</span>
+                </a>
+            </li>
+
+            <!-- Termas Asociadas -->
+            <li>
+                <a href="#" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-slate-800 transition-colors duration-200">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M5.5 16a3.5 3.5 0 01-.369-6.98 4 4 0 117.753-1.977A4.5 4.5 0 1113.5 16h-8z"></path>
+                    </svg>
+                    <span>Termas Asociadas</span>
+                </a>
+            </li>
+
+            <!-- Usuarios -->
+            <li>
+                <a href="#" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-slate-800 transition-colors duration-200">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"></path>
+                    </svg>
+                    <span>Usuarios</span>
+                </a>
+            </li>
+
+            <!-- Reportes -->
+            <li>
+                <a href="#" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-slate-800 transition-colors duration-200">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"></path>
+                    </svg>
+                    <span>Reportes</span>
+                </a>
+            </li>
+
+            <!-- Configuración -->
+            <li>
+                <a href="#" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-slate-800 transition-colors duration-200">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span>Configuración</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Logout -->
+    <div class="p-4 border-t border-slate-700">
+        <a href="{% url 'usuarios:logout' %}" onclick="return confirm('¿Estás seguro que deseas cerrar sesión?')" class="flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors duration-200 w-full border border-slate-600 hover:border-slate-500">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd"></path>
+            </svg>
+            <span>Cerrar Sesión</span>
+        </a>
+    </div>
+</aside>
+
+<!-- Overlay para móviles -->
+<div id="sidebarOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden hidden"></div>
+
+<!-- Botón para abrir sidebar en móviles -->
+<button id="openSidebar" class="md:hidden fixed top-4 left-4 z-30 bg-slate-900 text-white p-2 rounded-lg shadow-lg">
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+    </svg>
+</button>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    const openBtn = document.getElementById('openSidebar');
+    const closeBtn = document.getElementById('closeSidebar');
+
+    // Abrir sidebar
+    openBtn.addEventListener('click', function() {
+        sidebar.classList.add('sidebar-open');
+        overlay.classList.remove('hidden');
+    });
+
+    // Cerrar sidebar
+    function closeSidebar() {
+        sidebar.classList.remove('sidebar-open');
+        overlay.classList.add('hidden');
+    }
+
+    closeBtn.addEventListener('click', closeSidebar);
+    overlay.addEventListener('click', closeSidebar);
+
+    // Cerrar con tecla Escape
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeSidebar();
+        }
+    });
+});
+</script>
+
+<style>
+.sidebar {
+    transition: transform 0.3s ease-in-out;
+}
+.sidebar-hidden {
+    transform: translateX(-100%);
+}
+@media (max-width: 768px) {
+    .sidebar {
+        transform: translateX(-100%);
+    }
+    .sidebar.sidebar-open {
+        transform: translateX(0);
+    }
+}
+</style>

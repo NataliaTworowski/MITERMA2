@@ -53,8 +53,9 @@
         <p>Estimado/a administrador/a de {{ nombre_terma }},</p>
         
         <p>Nos complace informarte que tu solicitud para registrar tu terma en nuestra plataforma ha sido aprobada. 
-           Hemos creado una cuenta de administrador para que puedas gestionar tu terma.</p>
+           {% if password %}Hemos creado una cuenta de administrador para que puedas gestionar tu terma.{% else %}Tu cuenta de administrador ha sido actualizada para gestionar esta terma.{% endif %}</p>
         
+        {% if password %}
         <div class="credentials">
             <h3>Tus credenciales de acceso:</h3>
             <p><strong>Email:</strong> {{ email }}</p>
@@ -62,6 +63,9 @@
         </div>
         
         <p><strong>Importante:</strong> Por seguridad, te recomendamos cambiar tu contraseña después del primer inicio de sesión.</p>
+        {% else %}
+        <p><strong>Información:</strong> Puedes acceder a tu cuenta con tus credenciales habituales para gestionar esta nueva terma.</p>
+        {% endif %}
         
         <a href="{{ login_url }}" class="button">Iniciar Sesión</a>
         

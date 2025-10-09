@@ -73,6 +73,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'usuarios.context_processors.navbar_context',
             ],
         },
     },
@@ -133,6 +134,10 @@ USE_TZ = True
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'core/static'),
+    os.path.join(BASE_DIR, 'usuarios/static'),
+    os.path.join(BASE_DIR, 'termas/static'),
+    os.path.join(BASE_DIR, 'entradas/static'),
+    os.path.join(BASE_DIR, 'ventas/static'),
 ]
 
 # Media files (uploads)
