@@ -1,10 +1,12 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth.hashers import make_password, check_password
 from .models import Usuario, Rol, TokenRestablecerContrasena  # Agregar esta importación
 import re
 from .utils import enviar_email_confirmacion, enviar_email_reset_password  # Agregar enviar_email_reset_password
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
 
 def login_usuario(request):
     """Vista para iniciar sesión."""
@@ -202,12 +204,34 @@ def adm_termas(request):
     
     try:
         usuario = Usuario.objects.get(id=request.session['usuario_id'])
+        terma = usuario.terma
+        # métricas de la terma
+        if terma:
+            # Calcular métricas usando los métodos del modelo
+            terma.ingresos_totales = terma.ingresos_totales()
+            terma.total_visitantes = terma.total_visitantes()
+            terma.total_fotos = terma.total_fotos()
+            terma.calificaciones_recientes = terma.calificaciones_recientes()
+            # Usar el promedio ya calculado
+            terma.calificacion_promedio = terma.calificacion_promedio or 0
+            terma.total_calificaciones = terma.total_calificaciones()
+        
+        # Obtener filtro de comentarios desde GET parameter
+        filtro_comentarios = request.GET.get('filtro_comentarios', 'recientes')
         
         context = {
             'title': 'Administración de Termas - MiTerma',
             'usuario': usuario,
-            'terma': usuario.terma,
         }
+        
+        if terma:
+            context.update({
+                'terma': terma,
+                'calificaciones_filtradas': terma.filtro_calificaciones(filtro_comentarios),
+                'estadisticas_calificaciones': terma.estadisticas_calificaciones(),
+                'filtro_actual': filtro_comentarios,
+            })
+        
         return render(request, 'administrador_termas/adm_termas.html', context)
     except Usuario.DoesNotExist:
         messages.error(request, 'Sesión inválida.')
@@ -238,6 +262,7 @@ def admin_general(request):
             'title': 'Administración General - MiTerma',
             'usuario': usuario,
             'stats': {
+                'terma': Terma,
                 'total_termas': total_termas,
                 'solicitudes_pendientes': solicitudes_pendientes,
                 'total_usuarios': total_usuarios,
@@ -372,5 +397,77 @@ def reset_password_confirm(request):
         return redirect('core:home')
     
     return redirect('core:home')
+
+# Vista AJAX para cargar comentarios filtrados
+@require_http_methods(["GET"])
+def cargar_comentarios_filtrados(request, terma_id):
+    """Vista AJAX para cargar comentarios filtrados"""
+    # Verificar que el usuario esté logueado
+    if 'usuario_id' not in request.session:
+        return JsonResponse({'error': 'No autorizado'}, status=401)
+    
+    try:
+        from termas.models import Terma
+        # Obtener la terma y verificar que el usuario tenga acceso
+        usuario = Usuario.objects.get(id=request.session['usuario_id'])
+        terma = get_object_or_404(Terma, id=terma_id)
+        
+        # Verificar que es el administrador de la terma
+        if usuario.terma != terma:
+            return JsonResponse({'error': 'Sin permisos'}, status=403)
+        
+        filtro = request.GET.get('filtro', 'recientes')
+        calificaciones = terma.filtro_calificaciones(filtro)
+
+        calificaciones_data = []
+        for calificacion in calificaciones:
+            calificaciones_data.append({
+                'usuario_nombre': calificacion.usuario.nombre,
+                'puntuacion': calificacion.puntuacion,
+                'comentario': calificacion.comentario,
+                'fecha': calificacion.fecha.strftime('%d/%m/%Y'),
+                'fecha_completa': calificacion.fecha.strftime('%d/%m/%Y %H:%M'),
+            })
+        
+        return JsonResponse({
+            'calificaciones': calificaciones_data,
+            'total': len(calificaciones_data)
+        })
+    except Usuario.DoesNotExist:
+        return JsonResponse({'error': 'Usuario no encontrado'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+    
+
+def analisis_terma(request):
+    """Vista para mostrar el análisis de la terma."""
+    # Verificar si el usuario está logueado
+    if 'usuario_id' not in request.session:
+        messages.error(request, 'Debes iniciar sesión para acceder.')
+        return redirect('core:home')
+    
+    # Verificar si el usuario tiene el rol correcto (ID=2)
+    if request.session.get('usuario_rol') != 2:
+        messages.error(request, 'No tienes permisos para acceder a esta sección.')
+        return redirect('usuarios:inicio')
+    
+    try:
+        usuario = Usuario.objects.get(id=request.session['usuario_id'])
+        terma = usuario.terma
+        
+        context = {
+            'title': 'Análisis de Terma - MiTerma',
+            'usuario': usuario,
+            'terma': terma,
+        }
+        
+        return render(request, 'administrador_termas/analisis_terma.html', context)
+        
+    except Usuario.DoesNotExist:
+        messages.error(request, 'Sesión inválida.')
+        return redirect('core:home')
+    except Exception as e:
+        messages.error(request, f'Error al cargar análisis: {str(e)}')
+        return redirect('usuarios:adm_termas')
 
 

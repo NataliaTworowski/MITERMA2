@@ -1,5 +1,7 @@
 from django.db import models
 from usuarios.models import Usuario
+from django.utils import timezone
+from datetime import timedelta, datetime
 # Ciudad está definida en este mismo archivo
 
 class Terma(models.Model):
@@ -35,6 +37,8 @@ class Terma(models.Model):
     def tiene_precios(self):
         return self.entradatipo_set.filter(estado=True).exists()
     
+    #datos que se muestran en el dashboard del adm de termas
+    
     #para calcualr el promedio de calificacion 
     def promedio_calificacion(self):
         """Calcula el promedio de las puntuaciones de calificación"""
@@ -46,6 +50,90 @@ class Terma(models.Model):
     def total_calificaciones(self):
         """Retorna el número total de calificaciones"""
         return self.calificacion_set.count()
+
+    def ingresos_totales(self):
+        """Calcula los ingresos totales de la terma"""
+        from ventas.models import DetalleCompra
+        from django.db.models import Sum
+        total = DetalleCompra.objects.filter(
+            horario_disponible__terma=self,
+            compra__estado_pago='pagado'
+        ).aggregate(total=Sum('subtotal'))['total']
+        return total or 0
+
+    def total_visitantes(self):
+        """Calcula el total de visitantes de la terma"""
+        from ventas.models import DetalleCompra
+        from django.db.models import Sum
+        total = DetalleCompra.objects.filter(
+            horario_disponible__terma=self,
+            compra__estado_pago='pagado'
+        ).aggregate(total=Sum('cantidad'))['total']
+        return total or 0
+
+    def total_fotos(self):
+        """Retorna el total de fotos subidas de la terma"""
+        return self.imagenes.count()
+
+    def calificaciones_recientes(self, limite=5):
+        """Retorna las calificaciones más recientes"""
+        return self.calificacion_set.select_related('usuario').order_by('-fecha')[:limite]
+    
+    #para hacer el filtro de comentarios 
+
+    def filtro_calificaciones(self, filtro='recientes', limite=5):
+        """Retorna calificaciones filtradas por fecha"""
+        queryset = self.calificacion_set.select_related('usuario')
+        ahora = timezone.now()
+
+        if filtro == '7_dias':
+            fecha_limite = ahora - timedelta(days=7)
+            queryset = queryset.filter(fecha__gte=fecha_limite)
+        elif filtro == '30_dias':
+            fecha_limite = ahora - timedelta(days=30)
+            queryset = queryset.filter(fecha__gte=fecha_limite)
+        elif filtro == '90_dias':
+            fecha_limite = ahora - timedelta(days=90)
+            queryset = queryset.filter(fecha__gte=fecha_limite)
+        elif filtro == 'este_año':
+            fecha_inicio_año = datetime(ahora.year, 1, 1)
+            if timezone.is_aware(fecha_inicio_año):
+                fecha_inicio_año = timezone.make_aware(fecha_inicio_año)
+            else:
+                fecha_inicio_año = timezone.make_aware(fecha_inicio_año)
+            queryset = queryset.filter(fecha__gte=fecha_inicio_año)
+        elif filtro == 'mas_antiguos':
+            return queryset.order_by('fecha')[:limite]
+        elif filtro == 'todos':
+            return queryset.order_by('-fecha')
+        else:  # 'recientes' por defecto
+            return queryset.order_by('-fecha')[:limite]
+        
+        # Para filtros con fecha, ordenar por más recientes
+        return queryset.order_by('-fecha')[:limite]
+
+    def estadisticas_calificaciones(self):
+        """Retorna estadísticas de calificaciones por período"""
+        from django.db.models import Count, Avg
+        ahora = timezone.now()
+
+        return {
+            'total': self.calificacion_set.count(),
+            'ultimos_7_dias': self.calificacion_set.filter(
+                fecha__gte=ahora - timedelta(days=7)
+            ).count(),
+            'ultimo_mes': self.calificacion_set.filter(
+                fecha__gte=ahora - timedelta(days=30)
+            ).count(),
+            'promedio_general': self.calificacion_set.aggregate(
+                promedio=Avg('puntuacion')
+            )['promedio'] or 0,
+            'promedio_ultimo_mes': self.calificacion_set.filter(
+                fecha__gte=ahora - timedelta(days=30)
+            ).aggregate(
+                promedio=Avg('puntuacion')
+            )['promedio'] or 0,    
+        }
 
 
 class Calificacion(models.Model):

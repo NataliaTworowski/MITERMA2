@@ -31,7 +31,7 @@
         </div>
     {% endif %}
 
-    <main class="flex-1 p-6 md:ml-64">
+    <main class="flex-1 p-6 md:ml-50">
         <div class="mb-8 mx-auto max-w-4xl w-full">
             <div class="bg-white rounded-2xl shadow-lg p-10 text-center border border-gray-200">
                 {% if terma %}
@@ -45,6 +45,245 @@
                 {% endif %}
             </div>
         </div>
+
+        {% if terma %}
+        <!-- Métricas de la terma -->
+        <div class="max-w-7xl mx-auto mb-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">Métricas de tu Terma</h2>
+            
+            <!-- Grid de métricas -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <!-- Ingresos Totales -->
+                <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-2xl p-6 text-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="flex items-center gap-2 mb-2">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"></path>
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd"></path>
+                                </svg>
+                                <span class="text-sm opacity-90">Ingresos Totales</span>
+                            </div>
+                            <div class="text-3xl font-bold">${{ terma.ingresos_totales|default:"0"|floatformat:0 }}</div>
+                            <div class="text-sm opacity-80 flex items-center gap-1">
+                                <span class="text-green-200">↗ 12.5%</span>
+                                <span>vs. mes anterior</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visitantes -->
+                <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-6 text-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="flex items-center gap-2 mb-2">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"></path>
+                                </svg>
+                                <span class="text-sm opacity-90">Visitantes</span>
+                            </div>
+                            <div class="text-3xl font-bold">{{ terma.total_visitantes|default:"0" }}</div>
+                            <div class="text-sm opacity-80 flex items-center gap-1">
+                                <span class="text-blue-200">↗ 8.3%</span>
+                                <span>vs. mes anterior</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Calificación Promedio -->
+                <div class="bg-gradient-to-r from-orange-500 to-orange-600 rounded-2xl p-6 text-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="flex items-center gap-2 mb-2">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                </svg>
+                                <span class="text-sm opacity-90">Calificación</span>
+                            </div>
+                            <div class="text-3xl font-bold">{{ terma.calificacion_promedio|default:"N/A"|floatformat:1 }}/5</div>
+                            <div class="text-sm opacity-80">{{ terma.total_calificaciones }} reseñas</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fotos Subidas -->
+                <div class="bg-gradient-to-r from-teal-500 to-teal-600 rounded-2xl p-6 text-white">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <div class="flex items-center gap-2 mb-2">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"></path>
+                                </svg>
+                                <span class="text-sm opacity-90">Fotos</span>
+                            </div>
+                            <div class="text-3xl font-bold">{{ terma.total_fotos|default:"0" }}</div>
+                            <div class="text-sm opacity-80">fotos subidas</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gráficos y datos adicionales -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Reseñas recientes -->
+                <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-200">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-center text-lg font-semibold text-gray-900">Reseñas</h3>
+                        
+                        <!-- Filtro de comentarios -->
+                        <div class="relative">
+                            <select id="filtro-comentarios" class="bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="recientes" {% if filtro_actual == 'recientes' %}selected{% endif %}>Más recientes</option>
+                                <option value="7_dias" {% if filtro_actual == '7_dias' %}selected{% endif %}>Últimos 7 días</option>
+                                <option value="30_dias" {% if filtro_actual == '30_dias' %}selected{% endif %}>Último mes</option>
+                                <option value="90_dias" {% if filtro_actual == '90_dias' %}selected{% endif %}>Últimos 3 meses</option>
+                                <option value="este_año" {% if filtro_actual == 'este_año' %}selected{% endif %}>Este año</option>
+                                <option value="mas_antiguos" {% if filtro_actual == 'mas_antiguos' %}selected{% endif %}>Más antiguos</option>
+                                <option value="todos" {% if filtro_actual == 'todos' %}selected{% endif %}>Todos</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Estadísticas rápidas -->
+                    <div class="grid grid-cols-3 gap-4 mb-4 p-3 bg-gray-50 rounded-lg">
+                        <div class="text-center">
+                            <div class="text-lg font-bold text-gray-900">{{ estadisticas_calificaciones.total }}</div>
+                            <div class="text-xs text-gray-600">Total</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-lg font-bold text-blue-600">{{ estadisticas_calificaciones.ultimos_7_dias }}</div>
+                            <div class="text-xs text-gray-600">Esta semana</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-lg font-bold text-green-600">{{ estadisticas_calificaciones.ultimo_mes }}</div>
+                            <div class="text-xs text-gray-600">Este mes</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Container de comentarios -->
+                    <div id="comentarios-container">
+                        {% if calificaciones_filtradas %}
+                            <div class="space-y-4">
+                                {% for calificacion in calificaciones_filtradas %}
+                                <div class="border-l-4 border-blue-500 pl-4 py-2 hover:bg-gray-50 transition-colors">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-medium text-gray-900">{{ calificacion.usuario.nombre }}</span>
+                                            <div class="flex items-center">
+                                                {% for i in "12345" %}
+                                                    <svg class="w-4 h-4 {% if forloop.counter <= calificacion.puntuacion %}text-yellow-400{% else %}text-gray-300{% endif %}" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                                    </svg>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        <span class="text-xs text-gray-500">{{ calificacion.fecha|date:"d/m/Y H:i" }}</span>
+                                    </div>
+                                    <p class="text-gray-600 text-sm">{{ calificacion.comentario|truncatewords:30 }}</p>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-gray-500 text-center py-8">No hay reseñas para el período seleccionado</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Loading indicator -->
+                    <div id="loading-comentarios" class="hidden text-center py-4">
+                        <div class="inline-flex items-center px-4 py-2 font-semibold leading-6 text-sm shadow rounded-md text-blue-500 bg-blue-100">
+                            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Cargando comentarios...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if terma %}
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const filtroSelect = document.getElementById('filtro-comentarios');
+                const comentariosContainer = document.getElementById('comentarios-container');
+                const loadingIndicator = document.getElementById('loading-comentarios');
+                
+                // Verificar que existan los elementos
+                if (!filtroSelect || !comentariosContainer || !loadingIndicator) {
+                    console.error('Elementos del filtro de comentarios no encontrados');
+                    return;
+                }
+                
+                filtroSelect.addEventListener('change', function() {
+                    const filtro = this.value;
+                    
+                    // Mostrar loading
+                    loadingIndicator.classList.remove('hidden');
+                    comentariosContainer.style.opacity = '0.5';
+                    
+                    // Hacer petición AJAX usando directamente el ID de la terma
+                    fetch(`/termas/comentarios-filtrados/{{ terma.id }}/?filtro=${filtro}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            // Actualizar comentarios
+                            actualizarComentarios(data.calificaciones);
+                            
+                            // Ocultar loading
+                            loadingIndicator.classList.add('hidden');
+                            comentariosContainer.style.opacity = '1';
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            loadingIndicator.classList.add('hidden');
+                            comentariosContainer.style.opacity = '1';
+                        });
+                });
+                
+                function actualizarComentarios(calificaciones) {
+                    if (calificaciones.length === 0) {
+                        comentariosContainer.innerHTML = '<p class="text-gray-500 text-center py-8">No hay reseñas para el período seleccionado</p>';
+                        return;
+                    }
+                    
+                    let html = '<div class="space-y-4">';
+                    calificaciones.forEach(calificacion => {
+                        html += `
+                            <div class="border-l-4 border-blue-500 pl-4 py-2 hover:bg-gray-50 transition-colors">
+                                <div class="flex items-center justify-between mb-1">
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-medium text-gray-900">${calificacion.usuario_nombre}</span>
+                                        <div class="flex items-center">
+                                            ${generarEstrellas(calificacion.puntuacion)}
+                                        </div>
+                                    </div>
+                                    <span class="text-xs text-gray-500">${calificacion.fecha_completa}</span>
+                                </div>
+                                <p class="text-gray-600 text-sm">${calificacion.comentario}</p>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                    
+                    comentariosContainer.innerHTML = html;
+                }
+                
+                function generarEstrellas(puntuacion) {
+                    let estrellas = '';
+                    for (let i = 1; i <= 5; i++) {
+                        const clase = i <= puntuacion ? 'text-yellow-400' : 'text-gray-300';
+                        estrellas += `<svg class="w-4 h-4 ${clase}" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                        </svg>`;
+                    }
+                    return estrellas;
+                }
+            });
+        </script>
+        {% endif %}
     </main>
 
 </body>
