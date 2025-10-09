@@ -5,6 +5,41 @@
 <head>
     <title>Planes - MiTerma</title>
     {% include 'partials/head.html' %}
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+        
+        .animate-fadeIn {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+        
+        .animate-fadeOut {
+            animation: fadeOut 0.3s ease-in forwards;
+        }
+        
+        /* Animación adicional para el popup content */
+        .popup-enter {
+            animation: popupEnter 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        
+        @keyframes popupEnter {
+            0% {
+                opacity: 0;
+                transform: scale(0.9) translateY(-10px);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+    </style>
 </head>
 <body class="flex flex-col min-h-screen font-sans bg-sky-100">
     {% include 'partials/navbar.html' with navbar_mode='planes' %}
@@ -75,6 +110,33 @@
         </main>
     </div>
     {% include 'partials/footer.html' %}
+    
+    <!-- Popup de Éxito -->
+    <div id="popupExito" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 transform transition-all duration-300 opacity-0 scale-90" id="popupContent">
+            <div class="p-8 text-center">
+                <!-- Icono de éxito -->
+                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-6">
+                    <svg class="h-8 w-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                </div>
+                
+                <!-- Título -->
+                <h3 class="text-2xl font-bold text-gray-900 mb-4">¡Solicitud Enviada!</h3>
+                
+                <!-- Mensaje -->
+                <p class="text-gray-600 mb-8 leading-relaxed">
+                    Tu solicitud ha sido recibida correctamente. Nos pondremos en contacto contigo pronto para continuar con el proceso de registro.
+                </p>
+                
+                <!-- Botón de cerrar -->
+                <button onclick="cerrarPopupExito()" class="w-full bg-gradient-to-r from-green-600 to-green-700 text-white py-3 px-6 rounded-lg font-semibold hover:from-green-700 hover:to-green-800 transition-all duration-300 shadow-lg transform hover:scale-105">
+                    Entendido
+                </button>
+            </div>
+        </div>
+    </div>
     
     <!-- Modal SolicitudTerma -->
     <div id="solicitudModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm hidden p-2 sm:p-4">
@@ -162,5 +224,52 @@
     </div>
     
     <script src="{% static 'js/base.js' %}"></script>
+    
+    <!-- Script de debug para probar popup -->
+    <script>
+        // Función de test para verificar que el popup funciona
+        function testPopup() {
+            console.log('Test popup iniciado');
+            mostrarPopupExito();
+        }
+        
+        // Para testing: ejecutar en consola testPopup() para probar
+        console.log('Para probar el popup, ejecuta: testPopup()');
+    </script>
+    
+    {% if show_success_popup %}
+    <script>
+        console.log('show_success_popup es True - Iniciando popup');
+        // Mostrar popup de éxito automáticamente
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM cargado, intentando mostrar popup');
+            setTimeout(function() {
+                console.log('Ejecutando mostrarPopupExito()');
+                if (typeof mostrarPopupExito === 'function') {
+                    mostrarPopupExito();
+                    console.log('mostrarPopupExito() ejecutado');
+                } else {
+                    console.error('mostrarPopupExito no está definido');
+                }
+                
+                // Animación del contenido del popup
+                const popupContent = document.getElementById('popupContent');
+                if (popupContent) {
+                    console.log('popupContent encontrado, aplicando animaciones');
+                    setTimeout(() => {
+                        popupContent.classList.remove('opacity-0', 'scale-90');
+                        popupContent.classList.add('opacity-100', 'scale-100', 'popup-enter');
+                    }, 100);
+                } else {
+                    console.error('popupContent no encontrado');
+                }
+            }, 200);
+        });
+    </script>
+    {% else %}
+    <script>
+        console.log('show_success_popup es False o no está definido');
+    </script>
+    {% endif %}
 </body>
 </html>
