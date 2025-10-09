@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views, views_admin
+from usuarios.views import cargar_comentarios_filtrados
 
 app_name = 'termas'
 
@@ -14,4 +15,7 @@ urlpatterns = [
     path('aprobar_solicitud/<int:solicitud_id>/', views_admin.aprobar_solicitud, name='aprobar_solicitud'),
     path('rechazar_solicitud/<int:solicitud_id>/', views_admin.rechazar_solicitud, name='rechazar_solicitud'),
     path('detalles_solicitud/<int:solicitud_id>/', views_admin.detalles_solicitud, name='detalles_solicitud'),
+    
+    # URL para filtrar comentarios AJAX
+    path('comentarios-filtrados/<int:terma_id>/', cargar_comentarios_filtrados, name='comentarios_filtrados'),
 ]
