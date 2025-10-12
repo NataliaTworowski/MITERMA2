@@ -7,6 +7,40 @@ function closeSolicitudModal() {
     document.getElementById('solicitudModal').classList.add('hidden');
 }
 
+// Función para mostrar popup de éxito
+function mostrarPopupExito() {
+    console.log('Función mostrarPopupExito() llamada');
+    const popup = document.getElementById('popupExito');
+    console.log('Popup element:', popup);
+    if (popup) {
+        console.log('Popup encontrado, removiendo hidden y agregando flex');
+        popup.classList.remove('hidden');
+        popup.classList.add('flex');
+        
+        // Animación de entrada
+        setTimeout(() => {
+            console.log('Agregando animación fadeIn');
+            popup.classList.add('animate-fadeIn');
+        }, 10);
+    } else {
+        console.error('Elemento popupExito no encontrado en el DOM');
+    }
+}
+
+// Función para cerrar popup de éxito
+function cerrarPopupExito() {
+    const popup = document.getElementById('popupExito');
+    if (popup) {
+        popup.classList.add('animate-fadeOut');
+        
+        // Ocultar después de la animación
+        setTimeout(() => {
+            popup.classList.add('hidden');
+            popup.classList.remove('flex', 'animate-fadeIn', 'animate-fadeOut');
+        }, 300);
+    }
+}
+
 // Función para mostrar mensajes de error
 function mostrarError(mensaje) {
     const errorDiv = document.createElement('div');
@@ -63,6 +97,16 @@ document.addEventListener('DOMContentLoaded', function() {
         window.addEventListener('click', function(event) {
             if (event.target === modal) {
                 closeSolicitudModal();
+            }
+        });
+    }
+    
+    // Popup de éxito events
+    const popupExito = document.getElementById('popupExito');
+    if (popupExito) {
+        window.addEventListener('click', function(event) {
+            if (event.target === popupExito) {
+                cerrarPopupExito();
             }
         });
     }

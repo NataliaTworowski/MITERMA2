@@ -36,7 +36,7 @@ def get_comunas(request, region_id):
     return JsonResponse(list(comunas), safe=False)
 
 from django.contrib import messages
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.contrib.auth.decorators import login_required
 
 def planes(request):
@@ -50,11 +50,8 @@ def planes(request):
                 if request.user.is_authenticated:
                     solicitud.usuario = request.user
                 solicitud.save()
-                messages.success(request, 'Tu solicitud ha sido enviada correctamente. Nos pondremos en contacto contigo pronto.')
-                return render(request, 'planes.html', {
-                    'form': SolicitudTermaForm(),
-                    'solicitud_enviada': True
-                })
+                # Redirigir con parámetro de éxito para mostrar popup
+                return redirect('/planes/?success=1')
             except Exception as e:
                 messages.error(request, 'Ha ocurrido un error al procesar tu solicitud. Por favor, intenta nuevamente.')
                 return render(request, 'planes.html', {'form': form})
@@ -63,7 +60,16 @@ def planes(request):
             return render(request, 'planes.html', {'form': form})
     else:
         form = SolicitudTermaForm()
-    return render(request, 'planes.html', {'form': form})
+        # Verificar si viene del redirect exitoso
+        success = request.GET.get('success')
+        print(f"DEBUG: success parameter = {success}")  # Debug log
+        print(f"DEBUG: success == '1' = {success == '1'}")  # Debug log
+        context = {
+            'form': form,
+            'show_success_popup': success == '1'
+        }
+        print(f"DEBUG: context = {context}")  # Debug log
+        return render(request, 'planes.html', context)
 
 
 
