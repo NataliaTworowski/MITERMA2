@@ -4,14 +4,81 @@
 <head>
     <title>{{ title }}</title>
     {% include 'partials/head.html' %}
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="flex min-h-screen bg-white">
     {% include 'partials/navbar_adm_termas.html' %}
 
     <main class="flex-1 md:ml-10 pl-4 pr-6 py-6">
-        <div class="bg-white rounded-2xl shadow-lg p-10 text-center border border-gray-200">
-            <h1 class="text-4xl font-extrabold text-gray-900 tracking-wide"> Análisis de {{ terma.nombre_terma }} </h1>
+        <div class="bg-white rounded-2xl shadow-lg p-10 border border-gray-200">
+
+            <h1 class="text-4xl font-extrabold text-gray-900 tracking-wide mb-8 text-center"> 
+                Análisis de {{ terma.nombre_terma }} 
+            </h1>
+
+            <!-- Botones de rango de días -->
+            <div class="flex justify-center gap-4 mb-6">
+                <form method="get" id="rangoForm">
+                    <input type="hidden" name="rango" value="7" {% if rango == 7 %}disabled{% endif %}>
+                    <button type="submit" class="px-4 py-2 rounded-lg font-semibold border transition-colors duration-200 {% if rango == 7 %}bg-blue-600 text-white border-blue-700{% else %}bg-white text-blue-700 border-blue-400 hover:bg-blue-50{% endif %}">Últimos 7 días</button>
+                </form>
+                <form method="get" id="rangoForm15">
+                    <input type="hidden" name="rango" value="15" {% if rango == 15 %}disabled{% endif %}>
+                    <button type="submit" class="px-4 py-2 rounded-lg font-semibold border transition-colors duration-200 {% if rango == 15 %}bg-blue-600 text-white border-blue-700{% else %}bg-white text-blue-700 border-blue-400 hover:bg-blue-50{% endif %}">Últimos 15 días</button>
+                </form>
+                <form method="get" id="rangoForm30">
+                    <input type="hidden" name="rango" value="30" {% if rango == 30 %}disabled{% endif %}>
+                    <button type="submit" class="px-4 py-2 rounded-lg font-semibold border transition-colors duration-200 {% if rango == 30 %}bg-blue-600 text-white border-blue-700{% else %}bg-white text-blue-700 border-blue-400 hover:bg-blue-50{% endif %}">Últimos 30 días</button>
+                </form>
+            </div>
+
+            <!-- Gráfico de Ventas por Día -->
+            <div class="mt-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Ventas de los Últimos {{ rango }} Días</h2>
+                <div class="bg-gray-50 p-6 rounded-lg shadow-inner">
+                    <div style="height: 400px;">
+                        <canvas id="ventasChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Estadísticas adicionales -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+                <div class="bg-blue-50 p-6 rounded-lg text-center transform hover:scale-105 transition-transform duration-200">
+                    <h3 class="text-lg font-semibold text-blue-800">Total Ventas (7 días)</h3>
+                    <p class="text-3xl font-bold text-blue-600 estadistica-numero">{{ total_ventas }}</p>
+                </div>
+                <div class="bg-green-50 p-6 rounded-lg text-center transform hover:scale-105 transition-transform duration-200">
+                    <h3 class="text-lg font-semibold text-green-800">Promedio Diario</h3>
+                    <p class="text-3xl font-bold text-green-600 estadistica-numero">{{ promedio_ventas }}</p>
+                </div>
+                <div class="bg-purple-50 p-6 rounded-lg text-center transform hover:scale-105 transition-transform duration-200">
+                    <h3 class="text-lg font-semibold text-purple-800">Mejor Día</h3>
+                    <p class="text-3xl font-bold text-purple-600 estadistica-numero">{{ mejor_dia }}</p>
+                </div>
+            </div>
         </div>
     </main>
+
+    <!-- Scripts -->
+    <script src="{% static 'usuarios/js/analisis_charts.js' %}"></script>
+    <script>
+        // Datos del gráfico desde Django
+        const fechasData = JSON.parse('{{ fechas_json|escapejs }}');
+        const ventasData = JSON.parse('{{ ventas_por_dia_json|escapejs }}');
+        const nombreTerma = "{{ terma.nombre_terma|escapejs }}";
+
+        // Inicializar cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', function() {
+            // Crear el gráfico
+            crearGraficoVentas(fechasData, ventasData, nombreTerma);
+            
+            // Animar las estadísticas
+            setTimeout(() => {
+                animarEstadisticas();
+            }, 500);
+        });
+    </script>
 </body>
 </html>

@@ -7,6 +7,7 @@ import re
 from .utils import enviar_email_confirmacion, enviar_email_reset_password  # Agregar enviar_email_reset_password
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
+from ventas.models import Compra 
 
 def login_usuario(request):
     """Vista para iniciar sesión."""
@@ -452,15 +453,52 @@ def analisis_terma(request):
         return redirect('usuarios:inicio')
     
     try:
+        from django.db.models import Count, Sum
+        from datetime import datetime, timedelta
+        import json
+        
         usuario = Usuario.objects.get(id=request.session['usuario_id'])
         terma = usuario.terma
         
+        # Obtener rango de días desde GET (default 7)
+        try:
+            rango = int(request.GET.get('rango', 7))
+            if rango not in [7, 15, 30]:
+                rango = 7
+        except Exception:
+            rango = 7
+
+        hoy = datetime.now().date()
+        fechas = []
+        ventas_por_dia = []
+
+        for i in range(rango-1, -1, -1):
+            fecha = hoy - timedelta(days=i)
+            fechas.append(fecha.strftime('%d/%m'))
+            ventas_dia = Compra.objects.filter(
+                fecha_compra__date=fecha,
+                estado_pago='pagado',
+                terma=terma
+            ).count()
+            ventas_por_dia.append(ventas_dia)
+
+        # Calcular estadísticas
+        total_ventas = sum(ventas_por_dia)
+        promedio_ventas = total_ventas / rango if ventas_por_dia else 0
+        mejor_dia = max(ventas_por_dia) if ventas_por_dia else 0
+
         context = {
             'title': 'Análisis de Terma - MiTerma',
             'usuario': usuario,
             'terma': terma,
+            'fechas_json': json.dumps(fechas),
+            'ventas_por_dia_json': json.dumps(ventas_por_dia),
+            'total_ventas': total_ventas,
+            'promedio_ventas': round(promedio_ventas, 1),
+            'mejor_dia': mejor_dia,
+            'rango': rango,
         }
-        
+
         return render(request, 'administrador_termas/analisis_terma.html', context)
         
     except Usuario.DoesNotExist:
