@@ -8,6 +8,8 @@ from .utils import enviar_email_confirmacion, enviar_email_reset_password  # Agr
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from ventas.models import Compra 
+from django.utils import timezone
+
 
 def login_usuario(request):
     """Vista para iniciar sesión."""
@@ -223,20 +225,26 @@ def adm_termas(request):
         context = {
             'title': 'Administración de Termas - MiTerma',
             'usuario': usuario,
+            'now': timezone.now(),
         }
         
         if terma:
+            from ventas.models import Compra
+            from datetime import date
+            reservas_hoy = Compra.objects.filter(terma=terma, fecha_visita=date.today()).count()
             context.update({
                 'terma': terma,
                 'calificaciones_filtradas': terma.filtro_calificaciones(filtro_comentarios),
                 'estadisticas_calificaciones': terma.estadisticas_calificaciones(),
                 'filtro_actual': filtro_comentarios,
+                'reservas_hoy': reservas_hoy,
             })
         
         return render(request, 'administrador_termas/adm_termas.html', context)
     except Usuario.DoesNotExist:
         messages.error(request, 'Sesión inválida.')
         return redirect('core:home')
+    
 
 def admin_general(request):
     """Vista para mostrar la página de administración general del sistema."""
@@ -487,6 +495,27 @@ def analisis_terma(request):
         promedio_ventas = total_ventas / rango if ventas_por_dia else 0
         mejor_dia = max(ventas_por_dia) if ventas_por_dia else 0
 
+        # Distribución de tipos de entradas vendidas
+        from ventas.models import DetalleCompra
+        from entradas.models import EntradaTipo
+        # Buscar DetalleCompra de compras pagadas en el rango de fechas y terma
+        fecha_inicio = hoy - timedelta(days=rango-1)
+        detalles = DetalleCompra.objects.filter(
+            compra__terma=terma,
+            compra__estado_pago='pagado',
+            compra__fecha_compra__date__gte=fecha_inicio,
+            compra__fecha_compra__date__lte=hoy
+        ).select_related('horario_disponible__entrada_tipo')
+
+        # Contar por tipo de entrada
+        tipos = {}
+        for detalle in detalles:
+            tipo = detalle.horario_disponible.entrada_tipo.nombre
+            tipos[tipo] = tipos.get(tipo, 0) + detalle.cantidad
+
+        tipos_labels = list(tipos.keys())
+        tipos_values = list(tipos.values())
+
         context = {
             'title': 'Análisis de Terma - MiTerma',
             'usuario': usuario,
@@ -497,6 +526,8 @@ def analisis_terma(request):
             'promedio_ventas': round(promedio_ventas, 1),
             'mejor_dia': mejor_dia,
             'rango': rango,
+            'tipos_labels_json': json.dumps(tipos_labels),
+            'tipos_values_json': json.dumps(tipos_values),
         }
 
         return render(request, 'administrador_termas/analisis_terma.html', context)

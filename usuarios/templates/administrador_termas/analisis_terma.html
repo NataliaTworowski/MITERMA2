@@ -7,18 +7,19 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="flex min-h-screen bg-white">
+<body class="flex min-h-screen bg-slate-800">
     {% include 'partials/navbar_adm_termas.html' %}
 
-    <main class="flex-1 md:ml-10 pl-4 pr-6 py-6">
+    <main class="flex-1 md:ml-8 pl-4 pr-2 py-2">
         <div class="bg-white rounded-2xl shadow-lg p-10 border border-gray-200">
 
             <h1 class="text-4xl font-extrabold text-gray-900 tracking-wide mb-8 text-center"> 
                 Análisis de {{ terma.nombre_terma }} 
             </h1>
+        </div>
 
-            <!-- Botones de rango de días -->
-            <div class="flex justify-center gap-4 mb-6">
+        <!-- Botones de rango de días -->
+    <div class="flex justify-center gap-5 mb-2 mt-4">
                 <form method="get" id="rangoForm">
                     <input type="hidden" name="rango" value="7" {% if rango == 7 %}disabled{% endif %}>
                     <button type="submit" class="px-4 py-2 rounded-lg font-semibold border transition-colors duration-200 {% if rango == 7 %}bg-blue-600 text-white border-blue-700{% else %}bg-white text-blue-700 border-blue-400 hover:bg-blue-50{% endif %}">Últimos 7 días</button>
@@ -40,6 +41,20 @@
                     <div style="height: 400px;">
                         <canvas id="ventasChart"></canvas>
                     </div>
+                </div>
+            </div>
+
+            <!-- Gráfico de distribución de tipos de entradas vendidas -->
+            <div class="mt-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Distribución de Tipos de Entradas Vendidas</h2>
+                <div class="bg-gray-50 p-6 rounded-lg shadow-inner">
+                    {% if tipos_labels_json and tipos_values_json and tipos_labels_json != '[]' and tipos_values_json != '[]' %}
+                    <div style="height: 400px;">
+                        <canvas id="tiposEntradasChart"></canvas>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-20 text-gray-500 text-lg">No hay ventas de entradas en este rango de fechas.</div>
+                    {% endif %}
                 </div>
             </div>
             
@@ -68,12 +83,42 @@
         const fechasData = JSON.parse('{{ fechas_json|escapejs }}');
         const ventasData = JSON.parse('{{ ventas_por_dia_json|escapejs }}');
         const nombreTerma = "{{ terma.nombre_terma|escapejs }}";
+        // Datos para el gráfico de tipos de entradas
+        const tiposLabels = JSON.parse('{{ tipos_labels_json|escapejs }}');
+        const tiposValues = JSON.parse('{{ tipos_values_json|escapejs }}');
 
-        // Inicializar cuando el DOM esté listo
         document.addEventListener('DOMContentLoaded', function() {
-            // Crear el gráfico
+            // Crear el gráfico de ventas
             crearGraficoVentas(fechasData, ventasData, nombreTerma);
-            
+
+            // Crear el gráfico de tipos de entradas vendidas
+            const ctxTipos = document.getElementById('tiposEntradasChart').getContext('2d');
+            new Chart(ctxTipos, {
+                type: 'pie', // Puedes cambiar a 'bar' si prefieres barras
+                data: {
+                    labels: tiposLabels,
+                    datasets: [{
+                        label: 'Entradas Vendidas',
+                        data: tiposValues,
+                        backgroundColor: [
+                            '#2563eb', '#22c55e', '#f59e42', '#a78bfa', '#f43f5e', '#14b8a6', '#fbbf24', '#6366f1'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                        title: {
+                            display: false,
+                        }
+                    }
+                }
+            });
+
             // Animar las estadísticas
             setTimeout(() => {
                 animarEstadisticas();

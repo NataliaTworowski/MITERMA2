@@ -1,4 +1,5 @@
 from django.db import models
+from datetime import date
 from usuarios.models import Usuario
 from entradas.models import HorarioDisponible
 
@@ -21,6 +22,7 @@ class Compra(models.Model):
     metodo_pago = models.ForeignKey(MetodoPago, on_delete=models.SET_NULL, null=True, blank=True)
     terma = models.ForeignKey("termas.Terma", on_delete=models.SET_NULL, null=True, blank=True)
     fecha_compra = models.DateTimeField(auto_now_add=True)
+    fecha_visita = models.DateField(default=date.today, help_text="Fecha para la que es válida la entrada")
     total = models.DecimalField(max_digits=10, decimal_places=2)
     estado_pago = models.CharField(max_length=20, choices=ESTADO_PAGO)
     mercado_pago_id = models.CharField(max_length=100, null=True, blank=True)
