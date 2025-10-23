@@ -13,5 +13,4 @@ urlpatterns = [
     path('reset-password-confirm/', views.reset_password_confirm, name='reset_password_confirm'), 
     path('admin_general/', views.admin_general, name='admin_general'),
     path('solicitudes_pendientes/', views.solicitudes_pendientes, name='solicitudes_pendientes'),
-    path('analisis_terma/', views.analisis_terma, name='analisis_terma'),
 ]

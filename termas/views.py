@@ -2,6 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.db.models import Q
 from django.contrib import messages
 from .models import Terma, Region, Comuna, ImagenTerma
+from usuarios.models import Usuario
 import os
 
 def lista_termas(request):
@@ -24,8 +25,6 @@ def detalle_terma(request, pk):
 
 def buscar_termas(request):
     """Vista para buscar termas y mostrar resultados en inicio.html de usuarios."""
-    from usuarios.models import Usuario
-    from django.contrib import messages
     
     # Verificar si el usuario está logueado
     if 'usuario_id' not in request.session:
@@ -82,7 +81,6 @@ def buscar_termas(request):
     
 def subir_fotos(request):
     """Vista para gestionar las fotos de la terma."""
-    from usuarios.models import Usuario
     
     # Verificar si el usuario está logueado
     if 'usuario_id' not in request.session:
@@ -170,7 +168,6 @@ def subir_fotos(request):
 
 def eliminar_foto(request, foto_id):
     """Vista para eliminar una foto de la terma."""
-    from usuarios.models import Usuario
     
     # Verificar si el usuario está logueado
     if 'usuario_id' not in request.session:
@@ -216,3 +213,135 @@ def eliminar_foto(request, foto_id):
             messages.error(request, f'Error al eliminar la foto: {str(e)}')
     
     return redirect('termas:subir_fotos')
+
+def analisis_terma(request):
+    """Vista para mostrar el análisis de la terma."""
+    # Verificar si el usuario está logueado
+    if 'usuario_id' not in request.session:
+        messages.error(request, 'Debes iniciar sesión para acceder.')
+        return redirect('core:home')
+    if request.session.get('usuario_rol') != 2:
+        messages.error(request, 'No tienes permisos para acceder a esta sección.')
+        return redirect('usuarios:inicio')
+    try:
+        from django.db.models import Count, Sum
+        from datetime import datetime, timedelta
+        import json
+        from ventas.models import Compra, DetalleCompra
+        from entradas.models import EntradaTipo
+        usuario = Usuario.objects.get(id=request.session['usuario_id'])
+        terma = usuario.terma
+        try:
+            rango = int(request.GET.get('rango', 7))
+            if rango not in [7, 15, 30]:
+                rango = 7
+        except Exception:
+            rango = 7
+        hoy = datetime.now().date()
+        fechas = []
+        ventas_por_dia = []
+        for i in range(rango-1, -1, -1):
+            fecha = hoy - timedelta(days=i)
+            fechas.append(fecha.strftime('%d/%m'))
+            ventas_dia = Compra.objects.filter(
+                fecha_compra__date=fecha,
+                estado_pago='pagado',
+                terma=terma
+            ).count()
+            ventas_por_dia.append(ventas_dia)
+        total_ventas = sum(ventas_por_dia)
+        promedio_ventas = total_ventas / rango if ventas_por_dia else 0
+        mejor_dia = max(ventas_por_dia) if ventas_por_dia else 0
+        fecha_inicio = hoy - timedelta(days=rango-1)
+        detalles = DetalleCompra.objects.filter(
+            compra__terma=terma,
+            compra__estado_pago='pagado',
+            compra__fecha_compra__date__gte=fecha_inicio,
+            compra__fecha_compra__date__lte=hoy
+        ).select_related('horario_disponible__entrada_tipo')
+        tipos = {}
+        for detalle in detalles:
+            tipo = detalle.horario_disponible.entrada_tipo.nombre
+            tipos[tipo] = tipos.get(tipo, 0) + detalle.cantidad
+        tipos_labels = list(tipos.keys())
+        tipos_values = list(tipos.values())
+        context = {
+            'title': 'Análisis de Terma - MiTerma',
+            'usuario': usuario,
+            'terma': terma,
+            'fechas_json': json.dumps(fechas),
+            'ventas_por_dia_json': json.dumps(ventas_por_dia),
+            'total_ventas': total_ventas,
+            'promedio_ventas': round(promedio_ventas, 1),
+            'mejor_dia': mejor_dia,
+            'rango': rango,
+            'tipos_labels_json': json.dumps(tipos_labels),
+            'tipos_values_json': json.dumps(tipos_values),
+        }
+        return render(request, 'administrador_termas/analisis_terma.html', context)
+    except Usuario.DoesNotExist:
+        messages.error(request, 'Sesión inválida.')
+        return redirect('core:home')
+    except Exception as e:
+        messages.error(request, f'Error al cargar análisis: {str(e)}')
+        return redirect('usuarios:adm_termas')
+
+
+def editar_terma(request):
+    """Vista para editar la información de la terma."""
+    if 'usuario_id' not in request.session:
+        messages.error(request, 'Debes iniciar sesión para acceder.')
+        return redirect('core:home')
+    if request.session.get('usuario_rol') != 2:
+        messages.error(request, 'No tienes permisos para acceder a esta sección.')
+        return redirect('usuarios:inicio')
+    try:
+        usuario = Usuario.objects.get(id=request.session['usuario_id'])
+        terma = usuario.terma
+        if request.method == 'POST':
+            descripcion = request.POST.get('descripcion_terma', '').strip()
+            terma.descripcion_terma = descripcion
+            terma.save()
+            messages.success(request, 'Descripción guardada correctamente.')
+            return redirect('termas:editar_terma')
+        context = {
+            'title': 'Editar Terma - MiTerma',
+            'usuario': usuario,
+            'terma': terma,
+            'servicios': terma.servicios.all()
+        }
+        return render(request, 'administrador_termas/editar_terma.html', context)
+    except Usuario.DoesNotExist:
+        messages.error(request, 'Sesión inválida.')
+        return redirect('core:home')
+
+def agregar_servicio(request):
+    """Vista para agregar un nuevo servicio a la terma."""
+    if request.method == 'POST':
+        servicio = request.POST.get('servicio')
+        descripcion = request.POST.get('descripcion_servicio')
+        precio = request.POST.get('precio_servicio')
+        usuario = Usuario.objects.get(id=request.session['usuario_id'])
+        terma = usuario.terma
+        from termas.models import ServicioTerma
+        nuevo_servicio = ServicioTerma(
+            terma=terma,
+            servicio=servicio,
+            descripcion=descripcion,
+            precio=precio
+        )
+        nuevo_servicio.save()
+        messages.success(request, 'Servicio agregado correctamente.')
+        return redirect('termas:editar_terma')
+    return redirect('termas:editar_terma')
+
+def quitar_servicio(request, servicio_id):
+    """Vista para quitar un servicio de la terma."""
+    if request.method == 'POST':
+        from termas.models import ServicioTerma
+        servicio = get_object_or_404(ServicioTerma, id=servicio_id)
+        servicio.delete()
+        messages.success(request, 'Servicio eliminado correctamente.')
+        return redirect('termas:editar_terma')
+    return redirect('termas:editar_terma')
+

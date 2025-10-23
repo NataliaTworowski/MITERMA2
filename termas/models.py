@@ -180,6 +180,8 @@ class ImagenTerma(models.Model):
 class ServicioTerma(models.Model):
     terma = models.ForeignKey(Terma, on_delete=models.CASCADE, related_name="servicios")
     servicio = models.CharField(max_length=100)
+    descripcion = models.TextField(null=True, blank=True)
+    precio = models.CharField(max_length=20, null=True, blank=True)
 
 
 class SolicitudTerma(models.Model):

@@ -18,4 +18,10 @@ urlpatterns = [
     
     # URL para filtrar comentarios AJAX
     path('comentarios-filtrados/<int:terma_id>/', cargar_comentarios_filtrados, name='comentarios_filtrados'),
+    
+    # Nuevas rutas
+    path('analisis_terma/', views.analisis_terma, name='analisis_terma'),
+    path('editar_terma/', views.editar_terma, name='editar_terma'),
+    path('agregar_servicio/', views.agregar_servicio, name='agregar_servicio'),
+    path('quitar_servicio/<int:servicio_id>/', views.quitar_servicio, name='quitar_servicio'),
 ]
