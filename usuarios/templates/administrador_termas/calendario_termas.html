@@ -1,0 +1,19 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>{{ title }}</title>
+    {% include 'partials/head.html' %}
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="flex min-h-screen bg-gray-100 font-sans">
+    {% include 'partials/navbar_adm_termas.html' %}
+
+    <main class="flex-1 md:ml-8 pl-4 pr-2 py-2">
+        <div class="bg-[#374151] border-b-2 border-gray-200 pt-6 pb-4 px-8 w-full" style="margin-top:0; border-radius:0; box-shadow:none;">
+            <h1 class="text-4xl font-extrabold text-white tracking-wide text-left">Calendario - <span class="text-orange-400">{{ terma.nombre_terma }}</span></h1>
+        </div>
+    </main>
+</body>
+</html>

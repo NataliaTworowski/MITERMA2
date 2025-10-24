@@ -1,107 +1,65 @@
 <!-- Modal de Iniciar Sesión -->
-<div id="loginModal" class="fixed inset-0 bg-gradient-to-br from-blue-500/60 via-blue-200/40 to-white/80 backdrop-blur-lg hidden z-50 flex items-center justify-center p-4">
-    <div class="bg-white/90 rounded-3xl shadow-2xl w-full max-w-md transform transition-all duration-500 scale-95 opacity-0 border border-blue-100" id="loginModalContent">
-        <!-- Header del Modal -->
-        <div class="bg-gradient-to-r from-blue-700 via-blue-500 to-blue-400 rounded-t-3xl p-7 text-center relative shadow-lg">
-            <h2 class="text-3xl font-extrabold text-white mb-1 tracking-wide drop-shadow">Iniciar Sesión</h2>
-            <p class="text-blue-100 text-base mb-1">Accede a tu cuenta de <span class="font-semibold">MiTerma</span></p>
-            <!-- Botón cerrar -->
-            <button onclick="closeLoginModal()" class="absolute top-5 right-5 text-white hover:text-blue-200 transition-colors duration-200 bg-blue-500/40 rounded-full p-1.5 shadow-md">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
-            </button>
+<div id="loginModal" class="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-[#f6f3ee] rounded-2xl shadow-2xl w-full max-w-md p-8 relative">
+        <!-- Header -->
+        <button onclick="closeLoginModal()" class="absolute top-5 right-5 text-gray-400 hover:text-gray-700 text-xl">
+            &times;
+        </button>
+        <h2 class="text-3xl font-bold text-gray-800 mb-2 text-center">Bienvenid@</h2>
+        <p class="text-gray-500 text-center mb-6">Inicia sesión para reservar tu sesión de tranquilidad.</p>
+        <!-- Form -->
+        <form action="{% url 'usuarios:login' %}" method="POST" class="space-y-5">
+            {% csrf_token %}
+            <div>
+                <label for="email" class="block text-gray-700 font-semibold mb-2">Correo electrónico</label>
+                <input type="email" id="email" name="email" required placeholder="Ingresa tu correo electrónico" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-300 focus:outline-none bg-white placeholder:text-gray-400" />
+            </div>
+            <div>
+                <label for="password" class="block text-gray-700 font-semibold mb-2">contraseña</label>
+                <div class="relative">
+                    <input type="password" id="password" name="password" required placeholder="Ingresa tu contraseña" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-300 focus:outline-none bg-white pr-12 placeholder:text-gray-400" />
+                    <button type="button" onclick="togglePassword()" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-green-600">
+                        <svg id="eyeIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.522 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.478 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="flex justify-end">
+                <a href="#" onclick="closeLoginModal(); openResetPasswordModal();" class="text-sm text-gray-500 hover:text-green-700 font-medium">¿Olvidaste tu contraseña?</a>
+            </div>
+            <button type="submit" class="w-full bg-[#3b7c6e] hover:bg-[#2e6357] text-white py-3 rounded-lg font-bold text-lg transition-all duration-300 shadow-md">Log In</button>
+        </form>
+        <!-- Divider -->
+        <div class="my-7 flex items-center">
+            <div class="flex-grow border-t border-gray-300"></div>
+            <span class="px-4 text-sm text-gray-400 font-semibold">O</span>
+            <div class="flex-grow border-t border-gray-300"></div>
         </div>
         
-        <!-- Contenido del Modal de inicio de sesion  -->
-        <div class="p-8">
-            <form action="{% url 'usuarios:login' %}" method="POST" class="space-y-6">
-                {% csrf_token %}
-                <!-- Email -->
-                <div>
-                    <label for="email" class="block text-sm font-semibold text-gray-700 mb-2">
-                        <span class="inline-flex items-center gap-2">
-                            <svg class="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path>
-                                <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path>
-                            </svg>
-                            Email
-                        </span>
-                    </label>
-                    <div class="relative">
-                        <input 
-                            type="email" 
-                            id="email" 
-                            name="email" 
-                            required 
-                            class="w-full px-4 py-3 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-300 bg-blue-50/60 focus:bg-white shadow-sm placeholder:text-blue-300" 
-                            placeholder="tu@email.com"
-                        >
-                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-blue-300">
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path>
-                                <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path>
-                            </svg>
-                        </span>
-                    </div>
-                </div>
-                <!-- Contraseña -->
-                <div>
-                    <label for="password" class="block text-sm font-semibold text-gray-700 mb-2">
-                        <span class="inline-flex items-center gap-2">
-                            <svg class="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
-                            </svg>
-                            Contraseña
-                        </span>
-                    </label>
-                    <div class="relative">
-                        <input 
-                            type="password" 
-                            id="password" 
-                            name="password" 
-                            required 
-                            class="w-full px-4 py-3 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-300 bg-blue-50/60 focus:bg-white pr-12 shadow-sm placeholder:text-blue-300" 
-                            placeholder="••••••••"
-                        >
-                        <button type="button" onclick="togglePassword()" class="absolute right-3 top-1/2 -translate-y-1/2 text-blue-300 hover:text-blue-500 transition-colors duration-200">
-                            <svg id="eyeIcon" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"></path>
-                                <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"></path>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-                <!-- boton para el cambio de contraseña -->
-                <div class="text-right mb-4">
-                    <a href="#" onclick="closeLoginModal(); openResetPasswordModal();" 
-                       class="text-sm text-blue-500 hover:text-blue-700 font-semibold transition-colors duration-200 underline underline-offset-2">
-                        ¿Olvidaste tu contraseña?
-                    </a>
-                </div>
-                <!-- Botón de envío -->
-                <button 
-                    type="submit" 
-                    class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 rounded-xl font-bold text-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 tracking-wide flex items-center justify-center gap-2"
-                >
-                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                    </svg>
-                    Iniciar Sesión
-                </button>
-            </form>
-            <!-- Divider -->
-            <div class="my-7 flex items-center">
-                <div class="flex-grow border-t border-blue-200"></div>
-                <span class="px-4 text-sm text-blue-400 font-semibold">o</span>
-                <div class="flex-grow border-t border-blue-200"></div>
-            </div>
-            <!-- Registro -->
-            <div class="text-center">
-                <p class="text-gray-600">¿No tienes cuenta?</p>
-                <a href="#" onclick="closeLoginModal(); openRegisterModal();" class="text-blue-600 hover:text-blue-700 font-bold transition-colors duration-200 underline underline-offset-2">
-                    Regístrate aquí
-                </a>
-            </div>
+        <!-- Register -->
+        <div class="text-center mt-4">
+            <span class="text-gray-500">¿No tienes una cuenta?</span>
+            <a href="#" onclick="closeLoginModal(); openRegisterModal();" class="text-green-700 hover:text-green-900 font-bold ml-1">Regístrate</a>
         </div>
     </div>
 </div>
+<script>
+function closeLoginModal() {
+    document.getElementById('loginModal').classList.add('hidden');
+}
+function togglePassword() {
+    var input = document.getElementById('password');
+    var icon = document.getElementById('eyeIcon');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.setAttribute('fill', 'none');
+        icon.setAttribute('stroke', '#3b7c6e');
+    } else {
+        input.type = 'password';
+        icon.setAttribute('fill', 'none');
+        icon.setAttribute('stroke', 'currentColor');
+    }
+}
+</script>

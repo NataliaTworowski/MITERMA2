@@ -7,111 +7,148 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="flex min-h-screen bg-slate-800">
+<body class="flex min-h-screen bg-gray-100 font-sans">
     {% include 'partials/navbar_adm_termas.html' %}
 
     <main class="flex-1 md:ml-8 pl-4 pr-2 py-2">
-        <div class="bg-blue-900 rounded-2xl shadow-lg p-8 border border-blue-700 mb-8">
-            <h1 class="text-4xl font-extrabold text-white tracking-wide mb-2 text-center">Panel de Administración de Terma - {{ terma.nombre_terma }}</h1>
+        <div class="bg-[#374151] border-b-2 border-gray-200 pt-6 pb-4 px-8 w-full" style="margin-top:0; border-radius:0; box-shadow:none;">
+            <h1 class="text-4xl font-extrabold text-white tracking-wide text-left">Panel de Administración de Terma - <span class="text-orange-400">{{ terma.nombre_terma }}</span></h1>
         </div>
-
-        <div class="bg-white rounded-xl shadow p-6 border border-gray-200 mb-8">
-            <h2 class="text-xl font-bold text-gray-800 mb-4">Configuración General</h2>
-            <form method="post" action="#" class="flex flex-col md:flex-row gap-4 items-center">
-                {% csrf_token %}
-                <textarea name="descripcion_terma" rows="3" class="border border-gray-300 rounded px-3 py-2 w-full max-w-2xl resize-none" placeholder="Descripción">{{ terma.descripcion_terma|default:'' }}</textarea>
-                <button type="submit" formaction="{% url 'termas:editar_terma' %}" class="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold px-4 py-2 rounded transition">Guardar Descripción</button>
-            </form>
-        </div>
-
-        <div class="bg-white rounded-xl shadow p-6 border border-gray-200 mb-8">
-            <h2 class="text-xl font-bold text-gray-800 mb-4">Servicios Ofrecidos</h2>
-            <div class="overflow-x-auto">
-                <table class="min-w-full bg-gray-50 rounded-lg">
-                    <thead>
-                        <tr>
-                            <th class="px-4 py-2 text-left text-gray-700 font-semibold">Nombre del Servicio</th>
-                            <th class="px-4 py-2 text-left text-gray-700 font-semibold">Descripción</th>
-                            <th class="px-4 py-2 text-left text-gray-700 font-semibold">Precio</th>
-                            <th class="px-4 py-2 text-center text-gray-700 font-semibold">Gestión</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for servicio in servicios %}
-                        <tr class="border-b">
-                            <td class="px-4 py-2 font-medium text-gray-900">{{ servicio.servicio }}</td>
-                            <td class="px-4 py-2 text-gray-700">{{ servicio.descripcion }}</td>
-                            <td class="px-4 py-2 text-gray-700">{{ servicio.precio|default:'-' }}</td>
-                            <td class="px-4 py-2 text-center">
-                                <form method="post" action="#" class="inline">
-                                    {% csrf_token %}
-                                    <button type="submit" formaction="{% url 'termas:quitar_servicio' servicio.id %}" class="bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-2 rounded transition flex items-center gap-2" onclick="return confirm('¿Estás seguro de que deseas eliminar este servicio? Esta acción no se puede deshacer.');">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
-                                        Quitar
-                                    </button>
-                                </form>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="4" class="px-4 py-2 text-center text-gray-500">No hay servicios registrados.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            <div class="flex gap-4 mt-6">
-                <button id="toggleServicioForm" type="button" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded transition flex items-center gap-2">
-                    + Agregar Nuevo Servicio
-                </button>
-            </div>
-            <div id="servicioForm" class="mt-6 hidden">
-                <form method="post" action="#" class="bg-gray-100 p-6 rounded-lg shadow flex flex-col gap-4 w-full max-w-lg mx-auto">
+        <div class="flex flex-col md:flex-row gap-8 mt-8">
+            <div class="bg-white rounded-2xl shadow p-8 flex-1 min-w-[320px] max-w-md">
+                <h2 class="text-xl font-bold text-gray-800 mb-2">Detalles de la Terma</h2>
+                <form method="post" action="#" class="flex flex-col gap-4">
                     {% csrf_token %}
-                    <label for="servicio_select" class="font-semibold text-gray-700">Selecciona un servicio:</label>
-                    <select id="servicio_select" name="servicio" class="border border-gray-300 rounded px-3 py-2">
-                        <option value="Piscina thermal">Piscina termal</option>
-                        <option value="Sauna">Sauna</option>
-                        <option value="Masajes relajantes">Masajes relajantes</option>
-                        <option value="Estacionamiento gratuito">Estacionamiento gratuito</option>
-                        <option value="Alojamiento">Alojamiento</option>
-                        <option value="Restaurante">Restaurante</option>
-                        <option value="Bar">Bar</option>
-                        <option value="Spa">Spa</option>
-                        <option value="Gimnasio">Gimnasio</option>
-                        <option value="Zona de juegos">Zona de juegos</option>
-                        <option value="Cafetería">Restaurant</option>
-                    </select>
-                    <label for="descripcion_servicio" class="font-semibold text-gray-700">Descripción:</label>
-                    <textarea id="descripcion_servicio" name="descripcion_servicio" rows="2" class="border border-gray-300 rounded px-3 py-2 resize-none" placeholder="Descripción del servicio"></textarea>
-                    <label for="precio_servicio" class="font-semibold text-gray-700">Precio:</label>
-                    <input type="text" id="precio_servicio" name="precio_servicio" class="border border-gray-300 rounded px-3 py-2" placeholder="Ej: 15000">
-                    <div class="flex justify-end gap-2">
-                        <button type="submit" formaction="{% url 'termas:agregar_servicio' %}" class="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded transition">Agregar Servicio</button>
-                        <button type="button" id="cancelServicioForm" class="bg-gray-400 hover:bg-gray-500 text-white font-semibold px-4 py-2 rounded transition">Cancelar</button>
+                    <label class="text-sm font-semibold text-gray-600" for="nombre_terma">Nombre</label>
+                    <input type="text" id="nombre_terma" name="nombre_terma" value="{{ terma.nombre_terma }}" class="border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-800" disabled>
+                    <label class="text-sm font-semibold text-gray-600" for="ubicacion_terma">Ubicación</label>
+                    <input type="text" id="ubicacion_terma" name="ubicacion_terma" value="{{ terma.direccion_terma|default:'' }}" class="border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-800" disabled>
+                    <label class="text-sm font-semibold text-gray-600" for="descripcion_terma">Descripción</label>
+                    <textarea name="descripcion_terma" rows="4" class="border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-800 resize-none" placeholder="Descripción">{{ terma.descripcion_terma|default:'' }}</textarea>
+                    <div class="flex justify-end">
+                        <button type="submit" formaction="{% url 'termas:editar_terma' %}" class="bg-orange-400 hover:bg-orange-500 text-white font-semibold px-6 py-2 rounded-lg shadow transition">Guardar Descripción</button>
                     </div>
                 </form>
             </div>
-            <script>
-                document.addEventListener('DOMContentLoaded', function() {
-                    var toggleBtn = document.getElementById('toggleServicioForm');
-                    var servicioForm = document.getElementById('servicioForm');
-                    var cancelBtn = document.getElementById('cancelServicioForm');
-
-                    if (toggleBtn && servicioForm) {
-                        toggleBtn.addEventListener('click', function() {
-                            servicioForm.classList.toggle('hidden');
-                        });
-                    }
-                    if (cancelBtn && servicioForm) {
-                        cancelBtn.addEventListener('click', function() {
-                            servicioForm.classList.add('hidden');
-                        });
-                    }
-                });
-            </script>
+            <!-- Card: Servicios -->
+            <div class="bg-white rounded-2xl shadow p-8 flex-1">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-800">Servicios Ofrecidos</h2>
+                        <p class="text-gray-500 text-sm">Gestiona y agrega los servicios disponibles en la terma</p>
+                    </div>
+                    <button id="toggleServicioForm" type="button" class="bg-sky-100 hover:bg-sky-200 text-sky-700 font-semibold px-4 py-2 rounded-lg transition flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
+                        Agregar Nuevo Servicio
+                    </button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full rounded-lg border border-gray-200">
+                        <thead>
+                            <tr class="bg-gray-50">
+                                <th class="px-4 py-2 text-left text-gray-600 font-semibold">Nombre</th>
+                                <th class="px-4 py-2 text-left text-gray-600 font-semibold">Descripción</th>
+                                <th class="px-4 py-2 text-left text-gray-600 font-semibold">Precio</th>
+                                <th class="px-4 py-2 text-center text-gray-600 font-semibold">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for servicio in servicios %}
+                            <tr class="border-b">
+                                <td class="px-4 py-2 font-medium text-gray-800">{{ servicio.servicio }}</td>
+                                <td class="px-4 py-2 text-gray-600">{{ servicio.descripcion }}</td>
+                                <td class="px-4 py-2 text-gray-600">{{ servicio.precio|default:'-' }}</td>
+                                <td class="px-4 py-2 text-center flex items-center justify-center gap-2">
+                                    <form method="post" action="#" class="inline">
+                                        {% csrf_token %}
+                                        <button type="submit" formaction="{% url 'termas:quitar_servicio' servicio.id %}" class="p-2 rounded-full hover:bg-red-100 transition" title="Quitar" onclick="return confirm('¿Estás seguro de que deseas eliminar este servicio? Esta acción no se puede deshacer.');">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                        </button>
+                                    </form>
+                                    <button type="button" class="p-2 rounded-full hover:bg-gray-100 transition btn-editar-servicio" title="Editar" data-id="{{ servicio.id }}" data-servicio="{{ servicio.servicio }}" data-descripcion="{{ servicio.descripcion }}" data-precio="{{ servicio.precio }}">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13l6.293-6.293a1 1 0 011.414 0l1.586 1.586a1 1 0 010 1.414L11 15H9v-2z" /></svg>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="px-4 py-2 text-center text-gray-500">No hay servicios registrados.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <div id="servicioForm" class="mt-6 hidden">
+                    <form id="formServicio" method="post" action="#" class="bg-gray-50 p-6 rounded-2xl shadow-sm flex flex-col gap-4 w-full max-w-lg mx-auto">
+                        {% csrf_token %}
+                        <input type="hidden" id="servicio_id" name="servicio_id" value="">
+                        <label for="servicio_select" class="font-semibold text-gray-600">Selecciona un servicio:</label>
+                        <select id="servicio_select" name="servicio" class="border border-gray-300 rounded-lg px-3 py-2">
+                            <option value="Piscina thermal">Piscina termal</option>
+                            <option value="Sauna">Sauna</option>
+                            <option value="Masajes relajantes">Masajes relajantes</option>
+                            <option value="Estacionamiento gratuito">Estacionamiento gratuito</option>
+                            <option value="Alojamiento">Alojamiento</option>
+                            <option value="Restaurante">Restaurante</option>
+                            <option value="Bar">Bar</option>
+                            <option value="Spa">Spa</option>
+                            <option value="Gimnasio">Gimnasio</option>
+                            <option value="Zona de juegos">Zona de juegos</option>
+                            <option value="Cafetería">Restaurant</option>
+                        </select>
+                        <label for="descripcion_servicio" class="font-semibold text-gray-600">Descripción:</label>
+                        <textarea id="descripcion_servicio" name="descripcion_servicio" rows="2" class="border border-gray-300 rounded-lg px-3 py-2 resize-none" placeholder="Descripción del servicio"></textarea>
+                        <label for="precio_servicio" class="font-semibold text-gray-600">Precio:</label>
+                        <input type="text" id="precio_servicio" name="precio_servicio" class="border border-gray-300 rounded-lg px-3 py-2" placeholder="Ej: 15000">
+                        <div class="flex justify-end gap-2">
+                            <button type="submit" id="btnGuardarServicio" formaction="{% url 'termas:agregar_servicio' %}" class="bg-sky-100 hover:bg-sky-200 text-sky-700 font-semibold px-4 py-2 rounded-lg transition">Agregar Servicio</button>
+                            <button type="button" id="cancelServicioForm" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-4 py-2 rounded-lg transition">Cancelar</button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                var toggleBtn = document.getElementById('toggleServicioForm');
+                var servicioForm = document.getElementById('servicioForm');
+                var cancelBtn = document.getElementById('cancelServicioForm');
+                var btnEditarServicio = document.querySelectorAll('.btn-editar-servicio');
+                var formServicio = document.getElementById('formServicio');
+                var btnGuardarServicio = document.getElementById('btnGuardarServicio');
+                var servicioIdInput = document.getElementById('servicio_id');
+                var servicioSelect = document.getElementById('servicio_select');
+                var descripcionInput = document.getElementById('descripcion_servicio');
+                var precioInput = document.getElementById('precio_servicio');
+
+                if (toggleBtn && servicioForm) {
+                    toggleBtn.addEventListener('click', function() {
+                        servicioForm.classList.toggle('hidden');
+                        // Reset form for new service
+                        servicioIdInput.value = '';
+                        formServicio.reset();
+                        btnGuardarServicio.textContent = 'Agregar Servicio';
+                        btnGuardarServicio.setAttribute('formaction', "{% url 'termas:agregar_servicio' %}");
+                    });
+                }
+                if (cancelBtn && servicioForm) {
+                    cancelBtn.addEventListener('click', function() {
+                        servicioForm.classList.add('hidden');
+                    });
+                }
+                btnEditarServicio.forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        servicioForm.classList.remove('hidden');
+                        servicioIdInput.value = btn.getAttribute('data-id');
+                        servicioSelect.value = btn.getAttribute('data-servicio');
+                        descripcionInput.value = btn.getAttribute('data-descripcion');
+                        precioInput.value = btn.getAttribute('data-precio');
+                        btnGuardarServicio.textContent = 'Guardar Cambios';
+                        btnGuardarServicio.setAttribute('formaction', `/termas/editar_servicio/${btn.getAttribute('data-id')}/`);
+                    });
+                });
+            });
+        </script>
     </main>
 </body>
 </html>

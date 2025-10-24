@@ -7,73 +7,89 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="flex min-h-screen bg-slate-800">
+<body class="flex min-h-screen bg-gray-100 font-sans">
     {% include 'partials/navbar_adm_termas.html' %}
 
     <main class="flex-1 md:ml-8 pl-4 pr-2 py-2">
-        <div class="bg-white rounded-2xl shadow-lg p-10 border border-gray-200">
-
-            <h1 class="text-4xl font-extrabold text-gray-900 tracking-wide mb-8 text-center"> 
-                Análisis de {{ terma.nombre_terma }} 
-            </h1>
+        <!-- Barra superior -->
+        <div class="bg-[#374151] border-b-2 border-gray-200 pt-6 pb-4 px-8 w-full" style="margin-top:0; border-radius:0; box-shadow:none;">
+            <h1 class="text-4xl font-extrabold text-white tracking-wide text-left">Análisis de la Terma - <span class="text-orange-400">{{ terma.nombre_terma }}</span></h1>
         </div>
-
-        <!-- Botones de rango de días -->
-    <div class="flex justify-center gap-5 mb-2 mt-4">
-                <form method="get" id="rangoForm">
-                    <input type="hidden" name="rango" value="7" {% if rango == 7 %}disabled{% endif %}>
-                    <button type="submit" class="px-4 py-2 rounded-lg font-semibold border transition-colors duration-200 {% if rango == 7 %}bg-blue-600 text-white border-blue-700{% else %}bg-white text-blue-700 border-blue-400 hover:bg-blue-50{% endif %}">Últimos 7 días</button>
-                </form>
-                <form method="get" id="rangoForm15">
-                    <input type="hidden" name="rango" value="15" {% if rango == 15 %}disabled{% endif %}>
-                    <button type="submit" class="px-4 py-2 rounded-lg font-semibold border transition-colors duration-200 {% if rango == 15 %}bg-blue-600 text-white border-blue-700{% else %}bg-white text-blue-700 border-blue-400 hover:bg-blue-50{% endif %}">Últimos 15 días</button>
-                </form>
-                <form method="get" id="rangoForm30">
-                    <input type="hidden" name="rango" value="30" {% if rango == 30 %}disabled{% endif %}>
-                    <button type="submit" class="px-4 py-2 rounded-lg font-semibold border transition-colors duration-200 {% if rango == 30 %}bg-blue-600 text-white border-blue-700{% else %}bg-white text-blue-700 border-blue-400 hover:bg-blue-50{% endif %}">Últimos 30 días</button>
-                </form>
+        <!-- Estadísticas -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mt-8">
+            <div class="bg-white p-6 rounded-xl shadow text-center">
+                <h3 class="text-sm font-semibold text-gray-500 mb-1">Total Ventas</h3>
+                <p class="text-3xl font-bold text-green-600">${{ total_ventas }}</p>
+                <span class="text-xs text-green-500">+5.2%</span>
             </div>
-
-            <!-- Gráfico de Ventas por Día -->
-            <div class="mt-8">
-                <h2 class="text-2xl font-bold text-gray-800 mb-4">Ventas de los Últimos {{ rango }} Días</h2>
-                <div class="bg-gray-50 p-6 rounded-lg shadow-inner">
-                    <div style="height: 400px;">
-                        <canvas id="ventasChart"></canvas>
+            <div class="bg-white p-6 rounded-xl shadow text-center">
+                <h3 class="text-sm font-semibold text-gray-500 mb-1">Tickets Vendidos</h3>
+                <p class="text-3xl font-bold text-blue-600">{{ total_ventas }}</p>
+                <span class="text-xs text-blue-500">+8.1%</span>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow text-center">
+                <h3 class="text-sm font-semibold text-gray-500 mb-1">Promedio Diario</h3>
+                <p class="text-3xl font-bold text-orange-500">${{ promedio_ventas }}</p>
+                <span class="text-xs text-orange-500">-1.3%</span>
+            </div>
+            <div class="bg-white p-6 rounded-xl shadow text-center">
+                <h3 class="text-sm font-semibold text-gray-500 mb-1">Mejor Día</h3>
+                <p class="text-3xl font-bold text-purple-600">{{ mejor_dia }}</p>
+                <span class="text-xs text-green-500">+12%</span>
+            </div>
+        </div>
+        <!-- Gráficos -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+            <div class="bg-white p-6 rounded-xl shadow">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-bold text-gray-800">Tendencia de Ventas</h2>
+                    <div class="flex gap-2">
+                        <form method="get"><input type="hidden" name="rango" value="7"><button type="submit" class="px-3 py-1 rounded text-xs font-semibold border {% if rango == 7 %}bg-sky-100 text-sky-700 border-sky-200{% else %}bg-white text-gray-500 border-gray-200 hover:bg-gray-50{% endif %}">Semanal</button></form>
+                        <form method="get"><input type="hidden" name="rango" value="15"><button type="submit" class="px-3 py-1 rounded text-xs font-semibold border {% if rango == 15 %}bg-sky-100 text-sky-700 border-sky-200{% else %}bg-white text-gray-500 border-gray-200 hover:bg-gray-50{% endif %}">Quincenal</button></form>
+                        <form method="get"><input type="hidden" name="rango" value="30"><button type="submit" class="px-3 py-1 rounded text-xs font-semibold border {% if rango == 30 %}bg-sky-100 text-sky-700 border-sky-200{% else %}bg-white text-gray-500 border-gray-200 hover:bg-gray-50{% endif %}">Mensual</button></form>
                     </div>
                 </div>
-            </div>
-
-            <!-- Gráfico tipos de entradas vendidas -->
-            <div class="mt-8">
-                <h2 class="text-2xl font-bold text-gray-800 mb-4">Distribución de Tipos de Entradas Vendidas</h2>
-                <div class="bg-gray-50 p-6 rounded-lg shadow-inner">
-                    {% if tipos_labels_json and tipos_values_json and tipos_labels_json != '[]' and tipos_values_json != '[]' %}
-                    <div style="height: 400px;">
-                        <canvas id="tiposEntradasChart"></canvas>
-                    </div>
-                    {% else %}
-                    <div class="text-center py-20 text-gray-500 text-lg">No hay ventas de entradas en este rango de fechas.</div>
-                    {% endif %}
+                <div style="height: 300px;">
+                    <canvas id="ventasChart"></canvas>
                 </div>
             </div>
-            
-            <!-- Estadísticas adicionales -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
-                <div class="bg-blue-50 p-6 rounded-lg text-center transform hover:scale-105 transition-transform duration-200">
-                    <h3 class="text-lg font-semibold text-blue-800">Total Ventas (7 días)</h3>
-                    <p class="text-3xl font-bold text-blue-600 estadistica-numero">{{ total_ventas }}</p>
+            <div class="bg-white p-6 rounded-xl shadow">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-bold text-gray-800">Servicios Populares</h2>
                 </div>
-                <div class="bg-green-50 p-6 rounded-lg text-center transform hover:scale-105 transition-transform duration-200">
-                    <h3 class="text-lg font-semibold text-green-800">Promedio Diario</h3>
-                    <p class="text-3xl font-bold text-green-600 estadistica-numero">{{ promedio_ventas }}</p>
+                <div style="height: 300px;">
+                    <canvas id="serviciosTortaChart"></canvas>
                 </div>
-                <div class="bg-purple-50 p-6 rounded-lg text-center transform hover:scale-105 transition-transform duration-200">
-                    <h3 class="text-lg font-semibold text-purple-800">Mejor Día</h3>
-                    <p class="text-3xl font-bold text-purple-600 estadistica-numero">{{ mejor_dia }}</p>
+                <!-- Lista de servicios populares -->
+                <div class="mt-4">
+                    {% for servicio in servicios_populares %}
+                        <div class="flex justify-between text-sm text-gray-700 py-1">
+                            <span>{{ servicio.servicio }}</span>
+                            <span>{{ servicio.total_vendidos }}</span>
+                        </div>
+                    {% endfor %}
                 </div>
             </div>
         </div>
+                <div class="bg-white p-6 rounded-xl shadow">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-bold text-gray-800">Servicios Más Vendidos</h2>
+                    </div>
+                    <div>
+                        {% for servicio in servicios_populares %}
+                            <div class="mb-2">
+                                <div class="flex justify-between text-sm font-medium text-gray-700">
+                                    <span>{{ servicio.servicio }}</span>
+                                    <span>
+                                        {% widthratio servicio.total_vendidos servicios_populares_total 100 as porcentaje %}
+                                        {{ porcentaje|default:"0" }}%
+                                    </span>
+                                </div>
+                                <!-- Barra visual eliminada para evitar errores de CSS -->
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
     </main>
 
     <!-- Scripts -->
@@ -86,34 +102,53 @@
         // Datos para el gráfico de tipos de entradas
         const tiposLabels = JSON.parse('{{ tipos_labels_json|escapejs }}');
         const tiposValues = JSON.parse('{{ tipos_values_json|escapejs }}');
+        // Datos para el gráfico de servicios populares
+        const serviciosLabels = JSON.parse('{{ servicios_labels_json|escapejs }}');
+        const serviciosValues = JSON.parse('{{ servicios_values_json|escapejs }}');
 
         document.addEventListener('DOMContentLoaded', function() {
             // Crear el gráfico de ventas
             crearGraficoVentas(fechasData, ventasData, nombreTerma);
 
-            // Crear el gráfico de tipos de entradas vendidas
-            const ctxTipos = document.getElementById('tiposEntradasChart').getContext('2d');
-            new Chart(ctxTipos, {
-                type: 'pie', // Puedes cambiar a 'bar' si prefieres barras
+            // Crear el gráfico de servicios populares (torta)
+            const ctxServicios = document.getElementById('serviciosTortaChart').getContext('2d');
+            new Chart(ctxServicios, {
+                type: 'pie',
                 data: {
-                    labels: tiposLabels,
+                    labels: serviciosLabels,
                     datasets: [{
-                        label: 'Entradas Vendidas',
-                        data: tiposValues,
+                        label: 'Servicios Populares',
+                        data: serviciosValues,
                         backgroundColor: [
-                            '#2563eb', '#22c55e', '#f59e42', '#a78bfa', '#f43f5e', '#14b8a6', '#fbbf24', '#6366f1'
+                            '#4caf50',
+                            '#2196f3',
+                            '#ff9800',
+                            '#f44336',
+                            '#9c27b0',
+                            '#00bcd4',
+                            '#8bc34a',
+                            '#ffc107',
+                            '#e91e63',
+                            '#673ab7'
                         ],
-                        borderWidth: 1
+                        borderColor: '#fff',
+                        borderWidth: 2
                     }]
                 },
                 options: {
                     responsive: true,
                     plugins: {
                         legend: {
-                            position: 'bottom',
+                            position: 'top',
                         },
-                        title: {
-                            display: false,
+                        tooltip: {
+                            callbacks: {
+                                label: function(tooltipItem) {
+                                    const label = tooltipItem.label || '';
+                                    const value = tooltipItem.raw || 0;
+                                    return `${label}: ${value}`;
+                                }
+                            }
                         }
                     }
                 }

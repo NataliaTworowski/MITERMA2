@@ -9,6 +9,7 @@ class EntradaTipo(models.Model):
     precio = models.DecimalField(max_digits=10, decimal_places=2)
     duracion_horas = models.IntegerField(null=True, blank=True)
     estado = models.BooleanField(default=True)
+    servicios = models.ManyToManyField('termas.ServicioTerma', blank=True, related_name='entradas')
 
 
 class HorarioDisponible(models.Model):

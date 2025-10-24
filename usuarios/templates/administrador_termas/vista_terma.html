@@ -1,0 +1,53 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ terma.nombre }} - Comprar Entrada</title>
+    <link rel="stylesheet" href="{% static 'css/tu_estilo.css' %}">
+</head>
+<body>
+    <h1>{{ terma.nombre }}</h1>
+    <div class="galeria">
+        {% for imagen in terma.imagenes.all %}
+            <img src="{{ imagen.url_imagen }}" alt="Imagen de {{ terma.nombre }}" style="max-width:300px; margin:5px;">
+        {% empty %}
+            <p>No hay imágenes disponibles para esta terma.</p>
+        {% endfor %}
+    </div>
+    <p>{{ terma.descripcion }}</p>
+    <h2>Entradas disponibles</h2>
+    <form method="post" action="">
+        {% csrf_token %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Tipo de Entrada</th>
+                    <th>Precio</th>
+                    <th>Duración</th>
+                    <th>Servicios Incluidos</th>
+                    <th>Seleccionar</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entrada in entradas %}
+                <tr>
+                    <td>{{ entrada.nombre }}</td>
+                    <td>${{ entrada.precio }}</td>
+                    <td>{{ entrada.duracion_horas }} horas</td>
+                    <td>
+                        {% for servicio in entrada.servicios.all %}
+                            {{ servicio.servicio }}{% if not forloop.last %}, {% endif %}
+                        {% empty %}No incluye servicios{% endfor %}
+                    </td>
+                    <td><input type="radio" name="entrada_id" value="{{ entrada.id }}" required></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <label for="cantidad">Cantidad:</label>
+        <input type="number" name="cantidad" id="cantidad" min="1" value="1" required>
+        <button type="submit">Comprar</button>
+    </form>
+</body>
+</html>

@@ -39,6 +39,14 @@
             </svg>
             <span>Inicio</span>
         </a>
+        <a href="#"
+           class="flex items-center gap-3 p-3 rounded-lg transition-colors {% if request.resolver_match.url_name == 'carrito' %}bg-blue-600 text-white{% else %}hover:bg-[#1a2f3a]{% endif %}">
+            <!-- Icono carrito -->
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.35 2.7A1 1 0 007 17h10a1 1 0 00.95-.68L19 13M7 13V6a1 1 0 011-1h5a1 1 0 011 1v7"></path>
+            </svg>
+            <span>Carrito</span>
+        </a>
         <a href="#" class="flex items-center gap-3 p-3 rounded-lg hover:bg-[#1a2f3a] transition-colors">
             <!-- Icono Termas -->
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

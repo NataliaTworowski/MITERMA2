@@ -4,6 +4,7 @@ from django.contrib import messages
 from .models import Terma, Region, Comuna, ImagenTerma
 from usuarios.models import Usuario
 import os
+from entradas.models import EntradaTipo
 
 def lista_termas(request):
     """Vista para mostrar lista de termas."""
@@ -265,6 +266,27 @@ def analisis_terma(request):
             tipos[tipo] = tipos.get(tipo, 0) + detalle.cantidad
         tipos_labels = list(tipos.keys())
         tipos_values = list(tipos.values())
+
+            # Análisis de servicios más vendidos usando ServicioTerma
+        from termas.models import ServicioTerma
+        servicios_terma = ServicioTerma.objects.filter(terma=terma)
+        servicios_populares = []
+        servicios_populares_total = 0
+        # Contar servicios vendidos usando la relación ManyToMany en DetalleCompra
+        for servicio in servicios_terma:
+            cantidad_vendida = DetalleCompra.objects.filter(
+                compra__terma=terma,
+                compra__estado_pago='pagado',
+                servicios=servicio
+            ).aggregate(total=Sum('cantidad'))['total'] or 0
+            servicios_populares.append({
+                'servicio': servicio.servicio,
+                'total_vendidos': cantidad_vendida
+            })
+            servicios_populares_total += cantidad_vendida
+
+        servicios_labels = [s['servicio'] for s in servicios_populares]
+        servicios_values = [s['total_vendidos'] for s in servicios_populares]
         context = {
             'title': 'Análisis de Terma - MiTerma',
             'usuario': usuario,
@@ -277,6 +299,10 @@ def analisis_terma(request):
             'rango': rango,
             'tipos_labels_json': json.dumps(tipos_labels),
             'tipos_values_json': json.dumps(tipos_values),
+            'servicios_populares': servicios_populares,
+            'servicios_populares_total': servicios_populares_total,
+            'servicios_labels_json': json.dumps(servicios_labels),
+            'servicios_values_json': json.dumps(servicios_values),
         }
         return render(request, 'administrador_termas/analisis_terma.html', context)
     except Usuario.DoesNotExist:
@@ -344,4 +370,168 @@ def quitar_servicio(request, servicio_id):
         messages.success(request, 'Servicio eliminado correctamente.')
         return redirect('termas:editar_terma')
     return redirect('termas:editar_terma')
+
+def editar_servicio(request, servicio_id):
+    """Vista para editar un servicio de la terma."""
+    if 'usuario_id' not in request.session:
+        messages.error(request, 'Debes iniciar sesión para acceder.')
+        return redirect('core:home')
+    if request.session.get('usuario_rol') != 2:
+        messages.error(request, 'No tienes permisos para acceder a esta sección.')
+        return redirect('usuarios:inicio')
+    from termas.models import ServicioTerma
+    servicio = get_object_or_404(ServicioTerma, id=servicio_id)
+    if request.method == 'POST':
+        servicio.servicio = request.POST.get('servicio', servicio.servicio)
+        servicio.descripcion = request.POST.get('descripcion_servicio', servicio.descripcion)
+        servicio.precio = request.POST.get('precio_servicio', servicio.precio)
+        servicio.save()
+        messages.success(request, 'Servicio editado correctamente.')
+        return redirect('termas:editar_terma')
+    messages.error(request, 'Método no permitido.')
+    return redirect('termas:editar_terma')
+
+def precios_terma(request): 
+    usuario = None
+    terma = None
+    if 'usuario_id' in request.session:
+        from usuarios.models import Usuario
+        usuario = Usuario.objects.get(id=request.session['usuario_id'])
+        terma = usuario.terma
+    context = {
+        'title': 'Precios de la Terma - MiTerma',
+        'usuario': usuario,
+        'terma': terma,
+        'servicios': terma.servicios.all() if terma else []
+    }
+    return render(request, 'administrador_termas/precios_terma.html', context)
+
+def editar_entrada(request, entrada_id):
+    """Vista para editar un tipo de entrada."""
+    if 'usuario_id' not in request.session:
+        messages.error(request, 'Debes iniciar sesión para acceder.')
+        return redirect('core:home')
+    if request.session.get('usuario_rol') != 2:
+        messages.error(request, 'No tienes permisos para acceder a esta sección.')
+        return redirect('usuarios:inicio')
+    entrada = get_object_or_404(EntradaTipo, id=entrada_id)
+    from termas.models import ServicioTerma
+    servicios_disponibles = ServicioTerma.objects.filter(terma=entrada.terma)
+    if request.method == 'POST':
+        entrada.nombre = request.POST.get('nombre', entrada.nombre)
+        entrada.descripcion = request.POST.get('descripcion', entrada.descripcion)
+        from decimal import Decimal, InvalidOperation
+        precio_str = request.POST.get('precio', None)
+        duracion_str = request.POST.get('duracion_horas', None)
+        error_messages = []
+        if precio_str:
+            try:
+                entrada.precio = Decimal(precio_str)
+            except InvalidOperation:
+                error_messages.append('El precio ingresado no es válido.')
+        if duracion_str:
+            try:
+                entrada.duracion_horas = int(duracion_str)
+            except ValueError:
+                error_messages.append('La duración ingresada no es válida.')
+        if error_messages:
+            context = {
+                'title': 'Editar Tipo de Entrada',
+                'entrada': entrada,
+                'servicios_disponibles': servicios_disponibles,
+                'servicios_seleccionados': entrada.servicios.values_list('id', flat=True),
+                'messages': error_messages
+            }
+            return render(request, 'administrador_termas/editar_entrada.html', context)
+        entrada.save()
+        servicios_ids = request.POST.getlist('servicios')
+        entrada.servicios.set(servicios_ids)
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            # Respuesta simple para AJAX
+            from django.http import HttpResponse
+            return HttpResponse('OK')
+        messages.success(request, 'Tipo de entrada editado correctamente.')
+        return redirect('termas:precios_terma')
+    context = {
+        'title': 'Editar Tipo de Entrada',
+        'entrada': entrada,
+        'servicios_disponibles': servicios_disponibles,
+        'servicios_seleccionados': entrada.servicios.values_list('id', flat=True)
+    }
+    return render(request, 'administrador_termas/editar_entrada.html', context)
+
+def eliminar_entrada(request, entrada_id):
+    """Vista para eliminar un tipo de entrada con confirmación."""
+    if 'usuario_id' not in request.session:
+        messages.error(request, 'Debes iniciar sesión para acceder.')
+        return redirect('core:home')
+    if request.session.get('usuario_rol') != 2:
+        messages.error(request, 'No tienes permisos para acceder a esta sección.')
+        return redirect('usuarios:inicio')
+    entrada = get_object_or_404(EntradaTipo, id=entrada_id)
+    if request.method == 'POST':
+        entrada.delete()
+        messages.success(request, 'Tipo de entrada eliminado correctamente.')
+        return redirect('termas:precios_terma')
+    context = {
+        'title': 'Eliminar Tipo de Entrada',
+        'entrada': entrada
+    }
+    return render(request, 'administrador_termas/eliminar_entrada.html', context)
+
+def calendario_termas(request):
+    """Vista para mostrar el calendario de la terma."""
+    if 'usuario_id' not in request.session:
+        messages.error(request, 'Debes iniciar sesión para acceder.')
+        return redirect('core:home')
+    if request.session.get('usuario_rol') != 2:
+        messages.error(request, 'No tienes permisos para acceder a esta sección.')
+        return redirect('usuarios:inicio')
+    try:
+        usuario = Usuario.objects.get(id=request.session['usuario_id'])
+        terma = usuario.terma
+        context = {
+            'title': 'Calendario de la Terma - MiTerma',
+            'usuario': usuario,
+            'terma': terma,
+        }
+        return render(request, 'administrador_termas/calendario_termas.html', context)
+    except Usuario.DoesNotExist:
+        messages.error(request, 'Sesión inválida.')
+        return redirect('core:home')
+    
+def vista_termas(request):
+    """Vista para mostrar la terma del administrador."""
+    if 'usuario_id' not in request.session:
+        messages.error(request, 'Debes iniciar sesión para acceder.')
+        return redirect('core:home')
+    if request.session.get('usuario_rol') != 2:
+        messages.error(request, 'No tienes permisos para acceder a esta sección.')
+        return redirect('usuarios:inicio')
+    try:
+        usuario = Usuario.objects.get(id=request.session['usuario_id'])
+        terma = usuario.terma
+        context = {
+            'title': f'Vista de la Terma {terma.nombre_terma} - MiTerma',
+            'usuario': usuario,
+            'terma': terma,
+        }
+        return render(request, 'administrador_termas/vista_termas.html', context)
+    except Usuario.DoesNotExist:
+        messages.error(request, 'Sesión inválida.')
+        return redirect('core:home')
+
+def vista_terma(request, terma_id):
+    """Vista para mostrar los datos de una terma y permitir elegir entrada."""
+    terma = get_object_or_404(Terma, id=terma_id)
+    entradas = terma.get_tipos_entrada()
+    imagenes = ImagenTerma.objects.filter(terma=terma)
+
+    context = {
+        'terma': terma,
+        'entradas': entradas,
+        'imagenes': imagenes,
+
+    }
+    return render(request, 'administrador_termas/vista_terma.html', context)
 

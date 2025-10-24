@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Confirmar eliminación</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="max-w-xl mx-auto mt-10 bg-white p-8 rounded-xl shadow text-center">
+    <h2 class="text-2xl font-bold mb-6 text-red-600">¿Eliminar tipo de entrada?</h2>
+    <p class="mb-6 text-gray-700">¿Estás seguro que deseas eliminar <span class="font-semibold">{{ entrada.nombre }}</span>? Esta acción no se puede deshacer.</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="bg-red-500 hover:bg-red-600 text-white font-semibold px-6 py-2 rounded-lg">Sí, eliminar</button>
+        <a href="{% url 'termas:precios_terma' %}" class="ml-4 text-gray-500">Cancelar</a>
+    </form>
+</div>
+</body>
+</html>

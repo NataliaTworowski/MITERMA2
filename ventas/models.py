@@ -58,6 +58,7 @@ class DetalleCompra(models.Model):
     cantidad = models.IntegerField()
     precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
     subtotal = models.DecimalField(max_digits=10, decimal_places=2)
+    servicios = models.ManyToManyField('termas.ServicioTerma', blank=True, related_name='detalles_compra')
 
 
 class Carrito(models.Model):
