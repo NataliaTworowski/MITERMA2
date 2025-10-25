@@ -526,12 +526,56 @@ def vista_terma(request, terma_id):
     terma = get_object_or_404(Terma, id=terma_id)
     entradas = terma.get_tipos_entrada()
     imagenes = ImagenTerma.objects.filter(terma=terma)
+    calificacion_promedio = terma.promedio_calificacion()
 
+    from django.core import serializers
+    import json
+    servicios_por_entrada = {}
+    for entrada in entradas:
+        incluidos = list(entrada.servicios.values('id', 'servicio', 'descripcion', 'precio'))
+        extra_queryset = terma.servicios.exclude(id__in=entrada.servicios.values_list('id', flat=True))
+        extras = list(extra_queryset.values('id', 'servicio', 'descripcion', 'precio'))
+        servicios_por_entrada[entrada.id] = {
+            'incluidos': incluidos,
+            'extras': extras,
+        }
+
+    entrada_seleccionada = entradas.first() if entradas.exists() else None
+    servicios_incluidos = servicios_por_entrada[entrada_seleccionada.id]['incluidos'] if entrada_seleccionada else []
+    servicios_extra = servicios_por_entrada[entrada_seleccionada.id]['extras'] if entrada_seleccionada else []
+
+    # Procesar nuevo comentario
+    if request.method == 'POST' and 'puntuacion' in request.POST and 'comentario' in request.POST:
+        puntuacion = int(request.POST.get('puntuacion'))
+        comentario = request.POST.get('comentario')
+        usuario_id = request.session.get('usuario_id')
+        if usuario_id:
+            from usuarios.models import Usuario
+            usuario = Usuario.objects.get(id=usuario_id)
+            from termas.models import Calificacion
+            Calificacion.objects.create(
+                usuario=usuario,
+                terma=terma,
+                puntuacion=puntuacion,
+                comentario=comentario
+            )
+            messages.success(request, '¡Tu opinión se ha guardado correctamente!')
+            return redirect(request.path)
+        else:
+            messages.error(request, 'Debes iniciar sesión para dejar una opinión.')
+            return redirect('usuarios:inicio')
+
+    opiniones = terma.calificacion_set.select_related('usuario').order_by('-fecha')
     context = {
         'terma': terma,
         'entradas': entradas,
+        'entrada_seleccionada': entrada_seleccionada,
         'imagenes': imagenes,
-
+        'calificacion_promedio': calificacion_promedio,
+        'servicios': servicios_incluidos,
+        'servicios_extra': servicios_extra,
+        'servicios_por_entrada_json': json.dumps(servicios_por_entrada),
+        'opiniones': opiniones,
     }
     return render(request, 'administrador_termas/vista_terma.html', context)
 

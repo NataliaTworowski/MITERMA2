@@ -329,8 +329,8 @@
                                 Consultar precio
                             {% endif %}
                         </div>
-                        <a href="#" 
-                           class="bg-gray-700 text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors duration-300">
+                        <a href="{% url 'termas:vista_terma' terma.id %}" 
+                           class="bg-orange-400 text-white px-4 py-2 rounded-lg hover:bg-orange-800 transition-colors duration-300">
                             Ver Detalles
                         </a>
                     </div>

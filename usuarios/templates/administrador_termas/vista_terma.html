@@ -3,51 +3,473 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>{{ terma.nombre }} - Comprar Entrada</title>
-    <link rel="stylesheet" href="{% static 'css/tu_estilo.css' %}">
+    <title
+    <title>{{ terma.nombre_terma }} - Reserva tu Experiencia</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{% static 'usuarios/css/vista_terma.css' %}">
+ 
 </head>
-<body>
-    <h1>{{ terma.nombre }}</h1>
-    <div class="galeria">
-        {% for imagen in terma.imagenes.all %}
-            <img src="{{ imagen.url_imagen }}" alt="Imagen de {{ terma.nombre }}" style="max-width:300px; margin:5px;">
-        {% empty %}
-            <p>No hay imágenes disponibles para esta terma.</p>
-        {% endfor %}
-    </div>
-    <p>{{ terma.descripcion }}</p>
-    <h2>Entradas disponibles</h2>
-    <form method="post" action="">
-        {% csrf_token %}
-        <table>
-            <thead>
-                <tr>
-                    <th>Tipo de Entrada</th>
-                    <th>Precio</th>
-                    <th>Duración</th>
-                    <th>Servicios Incluidos</th>
-                    <th>Seleccionar</th>
-                </tr>
-            </thead>
-            <tbody>
+<body class="bg-gray-200 text-gray-800">
+    <!-- HEADER -->
+    <header class="bg-emerald-800 shadow-sm py-4 px-8 flex items-center justify-between">
+        <button onclick="window.history.back()" class="mr-4 flex items-center justify-center w-10 h-10 rounded-full bg-green-100 hover:bg-blue-200 text-blue-700">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+        </button>
+        <div class="flex-1 flex flex-col items-center">
+            <span class="text-3xl font-extrabold text-white tracking-wide text-center">{{ terma.nombre_terma }}</span>
+        </div>
+    </header>
+
+    <!-- carrusek chico -->
+    <main class="max-w-7xl mx-auto py-10 px-4 grid grid-cols-1 lg:grid-cols-3 gap-10">
+        <aside class="lg:col-span-1 order-2 lg:order-1">
+            <div class="bg-white rounded-2xl shadow-lg p-6 mb-8">
+                <div class="relative w-full h-64 rounded-xl overflow-hidden shadow mb-4" id="carrusel-terma">
+                    {% if terma.imagenes.all %}
+                        {% for imagen in terma.imagenes.all %}
+                            <img src="{{ imagen.url_imagen }}" 
+                                 class="carrusel-img absolute inset-0 w-full h-full object-cover transition-opacity duration-500 {% if not forloop.first %}opacity-0 pointer-events-none{% endif %}" 
+                                 alt="Imagen de {{ terma.nombre_terma }}">
+                        {% endfor %}
+                        <button type="button" id="carrusel-prev" class="absolute left-2 top-1/2 -translate-y-1/2 bg-white/70 rounded-full p-2 shadow hover:bg-white z-10">&#8592;</button>
+                        <button type="button" id="carrusel-next" class="absolute right-2 top-1/2 -translate-y-1/2 bg-white/70 rounded-full p-2 shadow hover:bg-white z-10">&#8594;</button>
+                    {% else %}
+                        <div class="flex items-center justify-center w-full h-full text-gray-400">No hay imágenes disponibles para esta terma.</div>
+                    {% endif %}
+                </div>
+                <form method="post" class="space-y-4">
+                    {% csrf_token %}
+                    <input type="hidden" id="entrada_id" name="entrada_id" value="">
+                    <input type="hidden" id="experiencia" name="experiencia" value="">
+                    <div>
+                        <label for="fecha" class="block font-semibold mb-1 flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>Selecciona la Fecha</label>
+                        <input type="date" id="fecha" name="fecha" class="w-full border rounded-lg px-3 py-2 text-lg" required>
+                    </div>
+                    <div>
+                        <label for="cantidad" class="block font-semibold mb-1">Cantidad de Personas</label>
+                        <div class="flex items-center gap-2">
+                            <button type="button" id="menos" class="bg-blue-100 text-blue-700 rounded-full w-8 h-8 flex items-center justify-center text-xl">-</button>
+                            <input type="number" id="cantidad" name="cantidad" min="1" value="1" class="w-16 border rounded-lg px-2 py-2 text-center text-lg" required>
+                            <button type="button" id="mas" class="bg-blue-100 text-blue-700 rounded-full w-8 h-8 flex items-center justify-center text-xl">+</button>
+                        </div>
+                    </div>
+                    <div class="bg-blue-50 rounded-lg p-4 mt-4">
+                        <div class="mb-2 flex justify-between">
+                            <span class="font-semibold">Experiencia:</span>
+                            <span id="resumen-experiencia" class="text-gray-700">-</span>
+                        </div>
+                        <div class="mb-2 flex justify-between">
+                            <span class="font-semibold">Precio unitario:</span>
+                            <span id="resumen-precio" class="text-gray-700">$0</span>
+                        </div>
+                        <div class="mb-2 flex justify-between">
+                            <span class="font-semibold">Servicios incluidos:</span>
+                            <span id="resumen-incluidos" class="text-green-700">-</span>
+                        </div>
+                        <div class="mb-2 flex justify-between">
+                            <span class="font-semibold">Servicios extra:</span>
+                            <span id="resumen-extras" class="text-blue-700"></span>
+                        </div>
+                        <div class="flex justify-between text-xl font-bold text-blue-700">
+                            <span>Total:</span>
+                            <span id="resumen-total">$0</span>
+                        </div>
+                    </div>
+                    <button type="submit" id="btn-pagar" class="w-full bg-green-600 hover:bg-green-800 text-white font-bold py-3 rounded-lg text-xl mt-2 transition">Confirmar Reserva y Pagar</button>
+                <!-- Pop-up de login -->
+                <div id="popup-login" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+                    <div class="bg-white border border-blue-400 rounded-2xl p-8 shadow-xl max-w-md w-full text-center">
+                        <h3 class="text-2xl font-bold text-blue-700 mb-4">Necesitas iniciar sesión</h3>
+                        <p class="mb-6 text-lg text-gray-700">Por favor, inicia sesión para completar tu reserva y pago.</p>
+                        <a href="{% url 'usuarios:inicio' %}" class="bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-6 rounded-lg">Ir al Login</a>
+                        <button type="button" id="cerrar-popup-login" class="mt-4 text-blue-700 underline">Cancelar</button>
+                    </div>
+                </div>
+                </form>
+            </div>
+        </aside>
+
+        <!-- Sección de selección de entradas -->
+        <section class="lg:col-span-2 order-1 lg:order-2">
+            <h2 class="text-3xl font-bold text-emerald-800 mb-8">Elige tu Experiencia</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
                 {% for entrada in entradas %}
-                <tr>
-                    <td>{{ entrada.nombre }}</td>
-                    <td>${{ entrada.precio }}</td>
-                    <td>{{ entrada.duracion_horas }} horas</td>
-                    <td>
+                <div class="bg-white rounded-2xl shadow-lg p-6 flex flex-col border-4 transition-all experiencia-card {% if forloop.first %}border-emerald-800{% else %}border-transparent{% endif %} hover:border-emerald-800 cursor-pointer" data-nombre="{{ entrada.nombre }}" data-precio="{{ entrada.precio }}" data-id="{{ entrada.id }}" data-duracion="{{ entrada.duracion_horas }}">
+                    <span class="text-xl font-bold text-emerald-800 mb-2">{{ entrada.nombre }}</span>
+                    <div class="text-gray-500 mb-2">{{ entrada.duracion_horas }} horas</div>
+                    <div class="flex flex-wrap gap-2 mb-4">
                         {% for servicio in entrada.servicios.all %}
-                            {{ servicio.servicio }}{% if not forloop.last %}, {% endif %}
-                        {% empty %}No incluye servicios{% endfor %}
-                    </td>
-                    <td><input type="radio" name="entrada_id" value="{{ entrada.id }}" required></td>
-                </tr>
+                            <span class="inline-block bg-blue-50 text-blue-700 px-2 py-1 rounded-full text-xs">{{ servicio.servicio }}</span>
+                        {% empty %}<span class="text-gray-400">No incluye servicios</span>{% endfor %}
+                    </div>
+                    <span class="text-2xl font-bold text-orange-500 mt-auto">${{ entrada.precio }} CLP</span>
+                </div>
                 {% endfor %}
-            </tbody>
-        </table>
-        <label for="cantidad">Cantidad:</label>
-        <input type="number" name="cantidad" id="cantidad" min="1" value="1" required>
-        <button type="submit">Comprar</button>
-    </form>
+            </div>
+
+            <!-- Servicios Incluidos -->
+            <section class="mt-10">
+                <h3 class="text-3xl font-bold text-emerald-800 mb-8">Servicios Incluidos</h3>
+                <div id="servicios-incluidos-lista" class="flex flex-col gap-4 mb-8 items-center w-full">
+                    <!-- Aquí se mostrarán los servicios incluidos dinámicamente -->
+                </div>
+            </section>
+
+            <!-- Servicios Extra -->
+            <section class="mt-10">
+                <h3 class="text-2xl font-bold text-green-800 mb-6">Personaliza tu Visita</h3>
+                <form id="form-servicios-extra" class="mb-6">
+                    <div id="servicios-extra" class="flex flex-col w-full gap-6">
+                        {% for servicio in servicios_extra %}
+                        <label class="bg-white rounded-2xl shadow-lg p-6 flex items-center gap-6 cursor-pointer border-2 border-transparent hover:border-blue-400 transition">
+                            <input type="checkbox" class="servicio-extra-checkbox mr-3 accent-blue-600" data-precio="{{ servicio.precio }}" data-nombre="{{ servicio.servicio }}" value="{{ servicio.id }}">
+                            <div class="flex flex-col items-center">
+                                <span class="text-xs text-gray-500 mb-1">Cantidad</span>
+                                <div class="flex items-center gap-2">
+                                    <button type="button" class="menos-servicio bg-blue-100 text-blue-700 rounded-full w-7 h-7 flex items-center justify-center text-lg" data-id="{{ servicio.id }}">-</button>
+                                    <input type="number" class="servicio-extra-cantidad w-12 border rounded-lg px-2 py-1 text-center text-lg focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition" min="1" value="1" data-precio="{{ servicio.precio }}" data-nombre="{{ servicio.servicio }}" data-id="{{ servicio.id }}">
+                                    <button type="button" class="mas-servicio bg-blue-100 text-blue-700 rounded-full w-7 h-7 flex items-center justify-center text-lg" data-id="{{ servicio.id }}">+</button>
+                                </div>
+                            </div>
+                            <div class="text-3xl text-blue-500">{{ servicio.icono_svg|safe }}</div>
+                            <div class="flex-1">
+                                <h3 class="text-xl font-bold text-gray-800">{{ servicio.servicio }}</h3>
+                                <p class="text-gray-600">{{ servicio.descripcion }}</p>
+                                <span class="text-orange-500 font-bold">+${{ servicio.precio }} CLP</span>
+                            </div>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </form>
+            </section>
+        </section>
+    </main>
+
+    <!-- SECCIÓN DE galeria de fotos -->
+    <section class="max-w-7xl mx-auto py-8 px-4 bg-gray-50 rounded-2xl shadow-lg mb-10">
+        <h2 class="text-2xl font-bold mb-4 text-green-800">Galería de Fotos</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {% for imagen in terma.imagenes.all %}
+                <div class="rounded-lg overflow-hidden shadow cursor-pointer gallery-thumb" data-img="{{ imagen.url_imagen }}">
+                    <img src="{{ imagen.url_imagen }}" alt="Imagen de {{ terma.nombre_terma }}" class="w-full h-48 object-cover hover:scale-105 transition-transform duration-300">
+                </div>
+            {% endfor %}
+        </div>
+        <!-- Modal para imagen grande -->
+        <div id="modal-img" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden">
+            <div class="relative bg-white rounded-2xl shadow-2xl p-4 max-w-3xl w-full flex flex-col items-center">
+                <button id="close-modal-img" class="absolute top-4 right-4 text-gray-600 hover:text-blue-700 text-3xl font-bold">&times;</button>
+                <img id="modal-img-src" src="" alt="Imagen grande" class="w-full max-w-3xl max-h-[80vh] object-contain rounded-xl shadow-lg">
+            </div>
+        </div>
+    </section>
+    <!-- SECCIÓN DE dejar un comentario -->
+    <section class="max-w-7xl mx-auto py-8 px-4">
+    <h2 class="text-2xl font-bold mb-4 text-green-800">Deja tu Opinión</h2>
+    <form method="post" action="" class="bg-[#f8fafc] rounded-2xl border border-gray-200 shadow-lg p-10 max-w-xl mx-auto" id="form-comentario">
+            {% csrf_token %}
+            <div class="mb-8">
+                <label class="block font-medium mb-4 text-gray-700 text-lg">Tu puntuación:</label>
+                <div class="flex items-center gap-2 justify-center" id="estrellas-container">
+                    {% for i in "12345" %}
+                        <input type="radio" id="estrella{{ forloop.counter }}" name="puntuacion" value="{{ forloop.counter }}" class="hidden" required>
+                        <label for="estrella{{ forloop.counter }}" class="cursor-pointer">
+                            <span class="text-4xl text-blue-200 transition-colors estrella" data-valor="{{ forloop.counter }}">★</span>
+                        </label>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="mb-4">
+                <label for="comentario" class="block font-medium mb-3 text-gray-700">Comentario:</label>
+                <textarea id="comentario" name="comentario" rows="3" class="w-full rounded-xl px-4 py-3 border border-gray-100 focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition placeholder-gray-400 text-base bg-white" required minlength="10" placeholder="Cuéntanos tu experiencia..."></textarea>
+            </div>
+            <button type="submit" class="bg-orange-500 hover:bg-orange-400 text-white font-bold py-2 px-6 rounded-lg">Enviar Opinión</button>
+        <style>
+        #form-comentario {
+            box-shadow: 0 4px 24px 0 rgba(30, 64, 175, 0.08);
+        }
+        </style>
+        </form>
+        <!-- Pop-up de login para comentarios -->
+        <div id="popup-login-comentario" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+            <div class="bg-white border border-green-400 rounded-2xl p-8 shadow-xl max-w-md w-full text-center">
+                <h3 class="text-2xl font-bold text-green-700 mb-4">Necesitas iniciar sesión</h3>
+                <p class="mb-6 text-lg text-gray-700">Por favor, inicia sesión para dejar tu opinión.</p>
+                <a href="{% url 'usuarios:inicio' %}" class="bg-green-700 hover:bg-green-800 text-white font-bold py-2 px-6 rounded-lg">Ir al Login</a>
+                <button type="button" id="cerrar-popup-login-comentario" class="mt-4 text-green-700 underline">Cancelar</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECCIÓN DE comentarios -->
+    <section class="max-w-7xl mx-auto py-8 px-4">
+        <h2 class="text-2xl font-bold mb-4 text-green-800">Opiniones de los Usuarios</h2>
+        <div class="flex items-center gap-4 bg-white rounded-xl shadow p-6">
+            <div class="flex items-center gap-2">
+                <span class="text-2xl font-bold text-yellow-400">★</span>
+                <span class="text-xl font-bold text-gray-800">{{ calificacion_promedio|floatformat:1 }}</span>
+                <span class="text-gray-500">({{ cantidad_opiniones }} opiniones)</span>
+            </div>
+            <a href="#" id="btn-ver-opiniones" class="ml-6 text-green-600 hover:underline font-semibold">Ver todas las opiniones</a>
+        </div>
+        <div id="opiniones-lista" class="max-w-2xl mx-auto mt-6 space-y-4 hidden">
+            <h2 class="text-2xl font-bold mb-4 text-green-700">Opiniones de {{ terma.nombre_terma }}</h2>
+            {% for calificacion in opiniones %}
+                <div class="bg-gray-50 rounded-lg p-4 shadow">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span>
+                            {% for i in "12345" %}
+                                {% if forloop.counter <= calificacion.puntuacion %}
+                                    <span class="text-yellow-400">★</span>
+                                {% else %}
+                                    <span class="text-gray-300">★</span>
+                                {% endif %}
+                            {% endfor %}
+                        </span>
+                        <span class="font-semibold text-gray-800">{{ calificacion.usuario.nombre|default:calificacion.usuario.id }}</span>
+                        <span class="text-xs text-gray-500">{{ calificacion.fecha|date:'d M Y' }}</span>
+                    </div>
+                    <div class="text-gray-700">{{ calificacion.comentario }}</div>
+                </div>
+            {% empty %}
+                <div class="text-gray-400">No hay comentarios para esta terma.</div>
+            {% endfor %}
+        </div>
+    </section>
+
+
+    <script id="servicios-por-entrada-json" type="application/json">
+        {{ servicios_por_entrada_json|safe }}
+    </script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const entradaCards = document.querySelectorAll('.experiencia-card');
+        const inputCantidad = document.getElementById('cantidad');
+        const serviciosPorEntrada = JSON.parse(document.getElementById('servicios-por-entrada-json').textContent);
+
+        function getPrecioSeleccionado() {
+            const resumenPrecio = document.getElementById('resumen-precio');
+            if (!resumenPrecio) return 0;
+            const precio = resumenPrecio.getAttribute('data-precio');
+            return parseInt(precio) || 0;
+        }
+
+        function actualizarIncluidos(entradaId) {
+            const resumenIncluidos = document.getElementById('resumen-incluidos');
+            const serviciosIncluidosLista = document.getElementById('servicios-incluidos-lista');
+            const servicios = serviciosPorEntrada[entradaId]?.incluidos || [];
+            // Actualiza el resumen (total)
+            if (resumenIncluidos) {
+                if (servicios.length > 0) {
+                    resumenIncluidos.textContent = servicios.map(s => s.servicio || s.nombre).join(', ');
+                } else {
+                    resumenIncluidos.textContent = '-';
+                }
+            }
+            // Actualiza la lista visual
+            if (serviciosIncluidosLista) {
+                if (servicios.length > 0) {
+                    serviciosIncluidosLista.innerHTML = servicios.map(s => `
+                        <div class="servicio-incluido">
+                            <span class="servicio-nombre">${s.servicio || s.nombre}</span>
+                            <span class="servicio-descripcion">${s.descripcion || ''}</span>
+                        </div>
+                    `).join('');
+                } else {
+                    serviciosIncluidosLista.innerHTML = '<div class="servicio-incluido">No hay servicios incluidos.</div>';
+                }
+            }
+        }
+
+        function actualizarTotal() {
+            const cantidad = parseInt(inputCantidad.value) || 1;
+            const precioSeleccionado = getPrecioSeleccionado();
+            let totalExtras = 0;
+            let extrasNombres = [];
+            let extrasPrecios = [];
+            document.querySelectorAll('.servicio-extra-cantidad').forEach(input => {
+                const cb = input.closest('label').querySelector('.servicio-extra-checkbox');
+                if (cb && cb.checked) {
+                    let precio = parseInt(input.getAttribute('data-precio')) || 0;
+                    let cant = parseInt(input.value) || 1;
+                    let subtotal = precio * cant;
+                    totalExtras += subtotal;
+                    extrasNombres.push(`${input.getAttribute('data-nombre')} x${cant}`);
+                    extrasPrecios.push(`$${subtotal.toLocaleString('es-CL')} CLP`);
+                }
+            });
+            const totalCLP = precioSeleccionado * cantidad + totalExtras;
+            let resumenExtras = document.getElementById('resumen-extras');
+            if (resumenExtras) {
+                if (extrasNombres.length > 0) {
+                    let extrasResumen = extrasNombres.map((nombre, i) => `${nombre} (${extrasPrecios[i]})`).join(', ');
+                    resumenExtras.textContent = extrasResumen;
+                } else {
+                    resumenExtras.textContent = '-';
+                }
+            }
+            let resumenTotal = document.getElementById('resumen-total');
+            if (resumenTotal) {
+                resumenTotal.textContent = `$${totalCLP.toLocaleString('es-CL')} CLP`;
+            }
+        }
+
+        // Inicializar con la primera entrada seleccionada
+        let selectedCard = entradaCards[0];
+        selectedCard.classList.add('border-emerald-800');
+        document.getElementById('resumen-experiencia').textContent = selectedCard.getAttribute('data-nombre');
+        document.getElementById('resumen-precio').textContent = `$${parseInt(selectedCard.getAttribute('data-precio')).toLocaleString('es-CL')} CLP`;
+        document.getElementById('resumen-precio').setAttribute('data-precio', selectedCard.getAttribute('data-precio'));
+        actualizarIncluidos(selectedCard.getAttribute('data-id'));
+        actualizarTotal();
+
+        entradaCards.forEach(card => {
+            card.addEventListener('click', function() {
+                entradaCards.forEach(c => c.classList.remove('border-emerald-800'));
+                card.classList.add('border-emerald-800');
+                document.getElementById('resumen-experiencia').textContent = card.getAttribute('data-nombre');
+                document.getElementById('resumen-precio').textContent = `$${parseInt(card.getAttribute('data-precio')).toLocaleString('es-CL')} CLP`;
+                document.getElementById('resumen-precio').setAttribute('data-precio', card.getAttribute('data-precio'));
+                actualizarIncluidos(card.getAttribute('data-id'));
+                // Reset extras
+                document.querySelectorAll('.servicio-extra-checkbox').forEach(cb => { cb.checked = false; });
+                document.querySelectorAll('.servicio-extra-cantidad').forEach(input => { input.value = 1; });
+                actualizarTotal();
+            });
+        });
+
+        // Cantidad personas
+        document.getElementById('menos').addEventListener('click', function() {
+            let val = parseInt(inputCantidad.value) || 1;
+            if (val > 1) inputCantidad.value = val - 1;
+            actualizarTotal();
+        });
+        document.getElementById('mas').addEventListener('click', function() {
+            let val = parseInt(inputCantidad.value) || 1;
+            inputCantidad.value = val + 1;
+            actualizarTotal();
+        });
+        inputCantidad.addEventListener('input', actualizarTotal);
+
+        // Servicios extra
+        document.querySelectorAll('.servicio-extra-checkbox').forEach(cb => {
+            cb.addEventListener('change', function() {
+                const cantidadInput = cb.parentElement.querySelector('.servicio-extra-cantidad');
+                cantidadInput.disabled = !cb.checked;
+                actualizarTotal();
+            });
+        });
+        document.querySelectorAll('.servicio-extra-cantidad').forEach(input => {
+            input.addEventListener('input', actualizarTotal);
+        });
+    });
+    </script>
+    <script>
+    // Galería: mostrar imagen en modal grande
+    document.addEventListener('DOMContentLoaded', function() {
+        const thumbs = document.querySelectorAll('.gallery-thumb');
+        const modal = document.getElementById('modal-img');
+        const modalImg = document.getElementById('modal-img-src');
+        const closeModal = document.getElementById('close-modal-img');
+        thumbs.forEach(thumb => {
+            thumb.addEventListener('click', function() {
+                const src = thumb.getAttribute('data-img');
+                modalImg.src = src;
+                modal.classList.remove('hidden');
+            });
+        });
+        if (closeModal) {
+            closeModal.addEventListener('click', function() {
+                modal.classList.add('hidden');
+                modalImg.src = '';
+            });
+        }
+        // Cerrar modal al hacer click fuera de la imagen
+        if (modal) {
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.classList.add('hidden');
+                    modalImg.src = '';
+                }
+            });
+        }
+    });
+    // Estrellas funcionales en la sección de opinión
+    document.addEventListener('DOMContentLoaded', function() {
+        const estrellas = document.querySelectorAll('#estrellas-container .estrella');
+        const radios = document.querySelectorAll('#estrellas-container input[type="radio"]');
+        estrellas.forEach((estrella, idx) => {
+            estrella.addEventListener('click', function() {
+                radios[idx].checked = true;
+                estrellas.forEach((e, i) => {
+                    if (i <= idx) {
+                        e.classList.add('text-yellow-400');
+                        e.classList.remove('text-blue-200');
+                    } else {
+                        e.classList.remove('text-yellow-400');
+                        e.classList.add('text-blue-200');
+                    }
+                });
+            });
+        });
+        // Si el usuario navega con teclado o el form se resetea
+        radios.forEach((radio, idx) => {
+            radio.addEventListener('change', function() {
+                estrellas.forEach((e, i) => {
+                    if (i <= idx && radio.checked) {
+                        e.classList.add('text-yellow-400');
+                        e.classList.remove('text-blue-200');
+                    } else {
+                        e.classList.remove('text-yellow-400');
+                        e.classList.add('text-blue-200');
+                    }
+                });
+            });
+        });
+        // Pop-up login control para comentarios
+        const formComentario = document.getElementById('form-comentario');
+        const popupLoginComentario = document.getElementById('popup-login-comentario');
+        const cerrarPopupComentario = document.getElementById('cerrar-popup-login-comentario');
+        const usuarioLogueado = "{{ usuario|yesno:'true,false'|lower }}";
+        if (formComentario && popupLoginComentario) {
+            formComentario.addEventListener('submit', function(e) {
+                if (usuarioLogueado !== "true") {
+                    e.preventDefault();
+                    popupLoginComentario.classList.remove('hidden');
+                }
+            });
+        }
+        if (cerrarPopupComentario) {
+            cerrarPopupComentario.addEventListener('click', function() {
+                popupLoginComentario.classList.add('hidden');
+            });
+        }
+    });
+    </script>
+    <script>
+    // Pop-up login control
+    document.addEventListener('DOMContentLoaded', function() {
+        const btnPagar = document.getElementById('btn-pagar');
+        const popupLogin = document.getElementById('popup-login');
+        const cerrarPopup = document.getElementById('cerrar-popup-login');
+        // Simulación: reemplaza esto por tu lógica real de usuario
+    const usuarioLogueado = "{{ usuario|yesno:'true,false'|lower }}";
+        if (btnPagar && popupLogin) {
+            btnPagar.closest('form').addEventListener('submit', function(e) {
+                if (usuarioLogueado !== "true") {
+                    e.preventDefault();
+                    popupLogin.classList.remove('hidden');
+                }
+            });
+        }
+        if (cerrarPopup) {
+            cerrarPopup.addEventListener('click', function() {
+                popupLogin.classList.add('hidden');
+            });
+        }
+    });
+    </script>    
+<!-- Footer -->
+    {% include 'partials/footer.html' %}
 </body>
 </html>

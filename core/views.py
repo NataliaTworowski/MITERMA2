@@ -13,8 +13,6 @@ def mostrar_termas(request):
     return render(request, 'mostrar_termas.html', context)
 
 
-
-
 def home(request):
     """Vista principal del sitio."""
     termas_destacadas = Terma.objects.prefetch_related(
