@@ -48,9 +48,7 @@
                     <div>
                         <label for="cantidad" class="block font-semibold mb-1">Cantidad de Personas</label>
                         <div class="flex items-center gap-2">
-                            <button type="button" id="menos" class="bg-blue-100 text-blue-700 rounded-full w-8 h-8 flex items-center justify-center text-xl">-</button>
-                            <input type="number" id="cantidad" name="cantidad" min="1" value="1" class="w-16 border rounded-lg px-2 py-2 text-center text-lg" required>
-                            <button type="button" id="mas" class="bg-blue-100 text-blue-700 rounded-full w-8 h-8 flex items-center justify-center text-xl">+</button>
+                            <input type="number" id="cantidad" name="cantidad" min="1" value="1" class="w-24 border rounded-lg px-2 py-2 text-center text-lg" required>
                         </div>
                     </div>
                     <div class="bg-blue-50 rounded-lg p-4 mt-4">
@@ -111,7 +109,6 @@
             <section class="mt-10">
                 <h3 class="text-3xl font-bold text-emerald-800 mb-8">Servicios Incluidos</h3>
                 <div id="servicios-incluidos-lista" class="flex flex-col gap-4 mb-8 items-center w-full">
-                    <!-- Aquí se mostrarán los servicios incluidos dinámicamente -->
                 </div>
             </section>
 
@@ -125,10 +122,8 @@
                             <input type="checkbox" class="servicio-extra-checkbox mr-3 accent-blue-600" data-precio="{{ servicio.precio }}" data-nombre="{{ servicio.servicio }}" value="{{ servicio.id }}">
                             <div class="flex flex-col items-center">
                                 <span class="text-xs text-gray-500 mb-1">Cantidad</span>
-                                <div class="flex items-center gap-2">
-                                    <button type="button" class="menos-servicio bg-blue-100 text-blue-700 rounded-full w-7 h-7 flex items-center justify-center text-lg" data-id="{{ servicio.id }}">-</button>
-                                    <input type="number" class="servicio-extra-cantidad w-12 border rounded-lg px-2 py-1 text-center text-lg focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition" min="1" value="1" data-precio="{{ servicio.precio }}" data-nombre="{{ servicio.servicio }}" data-id="{{ servicio.id }}">
-                                    <button type="button" class="mas-servicio bg-blue-100 text-blue-700 rounded-full w-7 h-7 flex items-center justify-center text-lg" data-id="{{ servicio.id }}">+</button>
+                                <div class="flex items-center">
+                                    <input type="number" class="servicio-extra-cantidad w-20 border rounded-lg px-2 py-1 text-center text-lg focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition" min="1" value="1" data-precio="{{ servicio.precio }}" data-nombre="{{ servicio.servicio }}" data-id="{{ servicio.id }}">
                                 </div>
                             </div>
                             <div class="text-3xl text-blue-500">{{ servicio.icono_svg|safe }}</div>
@@ -358,18 +353,15 @@
             });
         });
 
-        // Cantidad personas
-        document.getElementById('menos').addEventListener('click', function() {
-            let val = parseInt(inputCantidad.value) || 1;
-            if (val > 1) inputCantidad.value = val - 1;
+        // Cantidad personas: usar solo el control nativo (flechas internas)
+        inputCantidad.addEventListener('input', function() {
+            // asegurar mínimo 1
+            let val = parseInt(inputCantidad.value, 10);
+            if (isNaN(val) || val < 1) {
+                inputCantidad.value = 1;
+            }
             actualizarTotal();
         });
-        document.getElementById('mas').addEventListener('click', function() {
-            let val = parseInt(inputCantidad.value) || 1;
-            inputCantidad.value = val + 1;
-            actualizarTotal();
-        });
-        inputCantidad.addEventListener('input', actualizarTotal);
 
         // Servicios extra
         document.querySelectorAll('.servicio-extra-checkbox').forEach(cb => {
