@@ -37,7 +37,8 @@
                         <div class="flex items-center justify-center w-full h-full text-gray-400">No hay imágenes disponibles para esta terma.</div>
                     {% endif %}
                 </div>
-                <form method="post" class="space-y-4">
+                
+                <form method="post" action="{% url 'ventas:pago' %}" class="space-y-4">
                     {% csrf_token %}
                     <input type="hidden" id="entrada_id" name="entrada_id" value="">
                     <input type="hidden" id="experiencia" name="experiencia" value="">
@@ -56,30 +57,35 @@
                             <span class="font-semibold">Experiencia:</span>
                             <span id="resumen-experiencia" class="text-gray-700">-</span>
                         </div>
+                        <input type="hidden" id="input-experiencia" name="input_experiencia" value="">
                         <div class="mb-2 flex justify-between">
                             <span class="font-semibold">Precio unitario:</span>
                             <span id="resumen-precio" class="text-gray-700">$0</span>
                         </div>
+                        <input type="hidden" id="input-precio" name="input_precio" value="">
                         <div class="mb-2 flex justify-between">
                             <span class="font-semibold">Servicios incluidos:</span>
                             <span id="resumen-incluidos" class="text-green-700">-</span>
                         </div>
+                        <input type="hidden" id="input-incluidos" name="input_incluidos" value="">
                         <div class="mb-2 flex justify-between">
                             <span class="font-semibold">Servicios extra:</span>
                             <span id="resumen-extras" class="text-blue-700"></span>
                         </div>
+                        <input type="hidden" id="input-extras" name="input_extras" value="">
                         <div class="flex justify-between text-xl font-bold text-blue-700">
                             <span>Total:</span>
                             <span id="resumen-total">$0</span>
                         </div>
+                        <input type="hidden" id="input-total" name="input_total" value="">
                     </div>
-                    <button type="submit" id="btn-pagar" class="w-full bg-green-600 hover:bg-green-800 text-white font-bold py-3 rounded-lg text-xl mt-2 transition">Confirmar Reserva y Pagar</button>
+                    <button type="submit" id="btn-pagar" class="w-full bg-green-600 hover:bg-green-800 text-white font-bold py-3 rounded-lg text-xl mt-2 transition">Pagar</button>
                 <!-- Pop-up de login -->
                 <div id="popup-login" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
                     <div class="bg-white border border-blue-400 rounded-2xl p-8 shadow-xl max-w-md w-full text-center">
                         <h3 class="text-2xl font-bold text-blue-700 mb-4">Necesitas iniciar sesión</h3>
                         <p class="mb-6 text-lg text-gray-700">Por favor, inicia sesión para completar tu reserva y pago.</p>
-                        <a href="{% url 'usuarios:inicio' %}" class="bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-6 rounded-lg">Ir al Login</a>
+                        <a href="{% url 'usuarios:inicio' %}" class="bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-6 rounded-lg">Iniciar sesión</a>
                         <button type="button" id="cerrar-popup-login" class="mt-4 text-blue-700 underline">Cancelar</button>
                     </div>
                 </div>
@@ -262,6 +268,13 @@
         const inputCantidad = document.getElementById('cantidad');
         const serviciosPorEntrada = JSON.parse(document.getElementById('servicios-por-entrada-json').textContent);
 
+        // Inputs ocultos
+        const inputExperiencia = document.getElementById('input-experiencia');
+        const inputPrecio = document.getElementById('input-precio');
+        const inputIncluidos = document.getElementById('input-incluidos');
+        const inputExtras = document.getElementById('input-extras');
+        const inputTotal = document.getElementById('input-total');
+
         function getPrecioSeleccionado() {
             const resumenPrecio = document.getElementById('resumen-precio');
             if (!resumenPrecio) return 0;
@@ -296,6 +309,22 @@
             }
         }
 
+        function actualizarInputsResumen() {
+            // Experiencia
+            inputExperiencia.value = document.getElementById('resumen-experiencia').textContent;
+            // Precio unitario (solo número)
+            inputPrecio.value = document.getElementById('resumen-precio').getAttribute('data-precio') || '';
+            // Servicios incluidos
+            inputIncluidos.value = document.getElementById('resumen-incluidos').textContent;
+            // Servicios extra
+            inputExtras.value = document.getElementById('resumen-extras').textContent;
+            // Total (solo número, sin formato)
+            let resumenTotal = document.getElementById('resumen-total').textContent;
+            // Extraer solo el número
+            let totalMatch = resumenTotal.match(/\$([\d\.\,]+)/);
+            inputTotal.value = totalMatch ? totalMatch[1].replace(/\./g, '').replace(/,/g, '') : '';
+        }
+
         function actualizarTotal() {
             const cantidad = parseInt(inputCantidad.value) || 1;
             const precioSeleccionado = getPrecioSeleccionado();
@@ -327,6 +356,8 @@
             if (resumenTotal) {
                 resumenTotal.textContent = `$${totalCLP.toLocaleString('es-CL')} CLP`;
             }
+            // Actualizar inputs ocultos
+            actualizarInputsResumen();
         }
 
         // Inicializar con la primera entrada seleccionada
@@ -374,6 +405,8 @@
         document.querySelectorAll('.servicio-extra-cantidad').forEach(input => {
             input.addEventListener('input', actualizarTotal);
         });
+        // Actualizar los inputs ocultos al cargar
+        actualizarInputsResumen();
     });
     </script>
     <script>

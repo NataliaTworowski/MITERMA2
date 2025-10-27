@@ -566,6 +566,14 @@ def vista_terma(request, terma_id):
             return redirect('usuarios:inicio')
 
     opiniones = terma.calificacion_set.select_related('usuario').order_by('-fecha')
+    usuario = None
+    usuario_id = request.session.get('usuario_id')
+    if usuario_id:
+        from usuarios.models import Usuario
+        try:
+            usuario = Usuario.objects.get(id=usuario_id)
+        except Usuario.DoesNotExist:
+            usuario = None
     context = {
         'terma': terma,
         'entradas': entradas,
@@ -576,6 +584,7 @@ def vista_terma(request, terma_id):
         'servicios_extra': servicios_extra,
         'servicios_por_entrada_json': json.dumps(servicios_por_entrada),
         'opiniones': opiniones,
+        'usuario': usuario,
     }
     return render(request, 'administrador_termas/vista_terma.html', context)
 

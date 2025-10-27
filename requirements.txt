@@ -12,9 +12,8 @@ asgiref==3.9.1
 sqlparse==0.5.3
 tzdata==2025.2
 
-# Optional dependencies for development (uncomment if needed)
-# django-debug-toolbar==4.2.0    # For debugging in development
-# django-extensions==3.2.3       # Useful Django extensions
-# pillow==10.0.0                  # For image handling
-# django-crispy-forms==2.0        # For better form rendering
-# whitenoise==6.5.0               # For static files in production
+ 
+# Mercado Pago integration
+mercadopago==2.1.0
+# Environment variables management
+python-dotenv==1.0.1

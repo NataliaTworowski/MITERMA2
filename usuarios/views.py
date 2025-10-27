@@ -69,29 +69,46 @@ def inicio(request):
     # Solo redirigir si HAY búsqueda real (no parámetros vacíos)
     busqueda = request.GET.get('busqueda', '').strip()
     region = request.GET.get('region', '').strip()
-    ciudad = request.GET.get('ciudad', '').strip()
-    
-    if busqueda or region or ciudad:  
-        from django.urls import reverse
-        params = request.GET.urlencode()
-        url = reverse('termas:buscar')
-        return redirect(f'{url}?{params}')
-    
+    comuna = request.GET.get('comuna', '').strip()
+
     try:
         usuario = Usuario.objects.get(id=request.session['usuario_id'])
         from termas.models import Region, Comuna, Terma
         regiones = Region.objects.all().order_by('nombre')
         comunas = Comuna.objects.all().select_related('region').order_by('region__nombre', 'nombre')
-        termas_destacadas = Terma.objects.filter(estado_suscripcion="activa").order_by('-calificacion_promedio')[:4]
+        termas_qs = Terma.objects.filter(estado_suscripcion="activa")
+        if busqueda:
+            from django.db.models import Q
+            termas_qs = termas_qs.filter(
+                Q(nombre_terma__icontains=busqueda) | Q(descripcion_terma__icontains=busqueda)
+            )
+        if region:
+            termas_qs = termas_qs.filter(comuna__region__id=region)
+        if comuna:
+            termas_qs = termas_qs.filter(comuna__id=comuna)
+        orden = request.GET.get('orden', 'populares')
+        if orden == 'populares':
+            termas_qs = termas_qs.order_by('-calificacion_promedio')
+            termas_destacadas = termas_qs[:4]
+        elif orden == 'recientes':
+            termas_qs = termas_qs.order_by('-fecha_suscripcion')
+            termas_destacadas = termas_qs[:4]
+        elif orden == 'precio':
+            # Ordenar en Python por el método precio_minimo
+            termas_lista = list(termas_qs)
+            termas_lista.sort(key=lambda t: t.precio_minimo() if t.precio_minimo() is not None else float('inf'))
+            termas_destacadas = termas_lista[:4]
         context = {
             'title': 'Inicio - MiTerma',
             'usuario': usuario,
             'regiones': regiones,
             'comunas': comunas,
-            'region_seleccionada': request.GET.get('region', ''),
-            'comuna_seleccionada': request.GET.get('comuna', ''),
-            'busqueda': request.GET.get('busqueda', ''),
+            'region_seleccionada': region,
+            'comuna_seleccionada': comuna,
+            'busqueda': busqueda,
+            'orden': orden,
             'termas_destacadas': termas_destacadas,
+            'total_resultados': termas_qs.count() if (busqueda or region or comuna) else None,
         }
         return render(request, 'clientes/Inicio_cliente.html', context)
     except Usuario.DoesNotExist:
@@ -448,6 +465,7 @@ def cargar_comentarios_filtrados(request, terma_id):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
     
+
 
 
 

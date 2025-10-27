@@ -115,10 +115,10 @@
                             <h2 class="text-xl font-bold text-gray-900">Termas Destacadas</h2>
                             <div class="flex items-center gap-2">
                                 <span class="text-sm text-gray-600">Ordenar por:</span>
-                                <select id="ordenarPor" class="text-sm border-none bg-transparent focus:ring-0">
-                                    <option value="populares">Más populares</option>
-                                    <option value="recientes">Más recientes</option>
-                                    <option value="precio">Mejor precio</option>
+                                <select id="ordenarPor" name="orden" class="text-sm border-none bg-transparent focus:ring-0">
+                                    <option value="populares" {% if orden == 'populares' or not orden %}selected{% endif %}>Más populares</option>
+                                    <option value="recientes" {% if orden == 'recientes' %}selected{% endif %}>Más recientes</option>
+                                    <option value="precio" {% if orden == 'precio' %}selected{% endif %}>Mejor precio</option>
                                 </select>
                             </div>
                         {% endif %}
@@ -158,15 +158,13 @@
                                             <span class="text-sm font-medium text-gray-700 ml-1">{% if terma.calificacion_promedio %}{{ terma.calificacion_promedio|floatformat:1 }}{% else %}N/A{% endif %}</span>
                                             <span class="text-sm text-gray-500 ml-1">({{ terma.total_calificaciones }})</span>
                                         </div>
-                                        <span class="text-xs text-gray-500">•</span>
-                                        <span class="text-sm text-gray-600">{% if terma.temperatura %}{{ terma.temperatura }}°C{% else %}--°C{% endif %}</span>
                                     </div>
                                     <div class="flex justify-between items-center">
                                         <div>
                                             <span class="text-sm text-gray-500">Desde</span>
                                             <p class="text-lg font-bold text-gray-900">${% if terma.precio_minimo %}{{ terma.precio_minimo|floatformat:0 }}{% else %}--{% endif %}</p>
                                         </div>
-                                        <a href="{% url 'termas:detalle' terma.id %}" class="bg-[#0F202A] text-white px-4 py-2 rounded-lg hover:bg-[#1a2f3a] transition-colors text-sm">
+                                        <a href="{% url 'termas:vista_terma' terma.id %}" class="bg-[#0F202A] text-white px-4 py-2 rounded-lg hover:bg-[#1a2f3a] transition-colors text-sm">
                                             Ver más
                                         </a>
                                     </div>
@@ -186,6 +184,17 @@
 
     <!-- Scripts para funcionalidad de búsqueda -->
     <script src="{% static 'usuarios/js/busqueda_termas.js' %}"></script>
+    <script>
+    // Enviar el formulario al cambiar el orden
+    document.addEventListener('DOMContentLoaded', function() {
+        var ordenarPor = document.getElementById('ordenarPor');
+        if (ordenarPor) {
+            ordenarPor.addEventListener('change', function() {
+                document.getElementById('formBusquedaTermas').submit();
+            });
+        }
+    });
+    </script>
     
     <!-- JavaScript para funcionalidad del sidebar -->
     <script>

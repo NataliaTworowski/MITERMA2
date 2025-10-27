@@ -4,7 +4,7 @@
 <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden md:hidden"></div>
 
 <!-- Sidebar -->
-<aside id="sidebar" class="fixed left-0 top-0 h-screen w-64 bg-[#0F202A] text-white py-6 px-4 flex flex-col transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out z-50">
+<aside id="sidebar" class="fixed left-0 top-0 h-screen w-64 bg-[#0F202A] text-white py-6 px-4 flex flex-col transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out z-50 overflow-y-auto md:overflow-y-visible">
     <!-- Header del sidebar -->
     <div class="flex items-center justify-between mb-8">
         <div class="flex items-center gap-3">
@@ -38,14 +38,6 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
             </svg>
             <span>Inicio</span>
-        </a>
-        <a href="#"
-           class="flex items-center gap-3 p-3 rounded-lg transition-colors {% if request.resolver_match.url_name == 'carrito' %}bg-blue-600 text-white{% else %}hover:bg-[#1a2f3a]{% endif %}">
-            <!-- Icono carrito -->
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.35 2.7A1 1 0 007 17h10a1 1 0 00.95-.68L19 13M7 13V6a1 1 0 011-1h5a1 1 0 011 1v7"></path>
-            </svg>
-            <span>Carrito</span>
         </a>
         <a href="#" class="flex items-center gap-3 p-3 rounded-lg hover:bg-[#1a2f3a] transition-colors">
             <!-- Icono Termas -->
@@ -105,11 +97,11 @@
             <span>Ayuda y soporte</span>
         </a>
         
-        <!-- Espaciador que empuja el botón de cerrar sesión hacia abajo -->
-        <div class="flex-1"></div>
+        <!-- Espaciador que empuja el botón de cerrar sesión hacia abajo solo en pantallas md o mayores -->
+        <div class="flex-1 md:block hidden"></div>
 
-        <!-- Botón de cerrar sesión -->
-        <form action="{% url 'usuarios:logout' %}" method="POST" class="mt-auto">
+        <!-- Botón de cerrar sesión siempre visible en móviles -->
+        <form action="{% url 'usuarios:logout' %}" method="POST" class="mt-auto sticky bottom-0 bg-[#0F202A] z-50">
             {% csrf_token %}
             <button type="submit" class="flex w-full items-center gap-3 p-3 rounded-lg hover:bg-red-600 transition-colors text-red-500 hover:text-white">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

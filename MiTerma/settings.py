@@ -27,7 +27,26 @@ SECRET_KEY = config('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost', cast=Csv())
+ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="", cast=lambda v: [h.strip() for h in v.split(",") if h])
+# CSRF trusted origins and optional public base URL for testing (ngrok)
+from decouple import UndefinedValueError
+try:
+    CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='', cast=Csv())
+except UndefinedValueError:
+    CSRF_TRUSTED_ORIGINS = []
+
+# If you set MP_BASE_URL (public/ngrok URL), include it automatically
+MP_BASE_URL = os.getenv('MP_BASE_URL') or config('MP_BASE_URL', default='')
+if MP_BASE_URL:
+    from urllib.parse import urlparse
+    parsed = urlparse(MP_BASE_URL)
+    origin = f"{parsed.scheme}://{parsed.netloc}"
+    host = parsed.netloc
+    if origin and origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(origin)
+    # ensure host in ALLOWED_HOSTS
+    if host and host not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(host)
 
 
 # Application definition
