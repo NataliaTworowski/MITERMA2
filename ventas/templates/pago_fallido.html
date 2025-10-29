@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <div class="container mt-5">
+    <div class="alert alert-danger text-center">
+        <h2><i class="fas fa-times-circle"></i> Pago Rechazado</h2>
+        <p class="lead">No pudimos procesar tu pago</p>
+    </div>
+    
+    <div class="card">
+        <div class="card-body text-center">
+            <p>El pago fue rechazado por Mercado Pago.</p>
+            <p class="text-muted">Esto puede deberse a fondos insuficientes, límite de tarjeta alcanzado o un error en los datos.</p>
+            
+            {% if payment_id %}
+            <p class="mt-3"><strong>ID de transacción:</strong> {{ payment_id }}</p>
+            {% endif %}
+            
+            {% if status %}
+            <p><strong>Estado:</strong> <span class="badge badge-danger">{{ status }}</span></p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="text-center mt-4">
+        <a href="{% url 'usuarios:inicio' %}" class="btn btn-outline-secondary">Volver al inicio</a>
+        <a href="javascript:history.back()" class="btn btn-primary">Intentar nuevamente</a>
+    </div>
+</div>
+</body>
+</html>

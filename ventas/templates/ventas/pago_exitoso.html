@@ -1,0 +1,78 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+	<meta charset="UTF-8">
+	<title>Pago Exitoso</title>
+	<link rel="stylesheet" href="{% static 'usuarios/css/vista_terma.css' %}">
+	<script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col justify-center items-center">
+	<div class="container mt-5">
+    {% if success %}
+        <div class="alert alert-success text-center">
+            <h2><i class="fas fa-check-circle"></i> ¡Pago Exitoso!</h2>
+            <p class="lead">Tu reserva ha sido confirmada</p>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h4>Detalles de tu compra</h4>
+            </div>
+            <div class="card-body">
+                <p><strong>ID de Compra:</strong> #{{ compra.id }}</p>
+                <p><strong>Terma:</strong> {{ compra.terma.nombre }}</p>
+                <p><strong>Fecha de visita:</strong> {{ compra.fecha_visita|date:"d/m/Y" }}</p>
+                <p><strong>Monto pagado:</strong> ${{ compra.monto_pagado|floatformat:0 }}</p>
+                <p><strong>ID de pago:</strong> {{ payment_id }}</p>
+                <p><strong>Estado:</strong> <span class="badge badge-success">Aprobado</span></p>
+            </div>
+        </div>
+        
+        <div class="text-center mt-4">
+            <a href="{% url 'usuarios:inicio' %}" class="btn btn-primary">Volver al inicio</a>
+            <a href="#" class="btn btn-secondary">Ver mis reservas</a>
+        </div>
+        
+    {% elif error_message %}
+        <div class="alert alert-warning text-center">
+            <h2><i class="fas fa-exclamation-triangle"></i> Atención</h2>
+            <p class="lead">{{ error_message }}</p>
+        </div>
+        
+        <div class="card">
+            <div class="card-body">
+                <p><strong>ID de pago:</strong> {{ payment_id|default:"No disponible" }}</p>
+                <p><strong>Estado:</strong> {{ status|default:"Desconocido" }}</p>
+            </div>
+        </div>
+        
+        <div class="text-center mt-4">
+            <a href="{% url 'usuarios:inicio' %}" class="btn btn-primary">Volver al inicio</a>
+            <a href="mailto:soporte@tutermas.cl" class="btn btn-outline-secondary">Contactar soporte</a>
+        </div>
+        
+    {% else %}
+        <div class="alert alert-info text-center">
+            <h2><i class="fas fa-clock"></i> Procesando pago...</h2>
+            <p class="lead">Estamos verificando tu pago</p>
+        </div>
+        
+        <div class="card">
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    {% for key, value in request.GET.items %}
+                        <li><strong>{{ key }}:</strong> {{ value }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        
+        <div class="text-center mt-4">
+            <a href="{% url 'usuarios:inicio' %}" class="btn btn-primary">Volver al inicio</a>
+        </div>
+    {% endif %}
+</div>
+</body>
+{% include 'partials/footer.html' %}
+</html>

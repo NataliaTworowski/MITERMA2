@@ -25,8 +25,13 @@ class Compra(models.Model):
     fecha_visita = models.DateField(default=date.today, help_text="Fecha para la que es válida la entrada")
     total = models.DecimalField(max_digits=10, decimal_places=2)
     estado_pago = models.CharField(max_length=20, choices=ESTADO_PAGO)
-    mercado_pago_id = models.CharField(max_length=100, null=True, blank=True)
+    mercado_pago_id = models.CharField(max_length=100, null=True, blank=True, help_text="ID de la preferencia de Mercado Pago")
     codigo_confirmacion = models.CharField(max_length=100, null=True, blank=True)
+    pagador_email = models.EmailField(null=True, blank=True)
+    monto_pagado = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    fecha_confirmacion_pago = models.DateTimeField(null=True, blank=True)
+    payment_id = models.CharField(max_length=100, null=True, blank=True, help_text="Payment ID de Mercado Pago")
+
 
 
 

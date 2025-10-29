@@ -38,8 +38,9 @@
                     {% endif %}
                 </div>
                 
-                <form method="post" action="{% url 'ventas:pago' %}" class="space-y-4">
+                <form method="post" action="{% url 'ventas:pago' terma.id %}" class="space-y-4">
                     {% csrf_token %}
+                    <input type="hidden" name="terma_id" value="{{ terma.id }}">
                     <input type="hidden" id="entrada_id" name="entrada_id" value="">
                     <input type="hidden" id="experiencia" name="experiencia" value="">
                     <div>

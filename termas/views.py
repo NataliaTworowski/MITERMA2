@@ -246,7 +246,7 @@ def analisis_terma(request):
             fechas.append(fecha.strftime('%d/%m'))
             ventas_dia = Compra.objects.filter(
                 fecha_compra__date=fecha,
-                estado_pago='pagado',
+                estado_pago='aprobado',
                 terma=terma
             ).count()
             ventas_por_dia.append(ventas_dia)
