@@ -7,6 +7,7 @@ from django.http import JsonResponse
 def mostrar_termas(request):
     termas = Terma.objects.all()
     context = {
+        'usuario': request.user,
         'termas': termas,
         'navbar_mode': 'termas_only'
     }

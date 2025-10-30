@@ -23,14 +23,62 @@
 </head>
 <body class="flex flex-col min-h-screen font-sans bg-white termas-page">
     <!-- Navbar -->
-    {% include 'partials/navbar.html' with navbar_mode='termas_only' %}
+    {% if usuario %}
+        <nav class="fixed top-0 left-0 w-full bg-gray-50 border-b border-gray-200 px-6 py-1 flex items-center justify-between z-50">
+            <div class="flex items-center gap-2">
+                <img src="{% static 'img/logo.png' %}" alt="Termas Logo" class="w-10 h-10">
+                <span class="text-xl font-bold text-gray-800">Mi Terma</span>
+            </div>
+            <div class="flex gap-6 items-center">
+                <a href="{% url 'usuarios:inicio' %}"
+                   class="font-medium px-3 py-1 rounded-lg {% if active_page == 'home' %}bg-blue-100 text-blue-500{% else %}text-gray-700 hover:text-blue-500{% endif %}">
+                    Home
+                </a>
+                <a href="#"
+                   class="font-medium px-3 py-1 rounded-lg {% if active_page == 'calendario' %}bg-blue-100 text-blue-500{% else %}text-gray-700 hover:text-blue-500{% endif %}">
+                    Calendario
+                </a>
+                <a href="{% url 'core:mostrar_termas' %}"
+                   class="font-medium px-3 py-1 rounded-lg {% if active_page == 'termas' %}bg-blue-100 text-blue-500{% else %}text-gray-700 hover:text-blue-500{% endif %}">
+                    Termas
+                </a>
+            </div>
+            <div class="flex items-center gap-4 relative">
+                <button class="text-gray-500 hover:text-blue-500">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                    </svg>
+                </button>
+                <button class="text-gray-500 hover:text-blue-500">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <rect x="3" y="7" width="18" height="10" rx="2" stroke="currentColor" stroke-width="2" fill="none" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 11h18" />
+                    </svg>
+                </button>
+                <div class="relative">
+                    <button id="profile-avatar" class="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center text-lg font-bold text-gray-700 focus:outline-none">
+                        {{ usuario.nombre|first }}
+                    </button>
+                    <div id="profile-menu" class="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg py-2 z-50 hidden">
+                        <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Ajustes</a>
+                        <form action="{% url 'usuarios:logout' %}" method="POST">
+                            {% csrf_token %}
+                            <button type="submit" class="w-full text-left px-4 py-2 text-red-500 hover:bg-red-50">Cerrar sesión</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    {% else %}
+        {% include 'partials/navbar.html' with navbar_mode='termas_only' %}
+    {% endif %}
 
     <!-- Modales -->
     {% include 'partials/login_modal.html' %}
     {% include 'partials/register_modal.html' %}
 
     <!-- Contenido Principal -->
-    <main class="flex-grow container mx-auto px-4 py-20 mt-16">
+    <main class="flex-grow container mx-auto px-4 pt-20 pb-8">
         <h1 class="text-4xl font-bold mb-6 text-center">Nuestras Termas Asociadas</h1>
         <p class="text-xl text-gray-600 max-w-3xl mx-auto mb-8 text-center">
             Explora una selección de las termas más destacadas de Chile
@@ -128,7 +176,33 @@
     </main>
 
     <!-- Footer -->
-    {% include 'partials/footer.html' %}
+    <footer class="bg-[#0c1a2a] text-white w-full mt-12">
+        <div class="max-w-7xl mx-auto px-6 py-10 grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div>
+                <h2 class="text-xl font-bold mb-2 flex items-center gap-2">
+                    <span>🧖‍♂️</span> MiTerma
+                </h2>
+                <p class="mb-4 text-gray-300">La plataforma líder en Chile para descubrir y reservar experiencias termales únicas. Conectamos a viajeros con las mejores termas del país.</p>
+                <div class="flex gap-3 mb-4">
+                    <a href="#" class="bg-blue-600 rounded-full p-2"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" class="bg-pink-500 rounded-full p-2"><i class="fab fa-instagram"></i></a>
+                    <a href="#" class="bg-black rounded-full p-2"><i class="fab fa-x-twitter"></i></a>
+                </div>
+            </div>
+            <div>
+                <h2 class="text-xl font-bold mb-2">Contacto</h2>
+                <ul class="space-y-2">
+                    <li><span class="inline-block w-6">✉️</span> mitermaoficial@gmail.com</li>
+                    <li><span class="inline-block w-6">📞</span> +56 9 58070480</li>
+                    <li><span class="inline-block w-6">📍</span> Temuco, Chile</li>
+                </ul>
+            </div>
+        </div>
+        <div class="border-t border-gray-800 text-center py-4 text-gray-400 text-sm">
+            © 2025 MiTerma. Todos los derechos reservados.<br>
+            Desarrollado por Natalia Tworowski - Benjamin Pelizari - Jorge Jiménez
+        </div>
+    </footer>
     <!-- Scripts -->
     <script src="{% static 'js/navbar.js' %}"></script>
     <script src="{% static 'js/mostrar_termas.js' %}"></script>

@@ -45,8 +45,7 @@ def buscar_termas(request):
         comuna_id = request.GET.get('comuna', '')
         
         # Construir query de búsqueda
-        query = Q(estado_suscripcion='true')
-
+        query = Q(estado_suscripcion='activa')
         # Si hay filtros, agregarlos al query
         if busqueda:
             query &= (
@@ -61,17 +60,35 @@ def buscar_termas(request):
             query &= Q(comuna__id=comuna_id)
 
         # Ejecutar la consulta (si no hay filtros, muestra todas las termas activas)
-        termas_destacadas = Terma.objects.filter(query).select_related('comuna', 'comuna__region')
+        termas_activas = Terma.objects.filter(query).select_related('comuna', 'comuna__region')
+
+        # Ofertas Destacadas: 4 termas con el precio de entrada más barato
+        # Filtrar termas con precio mínimo válido
+        termas_con_precio = [t for t in termas_activas if t.precio_minimo() is not None]
+        ofertas_destacadas = sorted(
+            termas_con_precio,
+            key=lambda t: t.precio_minimo()
+        )[:4]
+
+        # Filtrar termas con calificación válida (aunque no tengan precio)
+        mejores_termas = sorted(
+            [t for t in termas_activas if t.calificacion_promedio is not None],
+            key=lambda t: t.calificacion_promedio,
+            reverse=True
+        )[:4]
+
+        print('DEBUG mejores_termas:', [(t.id, t.nombre_terma, t.calificacion_promedio) for t in mejores_termas])
         context = {
             'title': 'Inicio - MiTerma',
             'usuario': usuario,
-            'termas_destacadas': termas_destacadas,
+            'ofertas_destacadas': ofertas_destacadas,
+            'mejores_termas': mejores_termas,
             'busqueda': busqueda,
             'region_seleccionada': region_id,
             'comuna_seleccionada': comuna_id,
             'regiones': regiones,
             'comunas': comunas,
-            'total_resultados': len(termas_destacadas)
+            'total_resultados': len(mejores_termas)
         }
         # Renderizar el template de usuarios con los resultados
         return render(request, 'clientes/Inicio_cliente.html', context)

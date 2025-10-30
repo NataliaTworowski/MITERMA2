@@ -86,6 +86,8 @@ def inicio(request):
             termas_qs = termas_qs.filter(comuna__region__id=region)
         if comuna:
             termas_qs = termas_qs.filter(comuna__id=comuna)
+        # Solo termas con calificación válida
+        termas_qs = termas_qs.filter(calificacion_promedio__isnull=False)
         orden = request.GET.get('orden', 'populares')
         if orden == 'populares':
             termas_qs = termas_qs.order_by('-calificacion_promedio')
@@ -98,6 +100,7 @@ def inicio(request):
             termas_lista = list(termas_qs)
             termas_lista.sort(key=lambda t: t.precio_minimo() if t.precio_minimo() is not None else float('inf'))
             termas_destacadas = termas_lista[:4]
+        print('DEBUG termas_destacadas:', [(t.id, t.nombre_terma, t.calificacion_promedio) for t in termas_destacadas])
         context = {
             'title': 'Inicio - MiTerma',
             'usuario': usuario,

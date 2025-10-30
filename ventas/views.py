@@ -96,14 +96,14 @@ def pago(request, terma_id=None):
                     "currency_id": "CLP"
                 }
             ],
-            "external_reference": mercado_pago_id,  # ← Tu UUID único
+            "external_reference": mercado_pago_id,  
             "back_urls": {
-                "success": f"{base_url}/ventas/pago/success/",  # ← Coincide con tu URL
+                "success": f"{base_url}/ventas/pago/success/",  
                 "failure": f"{base_url}/ventas/pago/failure/",
                 "pending": f"{base_url}/ventas/pago/pending/"
             },
             "auto_return": "approved",
-            "notification_url": f"{base_url}/ventas/webhook/mercadopago/",  # ← Nueva ruta del webhook
+            "notification_url": f"{base_url}/ventas/webhook/mercadopago/",  
             "statement_descriptor": "TERMAS",
             "metadata": {
                 "compra_id": compra.id,
@@ -117,13 +117,8 @@ def pago(request, terma_id=None):
         
         if "init_point" in response_data:
             datos['mercadopago_url'] = response_data["init_point"]
-            # Nota: Ya no actualizamos mercado_pago_id aquí porque ya lo tenemos
-            # Si quieres guardar también el preference_id de Mercado Pago, puedes hacerlo:
-            # compra.mercado_pago_preference_id = response_data.get("id")
-            # compra.save()
         else:
             datos['mercadopago_error'] = response_data.get("message", "No se pudo generar el enlace de pago. Intenta nuevamente.")
-            # Si falla la creación de la preferencia, podrías eliminar la compra o marcarla como error
             compra.estado_pago = "error"
             compra.save()
 
@@ -139,6 +134,7 @@ def pago(request, terma_id=None):
         else:
             datos['terma_id'] = datos['entrada_id']
     
+    datos['usuario'] = usuario
     return render(request, 'ventas/pago.html', datos)
 
 @csrf_exempt
@@ -150,7 +146,7 @@ def mercadopago_webhook(request):
     if request.method == 'POST':
         try:
             import json
-            # Detectar si estamos en modo prueba
+            # Detectar si estamos en modo prueba o de desarrollo
             access_token = os.getenv("MP_ACCESS_TOKEN")
             is_test = access_token.startswith("TEST-") if access_token else False
             print(f"[WEBHOOK] Modo: {'PRUEBA' if is_test else 'PRODUCCIÓN'}")
@@ -194,13 +190,13 @@ def mercadopago_webhook(request):
                                 'status': 'error',
                                 'message': 'Invalid signature'
                             }, status=401)
-                        print("[WEBHOOK] ✅ Firma válida")
+                        print("[WEBHOOK] Firma válida")
                     else:
-                        print("[WEBHOOK] ⚠️ MP_WEBHOOK_SECRET no configurado en producción")
+                        print("[WEBHOOK] MP_WEBHOOK_SECRET no configurado en producción")
                 else:
-                    print("[WEBHOOK] ⚠️ No se recibió x-signature en producción")
+                    print("[WEBHOOK] No se recibió x-signature en producción")
             else:
-                print("[WEBHOOK] ℹ️ Modo PRUEBA: Saltando validación de firma")
+                print("[WEBHOOK] Modo PRUEBA: Saltando validación de firma")
 
             # Procesar webhook (igual para ambos modos)
             data = {}
@@ -224,7 +220,7 @@ def mercadopago_webhook(request):
                     status = payment_data.get('status')
                     print(f"[WEBHOOK] Payment status: {status}, external_reference: {external_reference}")
                     if is_test:
-                        print(f"[WEBHOOK] 🧪 PRUEBA - Payment data: {payment_data}")
+                        print(f"[WEBHOOK] PRUEBA - Payment data: {payment_data}")
                     if status == 'approved' and external_reference:
                         from ventas.models import Compra
                         from django.utils import timezone
@@ -242,20 +238,20 @@ def mercadopago_webhook(request):
                                     compra.monto_pagado = payment_data.get('transaction_amount', compra.total)
                                     compra.fecha_confirmacion_pago = timezone.now()
                                     compra.save()
-                                    print(f"[WEBHOOK] ✅ Compra {compra.id} actualizada")
+                                    print(f"[WEBHOOK] Compra {compra.id} actualizada")
                                     if is_test:
-                                        print(f"[WEBHOOK] 🧪 PRUEBA - Compra aprobada: {compra.id}")
+                                        print(f"[WEBHOOK] PRUEBA - Compra aprobada: {compra.id}")
                                     return JsonResponse({"status": "success"}, status=200)
                                 else:
-                                    print(f"[WEBHOOK] ⚠️ payment_id ya registrado")
+                                    print(f"[WEBHOOK] payment_id ya registrado")
                                     return JsonResponse({"status": "duplicate"}, status=200)
                             else:
-                                print(f"[WEBHOOK] ℹ️ Compra ya procesada")
+                                print(f"[WEBHOOK] Compra ya procesada")
                                 return JsonResponse({"status": "already_processed"}, status=200)
                 return JsonResponse({"status": "received"}, status=200)
             return JsonResponse({"status": "ignored"}, status=200)
         except Exception as e:
-            print(f"[WEBHOOK] ❌ Error: {str(e)}")
+            print(f"[WEBHOOK] Error: {str(e)}")
             import traceback
             traceback.print_exc()
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)

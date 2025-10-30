@@ -4,59 +4,62 @@
 <head>
     <meta charset="UTF-8">
     <title>Resumen de tu compra</title>
-    <link rel="stylesheet" href="{% static 'usuarios/css/vista_terma.css' %}">
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 text-gray-800">
-    <div class="max-w-xl mx-auto mt-20 bg-white rounded-2xl shadow-lg p-10 text-center">
-        {% if compra_error %}
-        <div class="mb-4 p-4 bg-red-100 text-red-700 rounded-lg font-bold">
-            {{ compra_error }}
-        </div>
-        {% endif %}
-        <h1 class="text-3xl font-bold text-green-700 mb-6">Resumen de tu compra</h1>
-        <form method="post">
-            {% csrf_token %}
-            <!-- Campo oculto para el id de la terma -->
-            <input type="hidden" name="terma_id" value="{{ terma_id }}">
-            {% if experiencia %}
-            <div class="mb-2"><strong>Experiencia:</strong> {{ experiencia }}</div>
+<body class="bg-gray-100 text-gray-800 min-h-screen">
+    {% include 'partials/navbar_usuario2.html' %}
+    <div class="md:ml-64 flex items-center justify-center min-h-screen p-4">
+        <div class="w-full max-w-xl bg-white rounded-2xl shadow-xl p-10 text-center">
+            {% if compra_error %}
+            <div class="mb-4 p-4 bg-red-100 text-red-700 rounded-lg font-bold">
+                {{ compra_error }}
+            </div>
             {% endif %}
-            {% if entrada_id %}
-            <div class="mb-2"><strong>ID Entrada:</strong> {{ entrada_id }}</div>
-            {% endif %}
-            {% if cantidad %}
-            <div class="mb-2"><strong>Cantidad de personas:</strong> {{ cantidad }}</div>
-            {% endif %}
-            {% if cantidad_entradas %}
-            <div class="mb-2"><strong>Cantidad de entradas:</strong> {{ cantidad_entradas }}</div>
-            {% endif %}
-            {% if fecha %}
-            <div class="mb-2"><strong>Fecha:</strong> {{ fecha }}</div>
-            {% endif %}
-            {% if precio %}
-            <div class="mb-2"><strong>Precio unitario:</strong> ${{ precio }}</div>
-            {% endif %}
-            {% if incluidos %}
-            <div class="mb-2"><strong>Servicios incluidos:</strong> {{ incluidos }}</div>
-            {% endif %}
-            {% if extras %}
-            <div class="mb-2"><strong>Servicios extra:</strong> {{ extras }}</div>
-            {% endif %}
-            {% if total %}
-            <div class="mb-2 text-xl font-bold text-blue-700"><strong>Total:</strong> ${{ total }}</div>
-            {% endif %}
-            <!-- Aquí va el botón de Mercado Pago -->
-            <div class="mt-8">
-                {% if mercadopago_url %}
-                <a href="{{ mercadopago_url }}" target="_blank" class="bg-blue-600 hover:bg-blue-800 text-white font-bold py-3 px-6 rounded-lg text-xl transition">Pagar con Mercado Pago</a>
-                {% elif mercadopago_error %}
-                <span class="text-red-600 font-bold">{{ mercadopago_error }}</span>
-                {% else %}
-                <span class="text-gray-500">No se pudo generar el link de pago.</span>
+            <h1 class="text-3xl font-bold text-gray-800 mb-2">Confirma tu Compra</h1>
+            <p class="mb-8 text-gray-500">Por favor, revisa los detalles de tu reserva antes de proceder al pago.</p>
+            <div class="mb-8 text-left">
+                {% if experiencia %}
+                <div class="flex justify-between py-2 border-b border-gray-200"><span class="text-gray-600">Experiencia</span> <span class="font-semibold">{{ experiencia }}</span></div>
+                {% endif %}
+                {% if cantidad_entradas %}
+                <div class="flex justify-between py-2 border-b border-gray-200"><span class="text-gray-600">Cantidad de entradas</span> <span class="font-semibold">{{ cantidad_entradas }}</span></div>
+                {% endif %}
+                {% if fecha %}
+                <div class="flex justify-between py-2 border-b border-gray-200"><span class="text-gray-600">Fecha</span> <span class="font-semibold">{{ fecha }}</span></div>
+                {% endif %}
+                {% if precio %}
+                <div class="flex justify-between py-2 border-b border-gray-200"><span class="text-gray-600">Precio unitario</span> <span class="font-semibold">${{ precio }}</span></div>
+                {% endif %}
+                {% if incluidos %}
+                <div class="flex justify-between py-2 border-b border-gray-200"><span class="text-gray-600">Servicios incluidos</span> <span class="font-semibold">{{ incluidos }}</span></div>
+                {% endif %}
+                {% if extras %}
+                <div class="flex justify-between py-2 border-b border-gray-200"><span class="text-gray-600">Servicios extra</span> <span class="font-semibold">{{ extras|default:'-' }}</span></div>
                 {% endif %}
             </div>
-        </form>
-        <a href="{% url 'usuarios:inicio' %}" class="mt-6 inline-block bg-green-600 hover:bg-green-800 text-white font-bold py-2 px-6 rounded-lg">Volver al inicio</a>
+            {% if total %}
+            <div class="bg-gray-50 py-6 mb-8 rounded-xl text-2xl font-bold text-blue-700 border border-gray-200">Total: ${{ total }}</div>
+            {% endif %}
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="terma_id" value="{{ terma_id }}">
+                <div class="mb-6">
+                    {% if mercadopago_url %}
+                    <a href="{{ mercadopago_url }}" target="_blank" class="w-full block bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg text-xl transition shadow">&#128179; Pagar con Mercado Pago</a>
+                    {% elif mercadopago_error %}
+                    <span class="text-red-600 font-bold">{{ mercadopago_error }}</span>
+                    {% else %}
+                    <span class="text-gray-500">No se pudo generar el link de pago.</span>
+                    {% endif %}
+                </div>
+            </form>
+            <a href="{% url 'usuarios:inicio' %}" class="mt-2 inline-block text-blue-700 font-bold hover:underline">Volver al inicio</a>
+            <div class="mt-8 text-gray-400 text-sm flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0-1.104.896-2 2-2s2 .896 2 2-.896 2-2 2-2-.896-2-2zm0 0V7m0 4v4m0 4h.01"/></svg>
+                Pago 100% seguro
+            </div>
+        </div>
     </div>
+    {% include 'partials/footer.html' %}
 </body>
 </html>

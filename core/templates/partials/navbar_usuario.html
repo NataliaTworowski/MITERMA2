@@ -1,5 +1,6 @@
 {% load static %}
 
+{% if usuario %}
 <!-- Overlay para móvil -->
 <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden md:hidden"></div>
 
@@ -96,11 +97,7 @@
             </svg>
             <span>Ayuda y soporte</span>
         </a>
-        
-        <!-- Espaciador que empuja el botón de cerrar sesión hacia abajo solo en pantallas md o mayores -->
         <div class="flex-1 md:block hidden"></div>
-
-        <!-- Botón de cerrar sesión siempre visible en móviles -->
         <form action="{% url 'usuarios:logout' %}" method="POST" class="mt-auto sticky bottom-0 bg-[#0F202A] z-50">
             {% csrf_token %}
             <button type="submit" class="flex w-full items-center gap-3 p-3 rounded-lg hover:bg-red-600 transition-colors text-red-500 hover:text-white">
@@ -112,3 +109,5 @@
         </form>
     </nav>
 </aside>
+<script src="{% static 'js/navbar_usuario.js' %}"></script>
+{% endif %}
