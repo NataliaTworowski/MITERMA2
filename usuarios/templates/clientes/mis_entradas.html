@@ -1,0 +1,21 @@
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>{{ title }}</title>
+    {% include 'partials/head.html' %}
+</head>
+<body class="min-h-screen bg-[#f8fafc]">
+    <!-- Navbar cliente -->
+    <div class="hidden md:block fixed top-0 left-0 right-0 z-40">
+        {% include 'partials/navbar_usuario2.html' %}
+    </div>
+</body>
+<main class="flex-1 pt-20 md:pt-24 transition-all duration-300">
+
+</main>
+<!-- Footer -->
+{% include 'partials/footer.html' %}
+
+</html>

@@ -19,6 +19,7 @@ class Terma(models.Model):
     fecha_suscripcion = models.DateField(null=True, blank=True)
     calificacion_promedio = models.DecimalField(max_digits=3, decimal_places=2, null=True, blank=True)
     rut_empresa = models.CharField(max_length=12, null=True, blank=True, help_text="RUT de la empresa (ej: 12.345.678-9)")
+    limite_ventas_diario = models.IntegerField(default=100, help_text="Límite máximo de ventas por día")
     administrador = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, blank=True, related_name='termas_administradas')
 
     def __str__(self):
@@ -74,13 +75,26 @@ class Terma(models.Model):
     def total_fotos(self):
         """Retorna el total de fotos subidas de la terma"""
         return self.imagenes.count()
+    
+    def verificar_disponibilidad_diaria(self, fecha):
+        """Verifica si hay disponibilidad para la fecha especificada"""
+        from ventas.models import DetalleCompra
+        from django.db.models import Sum
+        
+        # Obtener el total de entradas vendidas para esa fecha
+        ventas_dia = DetalleCompra.objects.filter(
+            horario_disponible__terma=self,
+            horario_disponible__fecha=fecha,
+            compra__estado_pago='pagado'
+        ).aggregate(total=Sum('cantidad'))['total'] or 0
+        
+        # Verificar si hay disponibilidad
+        return ventas_dia < self.limite_ventas_diario, self.limite_ventas_diario - ventas_dia
 
     def calificaciones_recientes(self, limite=5):
         """Retorna las calificaciones más recientes"""
         return self.calificacion_set.select_related('usuario').order_by('-fecha')[:limite]
     
-    #para hacer el filtro de comentarios 
-
     def filtro_calificaciones(self, filtro='recientes', limite=5):
         """Retorna calificaciones filtradas por fecha"""
         queryset = self.calificacion_set.select_related('usuario')

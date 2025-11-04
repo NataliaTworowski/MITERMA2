@@ -343,9 +343,19 @@ def editar_terma(request):
         terma = usuario.terma
         if request.method == 'POST':
             descripcion = request.POST.get('descripcion_terma', '').strip()
+            limite_ventas = request.POST.get('limite_ventas_diario')
+            
             terma.descripcion_terma = descripcion
+            if limite_ventas and limite_ventas.isdigit():
+                limite_ventas = int(limite_ventas)
+                if 1 <= limite_ventas <= 1000:
+                    terma.limite_ventas_diario = limite_ventas
+                else:
+                    messages.error(request, 'El límite de ventas debe estar entre 1 y 1000.')
+                    return redirect('termas:editar_terma')
+            
             terma.save()
-            messages.success(request, 'Descripción guardada correctamente.')
+            messages.success(request, 'Información de la terma actualizada correctamente.')
             return redirect('termas:editar_terma')
         context = {
             'title': 'Editar Terma - MiTerma',

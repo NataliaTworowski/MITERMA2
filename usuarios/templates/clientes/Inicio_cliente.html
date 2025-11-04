@@ -26,8 +26,6 @@
     <!-- Contenido principal -->
     <main class="flex-1 pt-20 md:pt-24 transition-all duration-300">
         <div class="p-4 md:p-8">
-            <div class="max-w-7xl mx-auto">
-                <!-- Header del contenido - oculto en móvil para evitar duplicación -->
                 <div class="hidden md:flex justify-between items-center mb-8">
                     <h1 class="text-2xl font-bold text-gray-900">Buscar Termas</h1>
                     <p class="text-sm text-gray-600">Descubre las mejores experiencias termales de Chile</p>
@@ -56,9 +54,9 @@
                     </div>
                 {% endif %}
 
-                <!-- Filtros de bu -->
+                <!-- Filtros de busqueda -->
                 <section class="w-full mb-8">
-                    <div class="rounded-3xl overflow-hidden relative flex flex-col items-center justify-center min-h-[340px] bg-cover bg-center bg-[url('/static/img/inicio_cliente.jpg')]">
+                    <div class="rounded-none md:rounded-3xl overflow-hidden relative flex flex-col items-center justify-center min-h-[340px] bg-cover bg-center bg-[url('/static/img/inicio_cliente.jpg')] w-screen left-1/2 right-1/2 -translate-x-1/2 md:w-full md:left-0 md:right-0 md:translate-x-0" style="position:relative; margin-left:50%; margin-right:50%; transform:translateX(-50%);">
                         <div class="absolute inset-0 bg-black/30"></div>
                         <div class="relative z-10 w-full flex flex-col items-center justify-center py-12">
                             <h2 class="text-4xl md:text-5xl font-extrabold text-white text-center mb-3 drop-shadow-lg">Encuentra tu momento de relajo</h2>

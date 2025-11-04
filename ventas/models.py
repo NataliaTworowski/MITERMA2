@@ -17,6 +17,8 @@ class Compra(models.Model):
         ("pagado", "Pagado"),
         ("cancelado", "Cancelado"),
     ]
+    
+    cantidad = models.IntegerField(default=1)
 
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
     metodo_pago = models.ForeignKey(MetodoPago, on_delete=models.SET_NULL, null=True, blank=True)

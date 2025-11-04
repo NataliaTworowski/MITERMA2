@@ -8,6 +8,10 @@
 	<script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col justify-center items-center">
+    <main>
+    <div class="hidden md:block fixed top-0 left-0 right-0 z-40">
+        {% include 'partials/navbar_usuario2.html' %}
+    </div>
 	<div class="container mt-5">
     {% if success %}
         <div class="alert alert-success text-center">
@@ -31,7 +35,7 @@
         
         <div class="text-center mt-4">
             <a href="{% url 'usuarios:inicio' %}" class="btn btn-primary">Volver al inicio</a>
-            <a href="#" class="btn btn-secondary">Ver mis reservas</a>
+            <a href="{% url 'usuarios:mis_entradas' %}" class="btn btn-secondary">Ver mis reservas</a>
         </div>
         
     {% elif error_message %}
@@ -74,5 +78,6 @@
     {% endif %}
 </div>
 </body>
+</main>
 {% include 'partials/footer.html' %}
 </html>

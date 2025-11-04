@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from . import views_cliente
 
 app_name = 'usuarios'
 
@@ -13,5 +14,6 @@ urlpatterns = [
     path('reset-password-confirm/', views.reset_password_confirm, name='reset_password_confirm'), 
     path('admin_general/', views.admin_general, name='admin_general'),
     path('solicitudes_pendientes/', views.solicitudes_pendientes, name='solicitudes_pendientes'),
+    path('mis_entradas/', views_cliente.mostrar_entradas, name='mis_entradas'),
     
 ]

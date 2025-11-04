@@ -1,8 +1,7 @@
 from django.shortcuts import render
 import mercadopago
-from dotenv import load_dotenv
 import os
-load_dotenv()
+from dotenv import load_dotenv
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 from django.http import JsonResponse
@@ -11,11 +10,16 @@ from termas.models import Terma
 from usuarios.models import Usuario
 from usuarios.models import Usuario
 
+# Cargar variables de entorno
+load_dotenv()
+
 def pago(request, terma_id=None):
     datos = {}
     if request.method == 'POST':
         datos['terma_id'] = request.POST.get('terma_id') or terma_id
         access_token = os.getenv("MP_ACCESS_TOKEN")
+        if not access_token:
+            return JsonResponse({'error': 'Error: No se encontró el token de acceso de Mercado Pago'}, status=500)
         sdk = mercadopago.SDK(access_token)
         datos['entrada_id'] = request.POST.get('entrada_id')
         datos['experiencia'] = request.POST.get('input_experiencia')
@@ -55,6 +59,21 @@ def pago(request, terma_id=None):
             datos['compra_error'] = "No se encontró la terma seleccionada para la compra."
             return render(request, 'ventas/pago.html', datos)
 
+        # Verificar disponibilidad para la fecha seleccionada
+        fecha_visita = datos.get('fecha')
+        if fecha_visita:
+            from datetime import datetime
+            fecha_visita = datetime.strptime(fecha_visita, '%Y-%m-%d').date()
+            hay_disponibilidad, cupos_restantes = terma.verificar_disponibilidad_diaria(fecha_visita)
+            
+            cantidad_solicitada = int(datos.get('cantidad_entradas', 1))
+            if not hay_disponibilidad:
+                datos['compra_error'] = "Lo sentimos, no hay disponibilidad para la fecha seleccionada."
+                return render(request, 'ventas/pago.html', datos)
+            elif cantidad_solicitada > cupos_restantes:
+                datos['compra_error'] = f"Solo quedan {cupos_restantes} cupos disponibles para la fecha seleccionada."
+                return render(request, 'ventas/pago.html', datos)
+
         # CREAR LA COMPRA ANTES de generar la preferencia
         try:
             from ventas.models import Compra, MetodoPago
@@ -73,6 +92,7 @@ def pago(request, terma_id=None):
                 total=datos['total'] if datos['total'] else 0,
                 estado_pago="pendiente",
                 mercado_pago_id=mercado_pago_id,
+                cantidad=int(datos['cantidad_entradas']) if datos['cantidad_entradas'] else 1,
             )
             print(f"Compra creada: id={compra.id}, mercado_pago_id={compra.mercado_pago_id}")
 
@@ -155,8 +175,8 @@ def mercadopago_webhook(request):
             print(f"[WEBHOOK] Body: {body}")
             print(f"[WEBHOOK] Query params: {dict(request.GET)}")
 
-            # VALIDAR FIRMA SOLO EN PRODUCCIÓN
-            if not is_test:
+            # VALIDAR FIRMA SOLO EN PRODUCCIÓN Y SI NO ESTAMOS EN DEBUG
+            if not is_test and not settings.DEBUG:
                 x_signature = request.headers.get('x-signature')
                 x_request_id = request.headers.get('x-request-id')
                 if x_signature and x_request_id:
@@ -196,7 +216,7 @@ def mercadopago_webhook(request):
                 else:
                     print("[WEBHOOK] No se recibió x-signature en producción")
             else:
-                print("[WEBHOOK] Modo PRUEBA: Saltando validación de firma")
+                print("[WEBHOOK] Modo PRUEBA o DEBUG: Saltando validación de firma")
 
             # Procesar webhook (igual para ambos modos)
             data = {}
@@ -232,13 +252,28 @@ def mercadopago_webhook(request):
                             ).first()
                             if compra:
                                 if not Compra.objects.filter(payment_id=str(resource_id)).exclude(id=compra.id).exists():
-                                    compra.estado_pago = "aprobado"
+                                    print(f"[WEBHOOK] Procesando pago aprobado para compra {compra.id}")
+                                    compra.estado_pago = "pagado"
                                     compra.payment_id = str(resource_id)
                                     compra.pagador_email = payment_data.get('payer', {}).get('email', '')
                                     compra.monto_pagado = payment_data.get('transaction_amount', compra.total)
                                     compra.fecha_confirmacion_pago = timezone.now()
                                     compra.save()
                                     print(f"[WEBHOOK] Compra {compra.id} actualizada")
+                                    
+                                    # Enviar correo con la entrada
+                                    try:
+                                        from ventas.utils import enviar_entrada_por_correo
+                                        print(f"[WEBHOOK] Preparando envío de correo para compra {compra.id}")
+                                        print(f"[WEBHOOK] Email del usuario: {compra.usuario.email}")
+                                        enviar_entrada_por_correo(compra)
+                                        print(f"[WEBHOOK] Correo enviado exitosamente para la compra {compra.id}")
+                                    except Exception as e:
+                                        import traceback
+                                        print(f"[WEBHOOK] Error al enviar correo: {str(e)}")
+                                        print("[WEBHOOK] Traceback completo:")
+                                        print(traceback.format_exc())
+
                                     if is_test:
                                         print(f"[WEBHOOK] PRUEBA - Compra aprobada: {compra.id}")
                                     return JsonResponse({"status": "success"}, status=200)
@@ -275,7 +310,7 @@ def pago_exitoso(request):
     compra = None
     error_message = None
     
-    # Si el pago fue aprobado, actualizar la compra
+    # Si el pago fue aprobado, actualizar la compra y enviar correo
     if status == 'approved' and payment_id:
         try:
             # Consultar la API de Mercado Pago para obtener el external_reference
@@ -311,25 +346,40 @@ def pago_exitoso(request):
                             compra.estado_pago = "revisión"
                             compra.save()
                             context = {
+                                'usuario': request.user,
                                 'payment_id': payment_id,
                                 'collection_id': collection_id,
                                 'preference_id': preference_id,
                                 'status': status,
                                 'compra': compra,
                                 'error_message': "Error en el monto del pago. Contacta a soporte.",
-                                'success': False
+                                'success': False,
+                                
                             }
                             return render(request, 'ventas/pago_exitoso.html', context)
 
                         if not compra_duplicada:
-                            # Actualizar la compra a aprobado
-                            compra.estado_pago = "aprobado"
+                            # Actualizar la compra a pagado
+                            compra.estado_pago = "pagado"
                             compra.payment_id = str(payment_id)
                             compra.pagador_email = payment_data.get('payer', {}).get('email', '')
                             compra.monto_pagado = payment_data.get('transaction_amount', compra.total)
                             compra.fecha_confirmacion_pago = timezone.now()
                             compra.save()
                             print(f"[PAGO_EXITOSO] Compra {compra.id} actualizada a aprobado")
+                            
+                            # Enviar correo con la entrada
+                            try:
+                                from ventas.utils import enviar_entrada_por_correo
+                                print(f"[PAGO_EXITOSO] Preparando envío de correo para compra {compra.id}")
+                                print(f"[PAGO_EXITOSO] Email del usuario: {compra.usuario.email}")
+                                enviar_entrada_por_correo(compra)
+                                print(f"[PAGO_EXITOSO] Correo enviado exitosamente para la compra {compra.id}")
+                            except Exception as e:
+                                import traceback
+                                print(f"[PAGO_EXITOSO] Error al enviar correo: {str(e)}")
+                                print("[PAGO_EXITOSO] Traceback completo:")
+                                print(traceback.format_exc())
                         else:
                             print(f"[PAGO_EXITOSO] payment_id {payment_id} ya registrado en otra compra")
                             error_message = "Este pago ya fue procesado anteriormente."
@@ -366,7 +416,7 @@ def pago_exitoso(request):
         'status': status,
         'compra': compra,
         'error_message': error_message,
-        'success': compra is not None and compra.estado_pago == 'aprobado'
+        'success': compra is not None and compra.estado_pago == 'pagado'
     }
     
     return render(request, 'ventas/pago_exitoso.html', context)

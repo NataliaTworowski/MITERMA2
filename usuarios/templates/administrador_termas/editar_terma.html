@@ -25,8 +25,16 @@
                     <input type="text" id="ubicacion_terma" name="ubicacion_terma" value="{{ terma.direccion_terma|default:'' }}" class="border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-800" disabled>
                     <label class="text-sm font-semibold text-gray-600" for="descripcion_terma">Descripción</label>
                     <textarea name="descripcion_terma" rows="4" class="border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-800 resize-none" placeholder="Descripción">{{ terma.descripcion_terma|default:'' }}</textarea>
+                    
+                    <label class="text-sm font-semibold text-gray-600" for="limite_ventas_diario">Límite de ventas diario</label>
+                    <div class="flex items-center gap-2">
+                        <input type="number" id="limite_ventas_diario" name="limite_ventas_diario" value="{{ terma.limite_ventas_diario }}" 
+                               class="border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-800" 
+                               min="1" max="1000" step="1">
+                        <span class="text-sm text-gray-500">entradas por día</span>
+                    </div>
                     <div class="flex justify-end">
-                        <button type="submit" formaction="{% url 'termas:editar_terma' %}" class="bg-orange-400 hover:bg-orange-500 text-white font-semibold px-6 py-2 rounded-lg shadow transition">Guardar Descripción</button>
+                        <button type="submit" formaction="{% url 'termas:editar_terma' %}" class="bg-orange-400 hover:bg-orange-500 text-white font-semibold px-6 py-2 rounded-lg shadow transition">Guardar Cambios</button>
                     </div>
                 </form>
             </div>
