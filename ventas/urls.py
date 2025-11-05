@@ -1,11 +1,13 @@
 from django.urls import path
 from . import views
-
-app_name = 'ventas'
+from . import api
 
 app_name = 'ventas'
 
 urlpatterns = [
+    # API endpoints
+    path('api/validar-qr/', api.ValidarEntradaQRView.as_view(), name='validar_qr'),
+    
     path('pago/<int:terma_id>/', views.pago, name='pago'),
     path('pago/success/', views.pago_exitoso, name='pago_exitoso'),
     path('pago/failure/', views.pago_fallido, name='pago_fallido'),

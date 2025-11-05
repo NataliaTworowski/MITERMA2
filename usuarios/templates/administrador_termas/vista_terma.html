@@ -288,8 +288,11 @@
         function actualizarIncluidos(entradaId) {
             const resumenIncluidos = document.getElementById('resumen-incluidos');
             const serviciosIncluidosLista = document.getElementById('servicios-incluidos-lista');
-            const servicios = serviciosPorEntrada[entradaId]?.incluidos || [];
-            // Actualiza el resumen (total)
+            const entradaInfo = serviciosPorEntrada[entradaId];
+            const servicios = entradaInfo?.incluidos || [];
+            const serviciosExtra = entradaInfo?.extras || [];
+            
+            // Actualizar servicios incluidos
             if (resumenIncluidos) {
                 if (servicios.length > 0) {
                     resumenIncluidos.textContent = servicios.map(s => s.servicio || s.nombre).join(', ');
@@ -297,7 +300,8 @@
                     resumenIncluidos.textContent = '-';
                 }
             }
-            // Actualiza la lista visual
+            
+            // Actualizar la lista visual de servicios incluidos
             if (serviciosIncluidosLista) {
                 if (servicios.length > 0) {
                     serviciosIncluidosLista.innerHTML = servicios.map(s => `
@@ -309,6 +313,35 @@
                 } else {
                     serviciosIncluidosLista.innerHTML = '<div class="servicio-incluido">No hay servicios incluidos.</div>';
                 }
+            }
+            
+            // Actualizar los servicios extra disponibles
+            const serviciosExtraContainer = document.querySelector('.servicios-extra-container');
+            if (serviciosExtraContainer) {
+                serviciosExtraContainer.innerHTML = serviciosExtra.map(servicio => `
+                    <label class="flex items-center space-x-3 py-2">
+                        <input type="checkbox" class="servicio-extra-checkbox" 
+                               data-id="${servicio.id}" 
+                               data-precio="${servicio.precio || 0}">
+                        <span>${servicio.servicio} (${servicio.precio ? '$' + parseInt(servicio.precio).toLocaleString('es-CL') + ' CLP' : 'Gratis'})</span>
+                        <input type="number" class="servicio-extra-cantidad w-16 text-center border rounded" 
+                               value="1" min="1" disabled
+                               data-nombre="${servicio.servicio}"
+                               data-precio="${servicio.precio || 0}">
+                    </label>
+                `).join('');
+                
+                // Reactivar los event listeners para los nuevos elementos
+                document.querySelectorAll('.servicio-extra-checkbox').forEach(cb => {
+                    cb.addEventListener('change', function() {
+                        const cantidadInput = cb.parentElement.querySelector('.servicio-extra-cantidad');
+                        cantidadInput.disabled = !cb.checked;
+                        actualizarTotal();
+                    });
+                });
+                document.querySelectorAll('.servicio-extra-cantidad').forEach(input => {
+                    input.addEventListener('input', actualizarTotal);
+                });
             }
         }
 
@@ -365,17 +398,23 @@
 
         // Inicializar con la primera entrada seleccionada
         let selectedCard = entradaCards[0];
-        selectedCard.classList.add('border-emerald-800');
-        document.getElementById('resumen-experiencia').textContent = selectedCard.getAttribute('data-nombre');
-        document.getElementById('resumen-precio').textContent = `$${parseInt(selectedCard.getAttribute('data-precio')).toLocaleString('es-CL')} CLP`;
-        document.getElementById('resumen-precio').setAttribute('data-precio', selectedCard.getAttribute('data-precio'));
-        actualizarIncluidos(selectedCard.getAttribute('data-id'));
+        if (selectedCard) {
+            selectedCard.classList.add('border-emerald-800');
+            // Establecer el ID de la entrada inicial
+            document.getElementById('entrada_id').value = selectedCard.getAttribute('data-id');
+            document.getElementById('resumen-experiencia').textContent = selectedCard.getAttribute('data-nombre');
+            document.getElementById('resumen-precio').textContent = `$${parseInt(selectedCard.getAttribute('data-precio')).toLocaleString('es-CL')} CLP`;
+            document.getElementById('resumen-precio').setAttribute('data-precio', selectedCard.getAttribute('data-precio'));
+            actualizarIncluidos(selectedCard.getAttribute('data-id'));
+        }
         actualizarTotal();
 
         entradaCards.forEach(card => {
             card.addEventListener('click', function() {
                 entradaCards.forEach(c => c.classList.remove('border-emerald-800'));
                 card.classList.add('border-emerald-800');
+                // Actualizar el ID de la entrada seleccionada
+                document.getElementById('entrada_id').value = card.getAttribute('data-id');
                 document.getElementById('resumen-experiencia').textContent = card.getAttribute('data-nombre');
                 document.getElementById('resumen-precio').textContent = `$${parseInt(card.getAttribute('data-precio')).toLocaleString('es-CL')} CLP`;
                 document.getElementById('resumen-precio').setAttribute('data-precio', card.getAttribute('data-precio'));

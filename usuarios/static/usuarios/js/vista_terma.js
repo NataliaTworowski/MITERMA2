@@ -95,10 +95,41 @@ document.addEventListener('DOMContentLoaded', function() {
         precioSeleccionado = parseInt(precio);
         const serviciosPorEntrada = JSON.parse(document.getElementById('servicios-por-entrada-json').textContent);
         const data = serviciosPorEntrada[id];
+        
+        // Actualizar servicios incluidos
         renderServiciosIncluidos(data.incluidos);
+        
+        // Actualizar servicios extra disponibles
+        const serviciosExtraContainer = document.querySelector('#servicios-extra');
+        if (serviciosExtraContainer && data.extras) {
+            serviciosExtraContainer.innerHTML = data.extras.map(servicio => `
+                <label class="flex items-center space-x-3 py-2">
+                    <input type="checkbox" class="servicio-extra-checkbox" 
+                           data-id="${servicio.id}" 
+                           data-nombre="${servicio.servicio}"
+                           data-precio="${servicio.precio || 0}">
+                    <span>${servicio.servicio} (${servicio.precio ? '$' + parseInt(servicio.precio).toLocaleString('es-CL') + ' CLP' : 'Gratis'})</span>
+                    <input type="number" class="servicio-extra-cantidad w-16 text-center border rounded" 
+                           value="1" min="1" disabled
+                           data-nombre="${servicio.servicio}"
+                           data-precio="${servicio.precio || 0}">
+                </label>
+            `).join('') || '<div class="text-gray-500">No hay servicios extra disponibles para esta entrada</div>';
+        }
+        
+        // Reactivar event listeners para los nuevos elementos
         document.querySelectorAll('.servicio-extra-checkbox').forEach(cb => {
-            cb.addEventListener('change', actualizarTotal);
+            cb.addEventListener('change', function() {
+                const cantidadInput = cb.parentElement.querySelector('.servicio-extra-cantidad');
+                cantidadInput.disabled = !cb.checked;
+                actualizarTotal();
+            });
         });
+        
+        document.querySelectorAll('.servicio-extra-cantidad').forEach(input => {
+            input.addEventListener('change', actualizarTotal);
+        });
+        
         actualizarTotal();
     }
 
@@ -120,34 +151,61 @@ document.addEventListener('DOMContentLoaded', function() {
         const cantidad = parseInt(inputCantidad.value) || 1;
         let totalExtras = 0;
         let extrasNombres = [];
+        let extrasIds = [];
+
+        // Recoger información de servicios extra seleccionados
         document.querySelectorAll('.servicio-extra-checkbox:checked').forEach(cb => {
             let precio = parseInt(cb.getAttribute('data-precio')) || 0;
-            totalExtras += precio * cantidad;
-            extrasNombres.push(cb.getAttribute('data-nombre'));
+            let id = cb.getAttribute('data-id');
+            if (id) {
+                extrasIds.push(id);
+                totalExtras += precio * cantidad;
+                extrasNombres.push(cb.getAttribute('data-nombre'));
+            }
         });
+
+        // Calcular total
         const totalCLP = precioSeleccionado * cantidad + totalExtras;
+
+        // Actualizar servicios incluidos en el resumen
         let resumenIncluidos = document.getElementById('resumen-incluidos');
         let serviciosIncluidos = [];
         let incluidosDivs = document.querySelectorAll('#servicios-incluidos > div .text-lg');
         if (incluidosDivs) {
             incluidosDivs.forEach(el => {
-                serviciosIncluidos.push(el.textContent);
+                if (el.textContent.trim()) {
+                    serviciosIncluidos.push(el.textContent.trim());
+                }
             });
         }
+
+        // Actualizar el resumen de servicios incluidos
         if (resumenIncluidos) {
             resumenIncluidos.textContent = serviciosIncluidos.length > 0 ? serviciosIncluidos.join(', ') : '-';
         }
+
+        // Actualizar el resumen de extras
         let resumenExtras = document.getElementById('resumen-extras');
         if (resumenExtras) {
-            if (extrasNombres.length > 0) {
-                resumenExtras.textContent = extrasNombres.join(', ');
-            } else {
-                resumenExtras.textContent = '-';
-            }
+            resumenExtras.textContent = extrasNombres.length > 0 ? extrasNombres.join(', ') : '-';
         }
+
+        // Actualizar campos ocultos
+        let inputExtras = document.getElementById('input-extras');
+        if (inputExtras) {
+            inputExtras.value = extrasIds.length > 0 ? extrasIds.join(',') : '';
+        }
+
+        // Actualizar total
         let resumenTotal = document.getElementById('resumen-total');
         if (resumenTotal) {
             resumenTotal.textContent = `$${totalCLP.toLocaleString('es-CL')} CLP`;
+        }
+
+        // Actualizar input hidden del total
+        let inputTotal = document.getElementById('input-total');
+        if (inputTotal) {
+            inputTotal.value = totalCLP;
         }
     }
 

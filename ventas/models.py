@@ -44,6 +44,15 @@ class CodigoQR(models.Model):
     fecha_uso = models.DateTimeField(null=True, blank=True)
     usado = models.BooleanField(default=False)
 
+class RegistroEscaneo(models.Model):
+    codigo_qr = models.ForeignKey(CodigoQR, on_delete=models.CASCADE)
+    fecha_escaneo = models.DateTimeField(auto_now_add=True)
+    usuario_scanner = models.ForeignKey('usuarios.Usuario', on_delete=models.SET_NULL, null=True)
+    exitoso = models.BooleanField(default=False)
+    mensaje = models.CharField(max_length=255, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    dispositivo = models.CharField(max_length=255, blank=True)
+
 
 class CuponDescuento(models.Model):
     codigo = models.CharField(max_length=50, unique=True)
@@ -60,6 +69,7 @@ class CuponUsado(models.Model):
 
 
 class DetalleCompra(models.Model):
+    id = models.AutoField(primary_key=True)
     compra = models.ForeignKey(Compra, on_delete=models.CASCADE, related_name="detalles")
     horario_disponible = models.ForeignKey(HorarioDisponible, on_delete=models.CASCADE)
     cantidad = models.IntegerField()

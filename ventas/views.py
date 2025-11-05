@@ -30,8 +30,36 @@ def pago(request, terma_id=None):
         datos['cantidad'] = request.POST.get('cantidad')
         datos['fecha'] = request.POST.get('fecha')
         datos['cantidad_entradas'] = request.POST.get('cantidad')
-
-        # Obtener usuario
+        
+                # Obtener descripción detallada de servicios extra
+        from termas.models import ServicioTerma
+        if datos.get('extras') and datos['extras'].strip():
+            try:
+                print(f"\n[DEBUG] Procesando servicio extra: {datos['extras']}")
+                # Obtener el servicio por nombre
+                nombre_servicio = datos['extras'].split('x1')[0].strip()  # "Gimnasio x1 ($17.000 CLP)" -> "Gimnasio"
+                print(f"[DEBUG] Buscando servicio con nombre: {nombre_servicio}")
+                
+                servicio = ServicioTerma.objects.filter(servicio__icontains=nombre_servicio).first()
+                if servicio:
+                    print(f"[DEBUG] Servicio encontrado - ID: {servicio.id}, Nombre: {servicio.servicio}")
+                    datos['extras_descripcion'] = f"{servicio.servicio} (${servicio.precio} CLP)"
+                    datos['servicio_extra_id'] = servicio.id
+                    # Save the service ID in session for later use
+                    request.session['servicio_extra_id'] = servicio.id
+                else:
+                    print(f"[DEBUG] No se encontró el servicio: {nombre_servicio}")
+                    datos['extras_descripcion'] = '-'
+                    datos['servicio_extra_id'] = None
+            except Exception as e:
+                print(f"[DEBUG] Error al procesar servicio extra: {str(e)}")
+                import traceback
+                print(traceback.format_exc())
+                datos['extras_descripcion'] = '-'
+                datos['servicio_extra_id'] = None
+        else:
+            datos['extras_descripcion'] = '-'
+            datos['servicio_extra_id'] = None        # Obtener usuario
         usuario = None
         if 'usuario_id' in request.session:
             usuario = Usuario.objects.filter(id=request.session['usuario_id']).first()
@@ -51,12 +79,39 @@ def pago(request, terma_id=None):
             datos['compra_error'] = "No se encontró el usuario para la compra. Debes iniciar sesión."
             return render(request, 'ventas/pago.html', datos)
         
-        if not datos['total']:
+        # Validar datos requeridos
+        if not datos.get('entrada_id'):
+            datos['compra_error'] = "No se especificó la entrada a comprar."
+            return render(request, 'ventas/pago.html', datos)
+
+        if not datos.get('total'):
             datos['compra_error'] = "No se recibió el monto total de la compra."
             return render(request, 'ventas/pago.html', datos)
-        
+
         if not terma:
             datos['compra_error'] = "No se encontró la terma seleccionada para la compra."
+            return render(request, 'ventas/pago.html', datos)
+            
+            # Validar que la entrada exista
+        from entradas.models import HorarioDisponible, EntradaTipo
+        try:
+            # Primero validar que sea un ID válido
+            entrada_id = str(datos.get('entrada_id')).strip()
+            if not entrada_id:
+                datos['compra_error'] = "No se seleccionó ningún tipo de entrada."
+                return render(request, 'ventas/pago.html', datos)
+
+            # Validar que el tipo de entrada exista y pertenezca a la terma
+            entrada_tipo = EntradaTipo.objects.filter(id=entrada_id, terma=terma, estado=True).first()
+            if not entrada_tipo:
+                datos['compra_error'] = "El tipo de entrada seleccionado no es válido para esta terma."
+                return render(request, 'ventas/pago.html', datos)
+
+            # Todo está correcto, asignar la entrada validada
+            datos['entrada_tipo'] = entrada_tipo
+
+        except (ValueError, EntradaTipo.DoesNotExist):
+            datos['compra_error'] = "La entrada seleccionada no es válida."
             return render(request, 'ventas/pago.html', datos)
 
         # Verificar disponibilidad para la fecha seleccionada
@@ -74,9 +129,11 @@ def pago(request, terma_id=None):
                 datos['compra_error'] = f"Solo quedan {cupos_restantes} cupos disponibles para la fecha seleccionada."
                 return render(request, 'ventas/pago.html', datos)
 
-        # CREAR LA COMPRA ANTES de generar la preferencia
+            # CREAR LA COMPRA ANTES de generar la preferencia
         try:
-            from ventas.models import Compra, MetodoPago
+            from ventas.models import Compra, MetodoPago, DetalleCompra
+            from entradas.models import HorarioDisponible
+            from termas.models import ServicioTerma
             import uuid
 
             metodo_pago = MetodoPago.objects.filter(nombre__icontains="Mercado Pago").first()
@@ -84,6 +141,42 @@ def pago(request, terma_id=None):
             # Generar un ID único para esta compra ANTES de crear la preferencia
             mercado_pago_id = f"{access_token[:10]}-{uuid.uuid4()}"
 
+            # Validar y obtener o crear el horario disponible
+            if not datos.get('entrada_id') or not datos.get('fecha'):
+                raise ValueError("No se especificó el ID de la entrada o la fecha")
+
+            try:
+                entrada_tipo = EntradaTipo.objects.get(id=datos['entrada_id'])
+                fecha_visita = datetime.strptime(datos['fecha'], '%Y-%m-%d').date()
+                
+                # Intentar obtener un horario existente o crear uno nuevo
+                horario = HorarioDisponible.objects.filter(
+                    entrada_tipo=entrada_tipo,
+                    fecha=fecha_visita
+                ).first()
+
+                if not horario:
+                    # Crear nuevo horario disponible
+                    horario = entrada_tipo.create_horario_disponible(fecha_visita)
+
+                # Verificar disponibilidad
+                if horario.cupos_disponibles < int(datos['cantidad_entradas']):
+                    raise ValueError(f"Solo quedan {horario.cupos_disponibles} cupos disponibles para esta fecha")
+
+            except Exception as e:
+                raise ValueError(f"Error al obtener o crear el horario disponible: {str(e)}")
+            
+            # Calcular precio con extras si hay
+            try:
+                precio_unitario = float(datos['precio'].replace(',', '.')) if datos.get('precio') else 0.0
+                cantidad = int(datos['cantidad_entradas']) if datos.get('cantidad_entradas') else 1
+                if cantidad <= 0:
+                    raise ValueError("La cantidad debe ser mayor a 0")
+                subtotal = precio_unitario * cantidad
+            except (ValueError, TypeError) as e:
+                raise ValueError(f"Error en los datos de precio o cantidad: {str(e)}")
+
+            # Crear la compra
             compra = Compra.objects.create(
                 usuario=usuario,
                 metodo_pago=metodo_pago,
@@ -92,8 +185,57 @@ def pago(request, terma_id=None):
                 total=datos['total'] if datos['total'] else 0,
                 estado_pago="pendiente",
                 mercado_pago_id=mercado_pago_id,
-                cantidad=int(datos['cantidad_entradas']) if datos['cantidad_entradas'] else 1,
+                cantidad=cantidad,
             )
+            
+            # Crear el detalle de compra
+            print(f"\n[DEBUG] Creando detalle de compra...")
+            detalle = DetalleCompra.objects.create(
+                compra=compra,
+                horario_disponible=horario,
+                cantidad=cantidad,
+                precio_unitario=precio_unitario,
+                subtotal=subtotal
+            )
+            print(f"[DEBUG] Detalle creado: ID={detalle.id}")
+            
+            # Debug de datos recibidos
+            print(f"[DEBUG] Datos de extras recibidos: {datos.get('extras', 'No hay extras')}")
+            print(f"[DEBUG] Tipo de datos extras: {type(datos.get('extras', ''))}")
+            
+            # Agregar servicios extra
+            if 'servicio_extra_id' in request.session:
+                try:
+                    servicio_id = request.session['servicio_extra_id']
+                    print(f"\n[DEBUG] Recuperando servicio_extra_id de sesión: {servicio_id}")
+                    
+                    servicio = ServicioTerma.objects.get(id=servicio_id)
+                    print(f"[DEBUG] Servicio encontrado para agregar: {servicio.servicio}")
+                    
+                    # Limpiar servicios existentes y agregar el nuevo
+                    detalle.servicios.clear()
+                    detalle.servicios.add(servicio)
+                    
+                    # Guardar explícitamente
+                    detalle.save()
+                    
+                    # Verificar que se guardó
+                    servicios_guardados = list(detalle.servicios.all())
+                    print(f"[DEBUG] Servicios guardados en detalle {detalle.id}: {[s.servicio for s in servicios_guardados]}")
+                    
+                    # Limpiar la sesión
+                    del request.session['servicio_extra_id']
+                except Exception as e:
+                    print(f"[DEBUG] Error al agregar servicio extra: {str(e)}")
+                    import traceback
+                    print(traceback.format_exc())
+                    try:
+                        # Asegurarnos de limpiar la sesión en caso de error
+                        if 'servicio_extra_id' in request.session:
+                            del request.session['servicio_extra_id']
+                    except:
+                        pass
+            
             print(f"Compra creada: id={compra.id}, mercado_pago_id={compra.mercado_pago_id}")
 
         except Exception as e:
@@ -107,15 +249,20 @@ def pago(request, terma_id=None):
         else:
             base_url = request.build_absolute_uri('/')[:-1]
         
+        # Obtener el total real desde el input_total que incluye entradas y servicios
+        total = float(datos.get('total', '0').replace('.', '').replace(',', '.'))
+        
+        # Crear un solo ítem con el total completo
+        items = [{
+            "title": f"Reserva: {datos['experiencia']} - {datos.get('cantidad_entradas', 1)} entrada(s)",
+            "quantity": 1,
+            "unit_price": total,
+            "currency_id": "CLP",
+            "description": f"Incluye: {datos.get('incluidos', '-')}. Servicios extra: {datos.get('extras_descripcion', '-')}"
+        }]
+
         preference_data = {
-            "items": [
-                {
-                    "title": f"Reserva: {datos['experiencia']}",
-                    "quantity": int(datos['cantidad_entradas']) if datos['cantidad_entradas'] else 1,
-                    "unit_price": float(datos['precio'].replace(',', '.')) if datos['precio'] else 0.0,
-                    "currency_id": "CLP"
-                }
-            ],
+            "items": items,
             "external_reference": mercado_pago_id,  
             "back_urls": {
                 "success": f"{base_url}/ventas/pago/success/",  

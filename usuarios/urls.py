@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 from . import views_cliente
+from . import api
 
 app_name = 'usuarios'
 
@@ -16,4 +17,6 @@ urlpatterns = [
     path('solicitudes_pendientes/', views.solicitudes_pendientes, name='solicitudes_pendientes'),
     path('mis_entradas/', views_cliente.mostrar_entradas, name='mis_entradas'),
     
+    # API endpoints
+    path('api/login/', api.LoginAPIView.as_view(), name='api_login'),
 ]

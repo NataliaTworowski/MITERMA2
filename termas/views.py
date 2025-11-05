@@ -558,13 +558,24 @@ def vista_terma(request, terma_id):
     from django.core import serializers
     import json
     servicios_por_entrada = {}
+    
+    # Obtener todos los servicios disponibles de la terma una sola vez
+    todos_servicios = list(terma.servicios.values('id', 'servicio', 'descripcion', 'precio'))
+    
     for entrada in entradas:
+        # Obtener servicios incluidos de esta entrada específica
         incluidos = list(entrada.servicios.values('id', 'servicio', 'descripcion', 'precio'))
-        extra_queryset = terma.servicios.exclude(id__in=entrada.servicios.values_list('id', flat=True))
-        extras = list(extra_queryset.values('id', 'servicio', 'descripcion', 'precio'))
+        
+        # Crear un set de IDs de servicios incluidos para búsqueda más eficiente
+        servicios_incluidos_ids = {s['id'] for s in incluidos}
+        
+        # Filtrar servicios extra: excluir los que ya están incluidos en la entrada
+        extras = [s for s in todos_servicios if s['id'] not in servicios_incluidos_ids]
+        
         servicios_por_entrada[entrada.id] = {
             'incluidos': incluidos,
             'extras': extras,
+            'nombre': entrada.nombre  # Agregar el nombre de la entrada para referencia
         }
 
     entrada_seleccionada = entradas.first() if entradas.exists() else None
