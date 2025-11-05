@@ -12,8 +12,8 @@
 <body class="bg-gray-200 text-gray-800">
     {% include 'partials/navbar_usuario2.html' %}
     <!-- HEADER -->
-    <header class="bg-emerald-800 shadow-sm py-4 px-8 flex items-center justify-between">
-        <button onclick="window.history.back()" class="mr-4 flex items-center justify-center w-10 h-10 rounded-full bg-green-100 hover:bg-blue-200 text-blue-700">
+    <header class="bg-gradient-to-r from-emerald-800 to-green-700 shadow-lg py-6 px-8 flex items-center justify-between">
+        <button onclick="window.history.back()" class="mr-4 flex items-center justify-center w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 text-white transition-all duration-300 backdrop-blur-sm">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
         </button>
         <div class="flex-1 flex flex-col items-center">
@@ -21,10 +21,10 @@
         </div>
     </header>
 
-    <div class="md:ml-64">
-    <!-- carrusek chico -->
-    <main class="max-w-7xl mx-auto py-10 px-4 grid grid-cols-1 lg:grid-cols-3 gap-10">
-        <aside class="lg:col-span-1 order-2 lg:order-1">
+    <div class="w-full">
+    <!-- Contenido principal -->
+    <main class="max-w-full mx-auto py-12 px-8 grid grid-cols-1 lg:grid-cols-3 gap-12 bg-gradient-to-br from-white to-green-50">
+        <aside class="lg:col-span-1 order-2 lg:order-1 bg-white rounded-3xl shadow-xl p-8 hover:shadow-2xl transition-shadow duration-300">
             <div class="bg-white rounded-2xl shadow-lg p-6 mb-8">
                 <div class="relative w-full h-64 rounded-xl overflow-hidden shadow mb-4" id="carrusel-terma">
                     {% if terma.imagenes.all %}
@@ -150,9 +150,9 @@
     </main>
 
     <!-- SECCIÓN DE galeria de fotos -->
-    <section class="max-w-7xl mx-auto py-8 px-4 bg-gray-50 rounded-2xl shadow-lg mb-10">
-        <h2 class="text-2xl font-bold mb-4 text-green-800">Galería de Fotos</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+    <section class="max-w-full mx-auto py-12 px-8 bg-gradient-to-br from-gray-50 to-green-50 rounded-3xl shadow-xl mb-12">
+        <h2 class="text-3xl font-bold mb-8 text-emerald-800 text-center">Galería de Fotos</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 p-4">
             {% for imagen in terma.imagenes.all %}
                 <div class="rounded-lg overflow-hidden shadow cursor-pointer gallery-thumb" data-img="{{ imagen.url_imagen }}">
                     <img src="{{ imagen.url_imagen }}" alt="Imagen de {{ terma.nombre_terma }}" class="w-full h-48 object-cover hover:scale-105 transition-transform duration-300">
@@ -168,9 +168,9 @@
         </div>
     </section>
     <!-- SECCIÓN DE dejar un comentario -->
-    <section class="max-w-7xl mx-auto py-8 px-4">
-    <h2 class="text-2xl font-bold mb-4 text-green-800">Deja tu Opinión</h2>
-    <form method="post" action="" class="bg-[#f8fafc] rounded-2xl border border-gray-200 shadow-lg p-10 max-w-xl mx-auto" id="form-comentario">
+    <section class="max-w-full mx-auto py-12 px-8">
+    <h2 class="text-3xl font-bold mb-8 text-emerald-800 text-center">Deja tu Opinión</h2>
+    <form method="post" action="" class="bg-gradient-to-br from-white to-green-50 rounded-3xl border-2 border-emerald-100 shadow-xl p-12 max-w-2xl mx-auto backdrop-blur-sm" id="form-comentario">
             {% csrf_token %}
             <div class="mb-8">
                 <label class="block font-medium mb-4 text-gray-700 text-lg">Tu puntuación:</label>
@@ -206,7 +206,7 @@
     </section>
 
     <!-- SECCIÓN DE comentarios -->
-    <section class="max-w-7xl mx-auto py-8 px-4">
+    <section class="max-w-full mx-auto py-8 px-8">
         <h2 class="text-2xl font-bold mb-4 text-green-800">Opiniones de los Usuarios</h2>
         <div class="flex items-center gap-4 bg-white rounded-xl shadow p-6">
             <div class="flex items-center gap-2">

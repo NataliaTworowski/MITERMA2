@@ -2,82 +2,139 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-	<meta charset="UTF-8">
-	<title>Pago Exitoso</title>
-	<link rel="stylesheet" href="{% static 'usuarios/css/vista_terma.css' %}">
-	<script src="https://cdn.tailwindcss.com"></script>
+    <meta charset="UTF-8">
+    <title>Pago Exitoso</title>
+    <link rel="stylesheet" href="{% static 'usuarios/css/vista_terma.css' %}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col justify-center items-center">
-    <main>
-    <div class="hidden md:block fixed top-0 left-0 right-0 z-40">
+<body class="bg-gradient-to-br from-blue-50 to-blue-100 min-h-screen">
+    <main class="pt-16">
+    <div class="fixed top-0 left-0 right-0 z-40 bg-white shadow-md">
         {% include 'partials/navbar_usuario2.html' %}
     </div>
-	<div class="container mt-5">
+    <div class="container mx-auto px-4 py-8 max-w-3xl">
     {% if success %}
-        <div class="alert alert-success text-center">
-            <h2><i class="fas fa-check-circle"></i> ¡Pago Exitoso!</h2>
-            <p class="lead">Tu reserva ha sido confirmada</p>
+        <div class="bg-green-100 border-l-4 border-green-500 rounded-lg p-8 mb-8 text-center animate-fade-in">
+            <i class="fas fa-check-circle text-5xl text-green-500 mb-4"></i>
+            <h2 class="text-3xl font-bold text-green-800 mb-2">¡Pago Exitoso!</h2>
+            <p class="text-lg text-green-600">Tu reserva ha sido confirmada</p>
         </div>
         
-        <div class="card">
-            <div class="card-header">
-                <h4>Detalles de tu compra</h4>
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="bg-blue-600 px-6 py-4">
+                <h4 class="text-xl font-semibold text-white">Detalles de tu compra</h4>
             </div>
-            <div class="card-body">
-                <p><strong>ID de Compra:</strong> #{{ compra.id }}</p>
-                <p><strong>Terma:</strong> {{ compra.terma.nombre }}</p>
-                <p><strong>Fecha de visita:</strong> {{ compra.fecha_visita|date:"d/m/Y" }}</p>
-                <p><strong>Monto pagado:</strong> ${{ compra.monto_pagado|floatformat:0 }}</p>
-                <p><strong>ID de pago:</strong> {{ payment_id }}</p>
-                <p><strong>Estado:</strong> <span class="badge badge-success">Aprobado</span></p>
+            <div class="p-6 space-y-4">
+                <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span class="text-gray-600">ID de Compra</span>
+                    <span class="font-semibold">#{{ compra.id }}</span>
+                </div>
+                <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span class="text-gray-600">Terma</span>
+                    <span class="font-semibold">
+                        {% if compra %}
+                            {% if compra.terma %}
+                                {{ compra.terma.nombre_terma }}
+                            {% else %}
+                                {% with primer_detalle=compra.detalles.first %}
+                                    {% if primer_detalle %}
+                                        {{ primer_detalle.horario_disponible.entrada_tipo.terma.nombre_terma }}
+                                    {% else %}
+                                        <span class="text-red-600">Debug - No hay detalles: {{ compra.id }}</span>
+                                    {% endif %}
+                                {% endwith %}
+                            {% endif %}
+                        {% else %}
+                            <span class="text-red-600">Debug - No hay compra</span>
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span class="text-gray-600">Fecha de visita</span>
+                    <span class="font-semibold">{{ compra.fecha_visita|date:"d/m/Y" }}</span>
+                </div>
+                <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span class="text-gray-600">Monto pagado</span>
+                    <span class="font-semibold text-green-600">${{ compra.monto_pagado|floatformat:0 }}</span>
+                </div>
+                <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span class="text-gray-600">ID de pago</span>
+                    <span class="font-mono text-sm">{{ payment_id }}</span>
+                </div>
+                <div class="flex justify-between items-center py-2">
+                    <span class="text-gray-600">Estado</span>
+                    <span class="px-4 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">Aprobado</span>
+                </div>
             </div>
         </div>
         
-        <div class="text-center mt-4">
-            <a href="{% url 'usuarios:inicio' %}" class="btn btn-primary">Volver al inicio</a>
-            <a href="{% url 'usuarios:mis_entradas' %}" class="btn btn-secondary">Ver mis reservas</a>
+        <div class="flex justify-center gap-4 mt-8">
+            <a href="{% url 'usuarios:inicio' %}" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2">
+                <i class="fas fa-home"></i> Volver al inicio
+            </a>
+            <a href="{% url 'usuarios:mis_entradas' %}" class="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200 flex items-center gap-2">
+                <i class="fas fa-ticket-alt"></i> Ver mis reservas
+            </a>
         </div>
         
     {% elif error_message %}
-        <div class="alert alert-warning text-center">
-            <h2><i class="fas fa-exclamation-triangle"></i> Atención</h2>
-            <p class="lead">{{ error_message }}</p>
+        <div class="bg-yellow-100 border-l-4 border-yellow-500 rounded-lg p-8 mb-8 text-center">
+            <i class="fas fa-exclamation-triangle text-5xl text-yellow-500 mb-4"></i>
+            <h2 class="text-2xl font-bold text-yellow-800 mb-2">Atención</h2>
+            <p class="text-lg text-yellow-600">{{ error_message }}</p>
         </div>
         
-        <div class="card">
-            <div class="card-body">
-                <p><strong>ID de pago:</strong> {{ payment_id|default:"No disponible" }}</p>
-                <p><strong>Estado:</strong> {{ status|default:"Desconocido" }}</p>
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="p-6 space-y-4">
+                <div class="flex justify-between items-center py-2 border-b border-gray-100">
+                    <span class="text-gray-600">ID de pago</span>
+                    <span class="font-mono">{{ payment_id|default:"No disponible" }}</span>
+                </div>
+                <div class="flex justify-between items-center py-2">
+                    <span class="text-gray-600">Estado</span>
+                    <span class="px-4 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">{{ status|default:"Desconocido" }}</span>
+                </div>
             </div>
         </div>
         
-        <div class="text-center mt-4">
-            <a href="{% url 'usuarios:inicio' %}" class="btn btn-primary">Volver al inicio</a>
-            <a href="mailto:soporte@tutermas.cl" class="btn btn-outline-secondary">Contactar soporte</a>
+        <div class="flex justify-center gap-4 mt-8">
+            <a href="{% url 'usuarios:inicio' %}" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2">
+                <i class="fas fa-home"></i> Volver al inicio
+            </a>
+            <a href="mailto:soporte@tutermas.cl" class="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200 flex items-center gap-2">
+                <i class="fas fa-envelope"></i> Contactar soporte
+            </a>
         </div>
         
     {% else %}
-        <div class="alert alert-info text-center">
-            <h2><i class="fas fa-clock"></i> Procesando pago...</h2>
-            <p class="lead">Estamos verificando tu pago</p>
+        <div class="bg-blue-100 border-l-4 border-blue-500 rounded-lg p-8 mb-8 text-center animate-pulse">
+            <i class="fas fa-clock text-5xl text-blue-500 mb-4"></i>
+            <h2 class="text-2xl font-bold text-blue-800 mb-2">Procesando pago...</h2>
+            <p class="text-lg text-blue-600">Estamos verificando tu pago</p>
         </div>
         
-        <div class="card">
-            <div class="card-body">
-                <ul class="list-unstyled">
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="p-6">
+                <ul class="space-y-3">
                     {% for key, value in request.GET.items %}
-                        <li><strong>{{ key }}:</strong> {{ value }}</li>
+                        <li class="flex justify-between items-center py-2 border-b border-gray-100">
+                            <span class="text-gray-600">{{ key }}</span>
+                            <span class="font-mono text-sm">{{ value }}</span>
+                        </li>
                     {% endfor %}
                 </ul>
             </div>
         </div>
         
-        <div class="text-center mt-4">
-            <a href="{% url 'usuarios:inicio' %}" class="btn btn-primary">Volver al inicio</a>
+        <div class="flex justify-center mt-8">
+            <a href="{% url 'usuarios:inicio' %}" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2">
+                <i class="fas fa-home"></i> Volver al inicio
+            </a>
         </div>
     {% endif %}
 </div>
-</body>
 </main>
 {% include 'partials/footer.html' %}
+</body>
 </html>

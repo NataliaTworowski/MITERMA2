@@ -472,8 +472,13 @@ def pago_exitoso(request):
                 print(f"[PAGO_EXITOSO] external_reference: {external_reference}")
                 
                 if external_reference:
-                    # Buscar la compra por el external_reference
-                    compra = Compra.objects.filter(
+                    # Buscar la compra por el external_reference con todas sus relaciones
+                    compra = Compra.objects.select_related('terma').prefetch_related(
+                        'detalles',
+                        'detalles__horario_disponible',
+                        'detalles__horario_disponible__entrada_tipo',
+                        'detalles__horario_disponible__entrada_tipo__terma'
+                    ).filter(
                         mercado_pago_id=str(external_reference),
                         estado_pago="pendiente"
                     ).first()

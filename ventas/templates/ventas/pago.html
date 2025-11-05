@@ -8,8 +8,8 @@
 </head>
 <body class="bg-gray-100 text-gray-800 min-h-screen">
     {% include 'partials/navbar_usuario2.html' %}
-    <div class="md:ml-64 flex items-center justify-center min-h-screen p-4">
-        <div class="w-full max-w-xl bg-white rounded-2xl shadow-xl p-10 text-center">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="w-full max-w-xl bg-white rounded-2xl shadow-xl p-10 text-center mx-auto my-8">
             {% if compra_error %}
             <div class="mb-4 p-4 bg-red-100 text-red-700 rounded-lg font-bold">
                 {{ compra_error }}

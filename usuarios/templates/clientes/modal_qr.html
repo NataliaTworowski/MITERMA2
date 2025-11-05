@@ -1,0 +1,85 @@
+<!-- Modal para mostrar el código QR -->
+<div id="qrModal" class="fixed inset-0 z-50 hidden overflow-y-auto">
+    <div class="min-h-screen px-4 text-center">
+        <!-- Overlay -->
+        <div class="fixed inset-0 bg-black bg-opacity-40 transition-opacity"></div>
+
+        <!-- Modal container -->
+        <div class="inline-block align-middle bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <!-- Modal content -->
+            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="sm:flex sm:items-start">
+                    <!-- Modal header -->
+                    <div class="w-full">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg leading-6 font-medium text-gray-900">
+                                Código QR de Entrada
+                            </h3>
+                            <button type="button" onclick="closeQRModal()" class="text-gray-400 hover:text-gray-500">
+                                <span class="sr-only">Cerrar</span>
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- QR code container -->
+                        <div id="qrContainer" class="flex flex-col items-center justify-center p-4">
+                            <!-- El QR se cargará aquí -->
+                            <div id="qrCodeImage" class="mb-4">
+                                <!-- Loading spinner -->
+                                <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                            </div>
+                            <p class="text-sm text-gray-600 text-center">
+                                Muestra este código QR al personal de la terma para validar tu entrada
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Modal actions -->
+            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button type="button" onclick="closeQRModal()" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showQRModal(compraId) {
+    // Mostrar el modal
+    document.getElementById('qrModal').classList.remove('hidden');
+    
+    // Cargar el QR
+    fetch(`/usuarios/get_qr/${compraId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.qr_code) {
+                // Crear la imagen del QR
+                const img = document.createElement('img');
+                img.src = data.qr_code;
+                img.classList.add('max-w-full', 'h-auto', 'rounded-lg', 'shadow');
+                
+                // Reemplazar el spinner con la imagen
+                const container = document.getElementById('qrCodeImage');
+                container.innerHTML = '';
+                container.appendChild(img);
+            } else {
+                document.getElementById('qrCodeImage').innerHTML = 
+                    '<p class="text-red-600">Error al cargar el código QR</p>';
+            }
+        })
+        .catch(error => {
+            document.getElementById('qrCodeImage').innerHTML = 
+                '<p class="text-red-600">Error al cargar el código QR</p>';
+        });
+}
+
+function closeQRModal() {
+    document.getElementById('qrModal').classList.add('hidden');
+    // Resetear el contenedor del QR al spinner
+    document.getElementById('qrCodeImage').innerHTML = 
+        '<div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>';
+}
+</script>
