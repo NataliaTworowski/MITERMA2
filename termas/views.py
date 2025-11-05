@@ -515,12 +515,56 @@ def calendario_termas(request):
         messages.error(request, 'No tienes permisos para acceder a esta sección.')
         return redirect('usuarios:inicio')
     try:
+        from datetime import datetime, date
+        from django.db.models import Sum
+        import json
+        from ventas.models import Compra
+        
         usuario = Usuario.objects.get(id=request.session['usuario_id'])
         terma = usuario.terma
+        
+        # Obtener mes y año de la URL o usar el actual
+        mes = int(request.GET.get('mes', datetime.now().month))
+        anio = int(request.GET.get('anio', datetime.now().year))
+        
+        # Obtener todas las ventas del mes seleccionado agrupadas por fecha_visita
+        ventas_mes = Compra.objects.filter(
+            terma=terma,
+            estado_pago='pagado',
+            fecha_visita__year=anio,
+            fecha_visita__month=mes
+        ).values('fecha_visita').annotate(
+            total_entradas=Sum('cantidad')
+        )
+        
+        # Convertir a diccionario con formato YYYY-MM-DD
+        ventas_por_dia = {}
+        
+        # Primero obtenemos todas las compras pagadas del mes
+        compras_mes = Compra.objects.filter(
+            terma=terma,
+            estado_pago='pagado',
+            fecha_visita__year=anio,
+            fecha_visita__month=mes
+        )
+        
+        # Convertir las ventas a un diccionario con formato YYYY-MM-DD
+        for venta in ventas_mes:
+            fecha = venta['fecha_visita']
+            total = venta['total_entradas']
+            ventas_por_dia[fecha.strftime('%Y-%m-%d')] = total
+        
+        # Imprimir para debug
+        print(f"Mes: {mes}, Año: {anio}")
+        print("Ventas encontradas:", ventas_por_dia)
+        
         context = {
             'title': 'Calendario de la Terma - MiTerma',
             'usuario': usuario,
             'terma': terma,
+            'ventas_por_dia': ventas_por_dia,  # Ya no necesitamos json.dumps aquí porque usamos json_script en el template
+            'mes_actual': mes,
+            'anio_actual': anio
         }
         return render(request, 'administrador_termas/calendario_termas.html', context)
     except Usuario.DoesNotExist:
