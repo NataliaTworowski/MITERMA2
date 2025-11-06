@@ -1,0 +1,130 @@
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>{{ title }}</title>
+    {% include 'partials/head.html' %}
+</head>
+<body class="flex min-h-screen bg-gray-100 font-sans">
+    {% include 'partials/navbar_adm_termas.html' %}
+
+    <main class="flex-1 md:ml-8 pl-4 pr-2 py-2">
+        <div class="bg-white rounded-xl shadow p-8 mt-8">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h1 class="text-3xl font-extrabold text-gray-800 mb-2">Crear Nueva Entrada</h1>
+                    <p class="text-gray-500">Agrega un nuevo tipo de entrada para tu spa.</p>
+                </div>
+                <a href="{% url 'termas:precios_terma' %}" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold px-5 py-2 rounded-lg shadow transition">← Volver a Precios</a>
+            </div>
+
+            <!-- Mostrar mensajes de error si los hay -->
+            {% if form.errors %}
+                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                    <strong>Error en el formulario:</strong>
+                    <ul class="mt-2">
+                        {% for field, errors in form.errors.items %}
+                            {% for error in errors %}
+                                <li>{{ field|capfirst }}: {{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                
+                <!-- Nombre de la entrada -->
+                <div>
+                    <label for="{{ form.nombre.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        {{ form.nombre.label }}
+                    </label>
+                    {{ form.nombre }}
+                    {% if form.nombre.help_text %}
+                        <p class="mt-1 text-sm text-gray-500">{{ form.nombre.help_text }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Descripción -->
+                <div>
+                    <label for="{{ form.descripcion.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        {{ form.descripcion.label }}
+                    </label>
+                    {{ form.descripcion }}
+                    {% if form.descripcion.help_text %}
+                        <p class="mt-1 text-sm text-gray-500">{{ form.descripcion.help_text }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Precio y Duración en una fila -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="{{ form.precio.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            {{ form.precio.label }}
+                        </label>
+                        {{ form.precio }}
+                        {% if form.precio.help_text %}
+                            <p class="mt-1 text-sm text-gray-500">{{ form.precio.help_text }}</p>
+                        {% endif %}
+                    </div>
+
+                    <div>
+                        <label for="{{ form.duracion_horas.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                            {{ form.duracion_horas.label }}
+                        </label>
+                        {{ form.duracion_horas }}
+                        {% if form.duracion_horas.help_text %}
+                            <p class="mt-1 text-sm text-gray-500">{{ form.duracion_horas.help_text }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Tipo de duración -->
+                <div>
+                    <label for="{{ form.duracion_tipo.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                        {{ form.duracion_tipo.label }}
+                    </label>
+                    {{ form.duracion_tipo }}
+                    {% if form.duracion_tipo.help_text %}
+                        <p class="mt-1 text-sm text-gray-500">{{ form.duracion_tipo.help_text }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Servicios incluidos -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        {{ form.servicios.label }}
+                    </label>
+                    <div class="space-y-2">
+                        {% for choice in form.servicios %}
+                            <div class="flex items-center">
+                                {{ choice.tag }}
+                                <label for="{{ choice.id_for_label }}" class="ml-2 text-sm text-gray-700">
+                                    {{ choice.choice_label }}
+                                </label>
+                            </div>
+                        {% empty %}
+                            <p class="text-gray-500 text-sm">No hay servicios disponibles. Debes crear servicios primero en la sección de servicios.</p>
+                        {% endfor %}
+                    </div>
+                    {% if form.servicios.help_text %}
+                        <p class="mt-1 text-sm text-gray-500">{{ form.servicios.help_text }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Botones de acción -->
+                <div class="flex justify-end gap-4 pt-6 border-t">
+                    <a href="{% url 'termas:precios_terma' %}" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                        Cancelar
+                    </a>
+                    <button type="submit" class="bg-sky-500 hover:bg-sky-600 text-white font-semibold px-6 py-2 rounded-lg shadow transition">
+                        Crear Entrada
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+</body>
+</html>

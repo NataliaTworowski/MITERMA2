@@ -26,10 +26,13 @@ urlpatterns = [
     path('editar_servicio/<int:servicio_id>/', views.editar_servicio, name='editar_servicio'),
     path('quitar_servicio/<int:servicio_id>/', views.quitar_servicio, name='quitar_servicio'),
     path('precios_terma/', views.precios_terma, name='precios_terma'),
+    path('crear_entrada/', views.crear_entrada, name='crear_entrada'),
+    path('gestionar_servicios_entrada/<int:entrada_id>/', views.gestionar_servicios_entrada, name='gestionar_servicios_entrada'),
     path('editar_entrada/<int:entrada_id>/', views.editar_entrada, name='editar_entrada'),
     path('eliminar_entrada/<int:entrada_id>/', views.eliminar_entrada, name='eliminar_entrada'),
     path('calendario_termas/', views.calendario_termas, name='calendario_termas'),
     path('vista_termas/', views.vista_termas, name='vista_termas'),
     path('comprar/<int:terma_id>/', views.vista_terma, name='vista_terma'),
     path('suscripcion/', views.suscripcion, name='suscripcion'),
+    path('cambiar_suscripcion/', views.cambiar_suscripcion, name='cambiar_suscripcion'),
 ]

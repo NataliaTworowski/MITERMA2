@@ -48,18 +48,36 @@
             <section class="py-20 bg-gray-100">
             <div class="container mx-auto px-6">
                 <div class="text-center mb-16">
+                    {% if es_cambio_suscripcion %}
+                    <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4">Cambiar Plan de Suscripción</h1>
+                    <p class="text-lg text-gray-600 max-w-2xl mx-auto mb-6">Selecciona tu nuevo plan. Los cambios se aplicarán inmediatamente.</p>
+                    {% if plan_actual %}
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto">
+                        <p class="text-blue-800 font-medium">Plan actual: <span class="font-bold">{{ plan_actual.get_nombre_display }}</span></p>
+                        <p class="text-blue-600 text-sm">Comisión: {{ plan_actual.porcentaje_comision }}%</p>
+                    </div>
+                    {% endif %}
+                    {% else %}
                     <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4">Nuestros Planes</h1>
                     <p class="text-lg text-gray-600 max-w-2xl mx-auto">Elige el plan que mejor se adapte a tu centro termal y potencia tu presencia digital.</p>
+                    {% endif %}
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                     {% for plan in planes %}
                     <!-- Plan {{ plan.get_nombre_display }} -->
-                    <a href="{% url 'core:solicitud_terma' %}?plan={{ plan.id }}" 
-                       class="group bg-gradient-to-br 
+                    <a href="{% if es_cambio_suscripcion %}{% url 'termas:cambiar_suscripcion' %}?plan={{ plan.id }}{% else %}{% url 'core:solicitud_terma' %}?plan={{ plan.id }}{% endif %}" 
+                       class="group bg-gradient-to-br relative
                               {% if plan.nombre == 'basico' %}from-blue-50 via-white to-blue-100 border-blue-200 hover:border-blue-400{% endif %}
                               {% if plan.nombre == 'estandar' %}from-green-50 via-white to-green-100 border-green-200 hover:border-green-400{% endif %}
                               {% if plan.nombre == 'premium' %}from-purple-50 via-white to-purple-100 border-2 border-purple-400 hover:border-purple-500{% endif %}
+                              {% if es_cambio_suscripcion and plan_actual and plan.id == plan_actual.id %}ring-4 ring-yellow-400 bg-yellow-50{% endif %}
                               rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 p-8 flex flex-col items-center cursor-pointer hover:scale-105">
+                        
+                        {% if es_cambio_suscripcion and plan_actual and plan.id == plan_actual.id %}
+                        <div class="absolute -top-3 -right-3 bg-yellow-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+                            Plan Actual
+                        </div>
+                        {% endif %}
                         
                         <div class="w-16 h-16 bg-gradient-to-br 
                                     {% if plan.nombre == 'basico' %}from-blue-200 via-blue-100 to-white{% endif %}

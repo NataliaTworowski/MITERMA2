@@ -51,15 +51,18 @@ class EntradaTipo(models.Model):
             hora_inicio = time(8, 0)   # 8:00 AM
             hora_fin = time(8, 0)      # 8:00 AM (siguiente día)
 
-        return HorarioDisponible.objects.create(
+        horario, created = HorarioDisponible.objects.get_or_create(
             terma=self.terma,
             entrada_tipo=self,
             fecha=fecha,
-            hora_inicio=hora_inicio,
-            hora_fin=hora_fin,
-            cupos_totales=self.terma.limite_ventas_diario,
-            cupos_disponibles=self.terma.limite_ventas_diario
+            defaults={
+                'hora_inicio': hora_inicio,
+                'hora_fin': hora_fin,
+                'cupos_totales': self.terma.limite_ventas_diario,
+                'cupos_disponibles': self.terma.limite_ventas_diario
+            }
         )
+        return horario
 
 
 class HorarioDisponible(models.Model):
@@ -70,3 +73,9 @@ class HorarioDisponible(models.Model):
     hora_fin = models.TimeField()
     cupos_totales = models.IntegerField()
     cupos_disponibles = models.IntegerField()
+
+    class Meta:
+        unique_together = ['terma', 'entrada_tipo', 'fecha']
+        
+    def __str__(self):
+        return f"{self.entrada_tipo.nombre} - {self.fecha} ({self.cupos_disponibles}/{self.cupos_totales})"

@@ -100,5 +100,3 @@ def solicitud_terma(request):
         }
         return render(request, 'solicitud_terma.html', context)
 
-
-

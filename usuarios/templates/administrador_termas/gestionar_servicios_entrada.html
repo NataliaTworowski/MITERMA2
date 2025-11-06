@@ -1,0 +1,98 @@
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>{{ title }}</title>
+    {% include 'partials/head.html' %}
+</head>
+<body class="flex min-h-screen bg-gray-100 font-sans">
+    {% include 'partials/navbar_adm_termas.html' %}
+
+    <main class="flex-1 md:ml-8 pl-4 pr-2 py-2">
+        <div class="bg-white rounded-xl shadow p-8 mt-8">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h1 class="text-3xl font-extrabold text-gray-800 mb-2">Gestionar Servicios</h1>
+                    <p class="text-gray-500">Selecciona los servicios incluidos en "{{ entrada.nombre }}"</p>
+                </div>
+                <a href="{% url 'termas:precios_terma' %}" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold px-5 py-2 rounded-lg shadow transition">← Volver a Precios</a>
+            </div>
+
+            <!-- Información de la entrada -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <h3 class="text-lg font-semibold text-blue-800 mb-2">{{ entrada.nombre }}</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-blue-700">
+                    <div>
+                        <span class="font-medium">Precio:</span> ${{ entrada.precio|intcomma }}
+                    </div>
+                    <div>
+                        <span class="font-medium">Duración:</span> {{ entrada.duracion_horas }} horas
+                    </div>
+                    <div>
+                        <span class="font-medium">Tipo:</span> {{ entrada.get_duracion_tipo_display }}
+                    </div>
+                </div>
+            </div>
+
+            {% if servicios_disponibles %}
+                <form method="post" class="space-y-6">
+                    {% csrf_token %}
+                    
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">Servicios Disponibles</h3>
+                        <div class="space-y-3">
+                            {% for servicio in servicios_disponibles %}
+                                <div class="flex items-start space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                                    <input 
+                                        type="checkbox" 
+                                        id="servicio_{{ servicio.id }}" 
+                                        name="servicios" 
+                                        value="{{ servicio.id }}"
+                                        {% if servicio in servicios_actuales %}checked{% endif %}
+                                        class="mt-1 h-4 w-4 text-sky-600 focus:ring-sky-500 border-gray-300 rounded"
+                                    >
+                                    <div class="flex-1">
+                                        <label for="servicio_{{ servicio.id }}" class="block text-sm font-medium text-gray-700 cursor-pointer">
+                                            {{ servicio.servicio }}
+                                        </label>
+                                        {% if servicio.descripcion %}
+                                            <p class="text-sm text-gray-500 mt-1">{{ servicio.descripcion }}</p>
+                                        {% endif %}
+                                        {% if servicio.precio %}
+                                            <p class="text-sm text-green-600 mt-1 font-medium">Precio adicional: {{ servicio.precio }}</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Botones de acción -->
+                    <div class="flex justify-end gap-4 pt-6 border-t">
+                        <a href="{% url 'termas:precios_terma' %}" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                            Cancelar
+                        </a>
+                        <button type="submit" class="bg-sky-500 hover:bg-sky-600 text-white font-semibold px-6 py-2 rounded-lg shadow transition">
+                            Guardar Servicios
+                        </button>
+                    </div>
+                </form>
+            {% else %}
+                <div class="text-center py-12">
+                    <div class="text-gray-400 text-6xl mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">No hay servicios disponibles</h3>
+                    <p class="text-gray-500 mb-6">Necesitas crear servicios para tu terma antes de poder asignarlos a las entradas.</p>
+                    <a href="{% url 'termas:analisis_terma' %}" class="bg-sky-500 hover:bg-sky-600 text-white font-semibold px-6 py-2 rounded-lg shadow transition inline-block">
+                        Ir a Gestionar Servicios
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </main>
+</body>
+</html>

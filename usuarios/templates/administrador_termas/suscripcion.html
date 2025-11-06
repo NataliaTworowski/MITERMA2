@@ -70,6 +70,56 @@
                     </span>
                 </div>
 
+                <!-- Estado de las Fotos -->
+                <div class="mt-6 p-4 bg-gray-50 rounded-lg">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-3">Estado de las Fotos</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-blue-600">{{ terma.total_fotos }}</div>
+                            <div class="text-sm text-gray-600">Fotos Actuales</div>
+                        </div>
+                        <div class="text-center">
+                            <div class="text-2xl font-bold {% if plan_actual.limite_fotos == -1 %}text-green-600{% else %}text-orange-600{% endif %}">
+                                {% if plan_actual.limite_fotos == -1 %}
+                                    ∞
+                                {% else %}
+                                    {{ plan_actual.limite_fotos }}
+                                {% endif %}
+                            </div>
+                            <div class="text-sm text-gray-600">Límite del Plan</div>
+                        </div>
+                        <div class="text-center">
+                            {% if terma.tiene_fotos_excedentes %}
+                                <div class="text-2xl font-bold text-red-600">-{{ terma.fotos_excedentes_cantidad }}</div>
+                                <div class="text-sm text-red-600">Excedentes</div>
+                            {% elif plan_actual.limite_fotos == -1 %}
+                                <div class="text-2xl font-bold text-green-600">∞</div>
+                                <div class="text-sm text-green-600">Disponibles</div>
+                            {% else %}
+                                <div class="text-2xl font-bold text-green-600">{{ terma.fotos_restantes }}</div>
+                                <div class="text-sm text-green-600">Disponibles</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    {% if terma.tiene_fotos_excedentes %}
+                        <div class="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <div class="flex items-center">
+                                <svg class="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                                </svg>
+                                <div>
+                                    <div class="font-semibold text-red-800">¡Atención! Fotos excedentes</div>
+                                    <div class="text-red-700 text-sm">
+                                        Tienes {{ terma.fotos_excedentes_cantidad }} fotos que exceden el límite de tu plan. 
+                                        Debes eliminar algunas fotos para poder subir nuevas imágenes.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+
                 <!-- Beneficios del Plan -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
@@ -218,7 +268,7 @@
             <div class="bg-white rounded-lg shadow-lg p-6">
                 <h3 class="text-lg font-semibold text-gray-900 mb-4">Gestionar Suscripción</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <a href="{% url 'core:planes' %}" class="flex items-center justify-center px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                    <a href="{% url 'termas:cambiar_suscripcion' %}" class="flex items-center justify-center px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
                         </svg>

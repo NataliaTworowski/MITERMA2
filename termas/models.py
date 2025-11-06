@@ -40,45 +40,6 @@ class Terma(models.Model):
         default=5,
         help_text="Límite actual de fotos basado en el plan (-1 para ilimitado)"
     )
-    fecha_ultimo_pago = models.DateField(
-        null=True, 
-        blank=True,
-        help_text="Fecha del último pago de suscripción"
-    )
-    
-    # Campos para billetera y Mercado Pago
-    saldo_disponible = models.DecimalField(
-        max_digits=12, 
-        decimal_places=2, 
-        default=0.00,
-        help_text="Saldo disponible en la billetera de la terma"
-    )
-    total_ingresos = models.DecimalField(
-        max_digits=12, 
-        decimal_places=2, 
-        default=0.00,
-        help_text="Total de ingresos históricos"
-    )
-    mercadopago_user_id = models.CharField(
-        max_length=50, 
-        null=True, 
-        blank=True,
-        help_text="ID de usuario de Mercado Pago para Split Payments"
-    )
-    mercadopago_access_token = models.TextField(
-        null=True, 
-        blank=True,
-        help_text="Access token de Mercado Pago (encriptado)"
-    )
-    mercadopago_cuenta_vinculada = models.BooleanField(
-        default=False,
-        help_text="Indica si la cuenta de Mercado Pago está vinculada"
-    )
-    fecha_vinculacion_mp = models.DateTimeField(
-        null=True, 
-        blank=True,
-        help_text="Fecha de vinculación con Mercado Pago"
-    )
 
     def __str__(self):
         return self.nombre_terma
@@ -96,17 +57,13 @@ class Terma(models.Model):
     def tiene_precios(self):
         return self.entradatipo_set.filter(estado=True).exists()
     
-    # Métodos para sistema de suscripciones
-    def tiene_suscripcion_activa(self):
-        """Verifica si la terma tiene una suscripción activa"""
-        try:
-            return (
-                hasattr(self, 'suscripcion_activa') and 
-                self.suscripcion_activa and 
-                self.suscripcion_activa.esta_activa()
-            )
-        except:
-            return False
+    # Métodos para sistema de planes (sin suscripciones de pago)
+    def tiene_plan_activo(self):
+        """Verifica si la terma tiene un plan asignado y está activa"""
+        return (
+            self.plan_actual is not None and 
+            self.estado_suscripcion == 'activa'
+        )
     
     def puede_subir_mas_fotos(self):
         """Verifica si la terma puede subir más fotos según su plan"""
@@ -123,18 +80,25 @@ class Terma(models.Model):
         restantes = self.limite_fotos_actual - fotos_actuales
         return max(0, restantes)
     
+    def tiene_fotos_excedentes(self):
+        """Verifica si la terma tiene más fotos de las permitidas por su plan actual"""
+        if self.limite_fotos_actual == -1:  # Plan ilimitado
+            return False
+        fotos_actuales = self.total_fotos()
+        return fotos_actuales > self.limite_fotos_actual
+    
+    def fotos_excedentes_cantidad(self):
+        """Retorna la cantidad de fotos que exceden el límite actual"""
+        if not self.tiene_fotos_excedentes():
+            return 0
+        fotos_actuales = self.total_fotos()
+        return fotos_actuales - self.limite_fotos_actual
+    
     def actualizar_configuracion_segun_plan(self):
         """Actualiza la configuración de la terma según su plan actual"""
         if self.plan_actual:
             self.porcentaje_comision_actual = self.plan_actual.porcentaje_comision
             self.limite_fotos_actual = self.plan_actual.limite_fotos
-            # Actualizar configuración de split si existe
-            try:
-                config_split = self.configuracion_split
-                config_split.porcentaje_comision_actual = self.plan_actual.porcentaje_comision
-                config_split.save()
-            except:
-                pass  # No tiene configuración de split aún
             self.save(update_fields=['porcentaje_comision_actual', 'limite_fotos_actual'])
     
     def get_beneficios_plan(self):
@@ -342,6 +306,9 @@ class ServicioTerma(models.Model):
     descripcion = models.TextField(null=True, blank=True)
     precio = models.CharField(max_length=20, null=True, blank=True)
 
+    def __str__(self):
+        return self.servicio
+
 
 class SolicitudTerma(models.Model):
     usuario = models.ForeignKey("usuarios.Usuario", on_delete=models.CASCADE, null=True, blank=True)  
@@ -396,18 +363,6 @@ class PlanSuscripcion(models.Model):
         decimal_places=2, 
         help_text="Porcentaje de comisión (ej: 5.00 para 5%)"
     )
-    precio_mensual = models.DecimalField(
-        max_digits=10, 
-        decimal_places=2,
-        default=0.00,
-        help_text="Precio mensual del plan (0 si solo se cobra comisión)"
-    )
-    precio_anual = models.DecimalField(
-        max_digits=10, 
-        decimal_places=2,
-        default=0.00,
-        help_text="Precio anual del plan (0 si solo se cobra comisión)"
-    )
     limite_fotos = models.IntegerField(
         help_text="Límite de fotos que puede subir (-1 para ilimitado)"
     )
@@ -441,122 +396,6 @@ class PlanSuscripcion(models.Model):
     
     def __str__(self):
         return f"{self.get_nombre_display()} - {self.porcentaje_comision}%"
-
-
-class SuscripcionTerma(models.Model):
-    ESTADOS_SUSCRIPCION = [
-        ('activa', 'Activa'),
-        ('vencida', 'Vencida'),
-        ('cancelada', 'Cancelada'),
-        ('pendiente_pago', 'Pendiente de Pago'),
-    ]
-    
-    TIPOS_PERIODO = [
-        ('mensual', 'Mensual'),
-        ('anual', 'Anual'),
-    ]
-    
-    terma = models.OneToOneField(
-        Terma, 
-        on_delete=models.CASCADE, 
-        related_name='suscripcion_activa'
-    )
-    plan = models.ForeignKey(PlanSuscripcion, on_delete=models.PROTECT)
-    fecha_inicio = models.DateField()
-    fecha_fin = models.DateField()
-    tipo_periodo = models.CharField(max_length=10, choices=TIPOS_PERIODO, default='mensual')
-    estado = models.CharField(max_length=20, choices=ESTADOS_SUSCRIPCION, default='activa')
-    auto_renovacion = models.BooleanField(default=True)
-    fecha_creacion = models.DateTimeField(auto_now_add=True)
-    fecha_actualizacion = models.DateTimeField(auto_now=True)
-    
-    class Meta:
-        verbose_name = "Suscripción de Terma"
-        verbose_name_plural = "Suscripciones de Termas"
-        ordering = ['-fecha_inicio']
-    
-    def __str__(self):
-        return f"{self.terma.nombre_terma} - {self.plan.get_nombre_display()}"
-    
-    def esta_activa(self):
-        """Verifica si la suscripción está activa y no ha vencido"""
-        from django.utils import timezone
-        return (
-            self.estado == 'activa' and 
-            self.fecha_fin >= timezone.now().date()
-        )
-    
-    def dias_restantes(self):
-        """Calcula los días restantes de la suscripción"""
-        from django.utils import timezone
-        if self.fecha_fin:
-            delta = self.fecha_fin - timezone.now().date()
-            return delta.days if delta.days > 0 else 0
-        return 0
-
-
-class ConfiguracionSplit(models.Model):
-    """Configuración para Split Payments de Mercado Pago"""
-    terma = models.OneToOneField(
-        Terma, 
-        on_delete=models.CASCADE, 
-        related_name='configuracion_split'
-    )
-    mercado_pago_access_token = models.TextField(
-        help_text="Access Token de Mercado Pago de la terma"
-    )
-    mercado_pago_user_id = models.CharField(
-        max_length=100,
-        help_text="User ID de Mercado Pago de la terma"
-    )
-    porcentaje_comision_actual = models.DecimalField(
-        max_digits=5, 
-        decimal_places=2,
-        help_text="Porcentaje de comisión actual basado en su plan"
-    )
-    activo = models.BooleanField(default=True)
-    fecha_configuracion = models.DateTimeField(auto_now_add=True)
-    fecha_actualizacion = models.DateTimeField(auto_now=True)
-    
-    class Meta:
-        verbose_name = "Configuración Split Payment"
-        verbose_name_plural = "Configuraciones Split Payment"
-    
-    def __str__(self):
-        return f"Split Config - {self.terma.nombre_terma} ({self.porcentaje_comision_actual}%)"
-
-
-class PagoSuscripcion(models.Model):
-    """Registro de pagos de suscripciones mensuales/anuales"""
-    ESTADOS_PAGO = [
-        ('pendiente', 'Pendiente'),
-        ('pagado', 'Pagado'),
-        ('fallido', 'Fallido'),
-        ('cancelado', 'Cancelado'),
-    ]
-    
-    suscripcion = models.ForeignKey(
-        SuscripcionTerma, 
-        on_delete=models.CASCADE, 
-        related_name='pagos'
-    )
-    monto = models.DecimalField(max_digits=10, decimal_places=2)
-    periodo_inicio = models.DateField()
-    periodo_fin = models.DateField()
-    estado = models.CharField(max_length=20, choices=ESTADOS_PAGO, default='pendiente')
-    mercado_pago_preference_id = models.CharField(max_length=100, null=True, blank=True)
-    mercado_pago_payment_id = models.CharField(max_length=100, null=True, blank=True)
-    fecha_pago = models.DateTimeField(null=True, blank=True)
-    fecha_vencimiento = models.DateTimeField()
-    fecha_creacion = models.DateTimeField(auto_now_add=True)
-    
-    class Meta:
-        verbose_name = "Pago de Suscripción"
-        verbose_name_plural = "Pagos de Suscripciones"
-        ordering = ['-fecha_creacion']
-    
-    def __str__(self):
-        return f"Pago {self.suscripcion.terma.nombre_terma} - {self.periodo_inicio} a {self.periodo_fin}"
 
 
 class HistorialSuscripcion(models.Model):

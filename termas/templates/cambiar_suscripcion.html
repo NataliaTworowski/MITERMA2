@@ -1,0 +1,219 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>Cambiar Plan de Suscripción - MiTerma</title>
+    {% include 'partials/head.html' %}
+</head>
+<body class="flex flex-col min-h-screen font-sans bg-gray-50">
+    
+    <div class="flex-grow py-8">
+        <div class="container mx-auto px-6">
+            
+            <!-- Encabezado con botón de volver -->
+            <div class="text-center mb-8">
+                <div class="flex items-center justify-between mb-4">
+                    <a href="{% url 'termas:suscripcion' %}" 
+                       class="flex items-center text-gray-600 hover:text-gray-800 transition-colors">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                        </svg>
+                        Volver a Suscripción
+                    </a>
+                    <div class="text-right">
+                        <p class="text-sm text-gray-500">{{ terma.nombre_terma }}</p>
+                    </div>
+                </div>
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">Cambiar Plan de Suscripción</h1>
+                <p class="text-lg text-gray-600">Selecciona el nuevo plan para tu terma</p>
+            </div>
+
+            <!-- Información del plan actual -->
+            <div class="max-w-4xl mx-auto mb-8">
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                    <h3 class="text-lg font-semibold text-blue-800 mb-3">Plan Actual</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                            <span class="text-blue-700 font-medium">Plan:</span>
+                            <p class="text-blue-900 font-bold">{{ plan_actual.get_nombre_display|title }}</p>
+                        </div>
+                        <div>
+                            <span class="text-blue-700 font-medium">Comisión:</span>
+                            <p class="text-blue-900 font-bold">{{ plan_actual.porcentaje_comision }}%</p>
+                        </div>
+                        <div>
+                            <span class="text-blue-700 font-medium">Límite de fotos:</span>
+                            <p class="text-blue-900 font-bold">
+                                {% if plan_actual.limite_fotos == -1 %}
+                                    Ilimitadas
+                                {% else %}
+                                    {{ plan_actual.limite_fotos }} fotos
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div>
+                            <span class="text-blue-700 font-medium">Fotos actuales:</span>
+                            <p class="text-blue-900 font-bold">{{ terma.total_fotos }} fotos</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Advertencia si tiene fotos excedentes -->
+                    {% if terma.tiene_fotos_excedentes %}
+                        <div class="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                            <div class="flex items-center">
+                                <svg class="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                                </svg>
+                                <div>
+                                    <h4 class="text-red-800 font-semibold">¡Atención! Fotos excedentes</h4>
+                                    <p class="text-red-700 text-sm">
+                                        Tienes {{ terma.fotos_excedentes_cantidad }} fotos que exceden el límite de tu plan actual. 
+                                        Debes eliminar fotos antes de poder subir nuevas.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Formulario de cambio -->
+            <div class="max-w-4xl mx-auto">
+                <form method="post" class="bg-white rounded-lg shadow-lg p-8">
+                    {% csrf_token %}
+                    
+                    <!-- Selección de nuevo plan -->
+                    <div class="mb-8">
+                        <label class="block text-lg font-semibold text-gray-700 mb-4">
+                            {{ form.nuevo_plan.label }}
+                        </label>
+                        <div class="space-y-4">
+                            {% for choice in form.nuevo_plan %}
+                                {% for plan in planes_disponibles %}
+                                    {% if plan.id == choice.data.value %}
+                                        <div class="relative">
+                                            <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg hover:border-blue-400 transition-colors cursor-pointer">
+                                                {{ choice.tag }}
+                                                <div class="ml-4 flex-grow">
+                                                    <div class="flex justify-between items-center mb-2">
+                                                        <div>
+                                                            <h4 class="text-lg font-semibold text-gray-800">
+                                                                Plan {{ plan.get_nombre_display|title }}
+                                                            </h4>
+                                                            <p class="text-sm text-gray-600">
+                                                                Comisión: {{ plan.porcentaje_comision }}% por venta
+                                                            </p>
+                                                            <p class="text-sm text-gray-600">
+                                                                Límite: 
+                                                                {% if plan.limite_fotos == -1 %}
+                                                                    Fotos ilimitadas
+                                                                {% else %}
+                                                                    {{ plan.limite_fotos }} fotos máximo
+                                                                {% endif %}
+                                                            </p>
+                                                        </div>
+                                                        <div class="text-right">
+                                                            <span class="text-2xl font-bold text-blue-600">
+                                                                {{ plan.porcentaje_comision }}%
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <!-- Advertencia si el nuevo plan tiene límite menor que las fotos actuales -->
+                                                    {% if plan.limite_fotos != -1 and terma.total_fotos > plan.limite_fotos %}
+                                                        <div class="bg-yellow-50 border border-yellow-200 rounded p-2 mt-2">
+                                                            <div class="flex items-center text-yellow-800 text-xs">
+                                                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                                                                </svg>
+                                                                <span>
+                                                                    Tienes {{ terma.total_fotos }} fotos. Deberás eliminar algunas fotos para cumplir el límite de {{ plan.limite_fotos }} fotos de este plan.
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    {% elif plan.limite_fotos != -1 and terma.total_fotos <= plan.limite_fotos %}
+                                                        <div class="bg-green-50 border border-green-200 rounded p-2 mt-2">
+                                                            <div class="flex items-center text-green-800 text-xs">
+                                                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="5 13l4 4L19 7"/>
+                                                                </svg>
+                                                                <span>
+                                                                    Compatible con tus {{ terma.total_fotos }} fotos actuales.
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                            </label>
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                            {% endfor %}
+                        </div>
+                        {% if form.nuevo_plan.errors %}
+                            <div class="mt-2 text-red-600 text-sm">
+                                {{ form.nuevo_plan.errors }}
+                            </div>
+                        {% endif %}
+                        <p class="mt-2 text-sm text-gray-500">{{ form.nuevo_plan.help_text }}</p>
+                    </div>
+
+                    <!-- Motivo del cambio -->
+                    <div class="mb-6">
+                        <label for="{{ form.motivo_cambio.id_for_label }}" class="block text-lg font-semibold text-gray-700 mb-2">
+                            {{ form.motivo_cambio.label }}
+                        </label>
+                        {{ form.motivo_cambio }}
+                        {% if form.motivo_cambio.errors %}
+                            <div class="mt-2 text-red-600 text-sm">
+                                {{ form.motivo_cambio.errors }}
+                            </div>
+                        {% endif %}
+                        <p class="mt-2 text-sm text-gray-500">{{ form.motivo_cambio.help_text }}</p>
+                    </div>
+
+                    <!-- Confirmación -->
+                    <div class="mb-8">
+                        <label class="flex items-center">
+                            {{ form.confirmar_cambio }}
+                            <span class="ml-3 text-gray-700">{{ form.confirmar_cambio.label }}</span>
+                        </label>
+                        {% if form.confirmar_cambio.errors %}
+                            <div class="mt-2 text-red-600 text-sm">
+                                {{ form.confirmar_cambio.errors }}
+                            </div>
+                        {% endif %}
+                        <p class="mt-2 text-sm text-gray-500">{{ form.confirmar_cambio.help_text }}</p>
+                    </div>
+
+                    <!-- Botones de acción -->
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                        <button type="submit" 
+                                class="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors">
+                            Confirmar Cambio de Plan
+                        </button>
+                        <a href="{% url 'termas:suscripcion' %}" 
+                           class="px-8 py-3 bg-gray-500 text-white font-semibold rounded-lg hover:bg-gray-600 transition-colors text-center">
+                            Cancelar
+                        </a>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Información adicional -->
+            <div class="max-w-4xl mx-auto mt-8">
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+                    <h4 class="text-yellow-800 font-semibold mb-2">💡 Información importante:</h4>
+                    <ul class="text-yellow-700 text-sm space-y-1">
+                        <li>• El cambio de plan se aplicará inmediatamente</li>
+                        <li>• El nuevo porcentaje de comisión afectará todas las ventas futuras</li>
+                        <li>• Las ventas anteriores mantendrán el porcentaje del plan anterior</li>
+                        <li>• Puedes cambiar de plan las veces que necesites</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

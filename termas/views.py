@@ -2,6 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.http import JsonResponse
 from django.db.models import Q
 from django.contrib import messages
+from django.views.decorators.http import require_http_methods
 from .models import Terma, Region, Comuna, ImagenTerma
 from usuarios.models import Usuario
 import os
@@ -153,18 +154,24 @@ def subir_fotos(request):
             
             # Validar límite de fotos según el plan
             fotos_actuales = ImagenTerma.objects.filter(terma=usuario.terma).count()
-            limite_fotos = None
             
-            # Obtener límite del plan actual
-            if usuario.terma.plan_actual:
-                limite_fotos = usuario.terma.plan_actual.limite_fotos
-            else:
-                # Plan por defecto (básico) si no tiene plan asignado
-                limite_fotos = usuario.terma.limite_fotos_actual or 5
+            # Verificar si tiene fotos excedentes primero
+            if usuario.terma.tiene_fotos_excedentes():
+                fotos_excedentes = usuario.terma.fotos_excedentes_cantidad()
+                plan_nombre = usuario.terma.plan_actual.get_nombre_display() if usuario.terma.plan_actual else "Básico"
+                error_msg = f'No puedes subir más fotos porque tienes {fotos_excedentes} fotos que exceden el límite de tu plan {plan_nombre} ({usuario.terma.limite_fotos_actual} fotos). Debes eliminar {fotos_excedentes} fotos primero.'
+                
+                if is_ajax:
+                    return JsonResponse({'success': False, 'message': error_msg})
+                messages.error(request, error_msg)
+                return redirect('termas:subir_fotos')
+            
+            # Verificar límite normal de fotos
+            limite_fotos = usuario.terma.limite_fotos_actual
             
             # Verificar si puede subir más fotos (-1 significa ilimitado)
             if limite_fotos != -1 and fotos_actuales >= limite_fotos:
-                plan_nombre = usuario.terma.plan_actual.nombre if usuario.terma.plan_actual else "Básico"
+                plan_nombre = usuario.terma.plan_actual.get_nombre_display() if usuario.terma.plan_actual else "Básico"
                 if limite_fotos == 5:
                     error_msg = f'Has alcanzado el límite de {limite_fotos} fotos de tu plan {plan_nombre}. Considera actualizar a un plan superior.'
                 else:
@@ -644,6 +651,86 @@ def eliminar_entrada(request, entrada_id):
     }
     return render(request, 'administrador_termas/eliminar_entrada.html', context)
 
+@require_http_methods(["GET", "POST"])
+def crear_entrada(request):
+    """Vista para crear un nuevo tipo de entrada."""
+    if 'usuario_id' not in request.session:
+        messages.error(request, 'Debes iniciar sesión para acceder.')
+        return redirect('core:home')
+    
+    if request.session.get('usuario_rol') != 2:
+        messages.error(request, 'No tienes permisos para acceder a esta sección.')
+        return redirect('usuarios:inicio')
+    
+    # Obtener la terma del usuario logueado
+    usuario = get_object_or_404(Usuario, id=request.session['usuario_id'])
+    terma = get_object_or_404(Terma, usuario=usuario)
+    
+    from entradas.forms import EntradaTipoForm
+    
+    if request.method == 'POST':
+        form = EntradaTipoForm(request.POST, terma=terma)
+        if form.is_valid():
+            entrada = form.save(commit=False)
+            entrada.terma = terma
+            entrada.save()
+            form.save_m2m()  # Guardar relaciones many-to-many
+            messages.success(request, f'Tipo de entrada "{entrada.nombre}" creado correctamente.')
+            return redirect('termas:precios_terma')
+    else:
+        form = EntradaTipoForm(terma=terma)
+    
+    context = {
+        'title': 'Crear Nueva Entrada - MiTerma',
+        'form': form,
+        'terma': terma
+    }
+    return render(request, 'administrador_termas/crear_entrada.html', context)
+
+@require_http_methods(["GET", "POST"])
+def gestionar_servicios_entrada(request, entrada_id):
+    """Vista para gestionar servicios de una entrada específica."""
+    if 'usuario_id' not in request.session:
+        messages.error(request, 'Debes iniciar sesión para acceder.')
+        return redirect('core:home')
+    
+    if request.session.get('usuario_rol') != 2:
+        messages.error(request, 'No tienes permisos para acceder a esta sección.')
+        return redirect('usuarios:inicio')
+    
+    # Obtener la terma del usuario logueado
+    usuario = get_object_or_404(Usuario, id=request.session['usuario_id'])
+    terma = get_object_or_404(Terma, usuario=usuario)
+    
+    # Obtener la entrada específica
+    entrada = get_object_or_404(EntradaTipo, id=entrada_id, terma=terma)
+    
+    if request.method == 'POST':
+        # Obtener servicios seleccionados del formulario
+        servicios_ids = request.POST.getlist('servicios')
+        
+        # Limpiar servicios actuales y agregar los nuevos
+        entrada.servicios.clear()
+        if servicios_ids:
+            servicios = entrada.terma.servicios.filter(id__in=servicios_ids)
+            entrada.servicios.set(servicios)
+        
+        messages.success(request, f'Servicios actualizados para "{entrada.nombre}".')
+        return redirect('termas:precios_terma')
+    
+    # Obtener todos los servicios de la terma
+    servicios_disponibles = terma.servicios.all()
+    servicios_actuales = entrada.servicios.all()
+    
+    context = {
+        'title': f'Gestionar Servicios - {entrada.nombre}',
+        'entrada': entrada,
+        'terma': terma,
+        'servicios_disponibles': servicios_disponibles,
+        'servicios_actuales': servicios_actuales
+    }
+    return render(request, 'administrador_termas/gestionar_servicios_entrada.html', context)
+
 def calendario_termas(request):
     """Vista para mostrar el calendario de la terma."""
     if 'usuario_id' not in request.session:
@@ -903,4 +990,138 @@ def suscripcion(request):
     except Exception as e:
         messages.error(request, f'Error al cargar la página de suscripción: {str(e)}')
         return redirect('usuarios:adm_termas')
+
+
+def cambiar_suscripcion(request):
+    """Vista para cambiar la suscripción de una terma existente."""
+    # Debug: verificar autenticación
+    print(f"DEBUG - Usuario autenticado: {request.user.is_authenticated}")
+    print(f"DEBUG - Sesión tiene usuario_id: {'usuario_id' in request.session}")
+    
+    if request.user.is_authenticated:
+        print(f"DEBUG - Usuario: {request.user}")
+        print(f"DEBUG - Tipo de usuario: {request.user.tipo_usuario}")
+        print(f"DEBUG - ID de usuario: {request.user.id}")
+    
+    # Verificar autenticación (usando el sistema de sesiones personalizado)
+    if not request.user.is_authenticated and 'usuario_id' not in request.session:
+        messages.error(request, 'Debes estar autenticado para cambiar tu suscripción.')
+        return redirect('usuarios:login')
+    
+    # Obtener el usuario
+    if request.user.is_authenticated:
+        usuario = request.user
+    else:
+        try:
+            usuario = Usuario.objects.get(id=request.session['usuario_id'])
+        except Usuario.DoesNotExist:
+            messages.error(request, 'Sesión inválida.')
+            return redirect('usuarios:login')
+    
+    # Verificar que el usuario tenga una terma asociada
+    try:
+        # Obtener la primera terma activa del usuario (en caso de múltiples)
+        terma = Terma.objects.filter(administrador=usuario, estado_suscripcion='activa').first()
+        if not terma:
+            # Si no hay termas activas, buscar cualquier terma del usuario
+            terma = Terma.objects.filter(administrador=usuario).first()
+        
+        if not terma:
+            print(f"DEBUG - No se encontró terma para el usuario {usuario.id}")
+            messages.error(request, 'No tienes una terma asociada a tu cuenta.')
+            return redirect('core:planes')
+        
+        print(f"DEBUG - Terma encontrada: {terma.nombre_terma}")
+    except Exception as e:
+        print(f"DEBUG - Error al buscar terma: {str(e)}")
+        messages.error(request, 'Error al acceder a la información de tu terma.')
+        return redirect('core:planes')
+    
+    # Verificar si viene con un plan pre-seleccionado desde la página de planes
+    plan_preseleccionado_id = request.GET.get('plan')
+    
+    if request.method == 'POST':
+        from .forms import CambiarSuscripcionForm
+        form = CambiarSuscripcionForm(
+            request.POST, 
+            plan_actual=terma.plan_actual, 
+            terma=terma
+        )
+        
+        if form.is_valid():
+            try:
+                from .models import PlanSuscripcion, HistorialSuscripcion
+                
+                nuevo_plan = form.cleaned_data['nuevo_plan']
+                motivo_cambio = form.cleaned_data['motivo_cambio']
+                
+                # Obtener el plan anterior
+                plan_anterior = terma.plan_actual
+                
+                # Actualizar el plan de la terma
+                terma.plan_actual = nuevo_plan
+                terma.save()
+                
+                # Actualizar configuración según el nuevo plan
+                terma.actualizar_configuracion_segun_plan()
+                
+                # Crear el motivo del historial
+                motivo_historial = motivo_cambio if motivo_cambio else f"Cambio de plan solicitado por el usuario desde {plan_anterior.get_nombre_display() if plan_anterior else 'Sin plan'} a {nuevo_plan.get_nombre_display()}"
+                
+                # Registrar el cambio en el historial
+                HistorialSuscripcion.objects.create(
+                    terma=terma,
+                    plan_anterior=plan_anterior,
+                    plan_nuevo=nuevo_plan,
+                    motivo=motivo_historial
+                )
+                
+                # Verificar si hay fotos excedentes después del cambio
+                if terma.tiene_fotos_excedentes():
+                    fotos_excedentes = terma.fotos_excedentes_cantidad()
+                    messages.warning(
+                        request, 
+                        f'Plan actualizado exitosamente a {nuevo_plan.get_nombre_display()}. '
+                        f'ATENCIÓN: Tienes {fotos_excedentes} fotos que exceden el límite del nuevo plan '
+                        f'({terma.limite_fotos_actual} fotos). Debes eliminar {fotos_excedentes} fotos '
+                        f'antes de poder subir nuevas imágenes.'
+                    )
+                else:
+                    messages.success(request, f'¡Tu plan ha sido actualizado exitosamente a {nuevo_plan.get_nombre_display()}!')
+                
+                return redirect('termas:suscripcion')
+                
+            except Exception as e:
+                messages.error(request, f'Error al procesar el cambio: {str(e)}')
+        else:
+            messages.error(request, 'Por favor, corrige los errores en el formulario.')
+    
+    else:
+        # GET request - mostrar formulario
+        from .forms import CambiarSuscripcionForm
+        
+        initial_data = {}
+        if plan_preseleccionado_id:
+            try:
+                from .models import PlanSuscripcion
+                plan_preseleccionado = PlanSuscripcion.objects.get(id=plan_preseleccionado_id, activo=True)
+                initial_data['nuevo_plan'] = plan_preseleccionado
+            except PlanSuscripcion.DoesNotExist:
+                pass
+        
+        form = CambiarSuscripcionForm(
+            initial=initial_data,
+            plan_actual=terma.plan_actual, 
+            terma=terma
+        )
+    
+    context = {
+        'form': form,
+        'terma': terma,
+        'plan_actual': terma.plan_actual,
+        'planes_disponibles': form.fields['nuevo_plan'].queryset,
+        'title': 'Cambiar Plan de Suscripción'
+    }
+    
+    return render(request, 'cambiar_suscripcion.html', context)
 

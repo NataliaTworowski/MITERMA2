@@ -10,8 +10,7 @@ from django.urls import path
 from django.utils.html import format_html
 from .models import (
     Terma, Calificacion, ImagenTerma, ServicioTerma, SolicitudTerma,
-    PlanSuscripcion, SuscripcionTerma, ConfiguracionSplit, 
-    PagoSuscripcion, HistorialSuscripcion
+    PlanSuscripcion, HistorialSuscripcion
 )
 
 @admin.register(Terma)
@@ -150,19 +149,6 @@ class SolicitudTermaAdmin(admin.ModelAdmin):
                 limite_fotos_actual=plan_seleccionado.limite_fotos if plan_seleccionado else 5
             )
 
-            # Crear suscripción activa
-            if plan_seleccionado:
-                from datetime import date, timedelta
-                SuscripcionTerma.objects.create(
-                    terma=terma,
-                    plan=plan_seleccionado,
-                    fecha_inicio=date.today(),
-                    fecha_fin=date.today() + timedelta(days=30),  # 30 días de prueba
-                    tipo_periodo='mensual',
-                    estado='activa',
-                    auto_renovacion=True
-                )
-
             # Actualizar solicitud
             solicitud.estado = 'aceptada'
             solicitud.fecha_respuesta = timezone.now()
@@ -245,69 +231,6 @@ class PlanSuscripcionAdmin(admin.ModelAdmin):
             'description': 'Estos campos no se usan ya que solo se cobra comisión por venta.'
         }),
     )
-
-
-@admin.register(SuscripcionTerma)
-class SuscripcionTermaAdmin(admin.ModelAdmin):
-    list_display = [
-        'terma', 'plan', 'fecha_inicio', 'fecha_fin', 'tipo_periodo',
-        'estado', 'auto_renovacion', 'dias_restantes_display'
-    ]
-    list_filter = ['estado', 'tipo_periodo', 'plan', 'auto_renovacion']
-    search_fields = ['terma__nombre_terma']
-    ordering = ['-fecha_inicio']
-    date_hierarchy = 'fecha_inicio'
-    
-    def dias_restantes_display(self, obj):
-        dias = obj.dias_restantes()
-        if dias > 0:
-            return f"{dias} días"
-        elif dias == 0:
-            return "Vence hoy"
-        else:
-            return "Vencida"
-    dias_restantes_display.short_description = "Días restantes"
-
-
-@admin.register(ConfiguracionSplit)
-class ConfiguracionSplitAdmin(admin.ModelAdmin):
-    list_display = [
-        'terma', 'porcentaje_comision_actual', 'mercado_pago_user_id',
-        'activo', 'fecha_configuracion'
-    ]
-    list_filter = ['activo', 'porcentaje_comision_actual']
-    search_fields = ['terma__nombre_terma', 'mercado_pago_user_id']
-    ordering = ['-fecha_configuracion']
-    
-    fieldsets = (
-        ('Terma', {
-            'fields': ('terma', 'activo')
-        }),
-        ('Configuración Mercado Pago', {
-            'fields': ('mercado_pago_access_token', 'mercado_pago_user_id')
-        }),
-        ('Comisión', {
-            'fields': ('porcentaje_comision_actual',)
-        }),
-    )
-
-
-@admin.register(PagoSuscripcion)
-class PagoSuscripcionAdmin(admin.ModelAdmin):
-    list_display = [
-        'suscripcion', 'monto', 'periodo_inicio', 'periodo_fin',
-        'estado', 'fecha_pago', 'mercado_pago_payment_id'
-    ]
-    list_filter = ['estado', 'periodo_inicio']
-    search_fields = [
-        'suscripcion__terma__nombre_terma', 
-        'mercado_pago_payment_id', 
-        'mercado_pago_preference_id'
-    ]
-    ordering = ['-fecha_creacion']
-    date_hierarchy = 'fecha_creacion'
-    readonly_fields = ['fecha_creacion']
-
 
 @admin.register(HistorialSuscripcion)
 class HistorialSuscripcionAdmin(admin.ModelAdmin):

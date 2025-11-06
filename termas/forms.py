@@ -68,3 +68,61 @@ class TermaForm(forms.ModelForm):
             'descripcion_terma': forms.Textarea(attrs={'rows': 4}),
             'direccion_terma': forms.Textarea(attrs={'rows': 3}),
         }
+
+
+class CambiarSuscripcionForm(forms.Form):
+    """Formulario para cambiar el plan de suscripción de una terma"""
+    
+    nuevo_plan = forms.ModelChoiceField(
+        queryset=PlanSuscripcion.objects.filter(activo=True),
+        widget=forms.RadioSelect(attrs={
+            'class': 'form-radio'
+        }),
+        label="Nuevo Plan",
+        help_text="Selecciona el plan al que deseas cambiar"
+    )
+    
+    motivo_cambio = forms.CharField(
+        max_length=500,
+        widget=forms.Textarea(attrs={
+            'rows': 3,
+            'class': 'form-control',
+            'placeholder': 'Opcional: Describe el motivo del cambio de plan'
+        }),
+        label="Motivo del cambio (Opcional)",
+        required=False,
+        help_text="Puedes agregar una descripción del por qué cambias de plan"
+    )
+    
+    confirmar_cambio = forms.BooleanField(
+        widget=forms.CheckboxInput(attrs={
+            'class': 'form-checkbox'
+        }),
+        label="Confirmo que deseo cambiar mi plan de suscripción",
+        help_text="Este cambio se aplicará inmediatamente",
+        required=True
+    )
+    
+    def __init__(self, *args, **kwargs):
+        plan_actual = kwargs.pop('plan_actual', None)
+        terma = kwargs.pop('terma', None)
+        super().__init__(*args, **kwargs)
+        
+        # Filtrar para no mostrar el plan actual como opción
+        if plan_actual:
+            self.fields['nuevo_plan'].queryset = PlanSuscripcion.objects.filter(
+                activo=True
+            ).exclude(id=plan_actual.id)
+        
+        # Guardar referencias para validación
+        self.plan_actual = plan_actual
+        self.terma = terma
+    
+    def clean_nuevo_plan(self):
+        nuevo_plan = self.cleaned_data.get('nuevo_plan')
+        
+        # Verificar que no sea el mismo plan actual
+        if self.plan_actual and nuevo_plan.id == self.plan_actual.id:
+            raise forms.ValidationError("No puedes cambiar al mismo plan que ya tienes activo.")
+        
+        return nuevo_plan
