@@ -1,0 +1,141 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>{{ title }}</title>
+    {% include 'partials/head.html' %}
+</head>
+<body class="flex min-h-screen bg-gray-50">
+    <!-- navbar / sidebar -->
+    {% include 'partials/navbar_adm_termas.html' %}
+    
+    <!-- Contenido principal -->
+    <main class="flex-1 ml-0 md:ml-0 transition-all duration-300">
+        <!-- Header -->
+        <div class="bg-white shadow-sm border-b border-gray-200">
+            <div class="px-6 py-4">
+                <h1 class="text-2xl font-bold text-gray-900">Billetera</h1>
+                <p class="text-gray-600">Gestiona tus ingresos y vincula tu cuenta de Mercado Pago</p>
+            </div>
+        </div>
+
+        <!-- Contenido de la billetera -->
+        <div class="p-6">
+            <!-- Tarjetas de resumen -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <!-- Saldo disponible -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-green-100 text-green-600">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-semibold text-gray-900">Saldo Disponible</h3>
+                            <p class="text-2xl font-bold text-green-600">${{ terma.saldo_disponible|floatformat:0 }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ingresos del mes -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-semibold text-gray-900">Ingresos del Mes</h3>
+                            <p class="text-2xl font-bold text-blue-600">${{ ingresos_mes|floatformat:0 }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total ingresos históricos -->
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-purple-100 text-purple-600">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-semibold text-gray-900">Total Histórico</h3>
+                            <p class="text-2xl font-bold text-purple-600">${{ terma.total_ingresos|floatformat:0 }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Configuración de Mercado Pago -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">Configuración de Mercado Pago</h2>
+                
+                {% if terma.mercadopago_cuenta_vinculada %}
+                    <!-- Cuenta vinculada -->
+                    <div class="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <svg class="w-8 h-8 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <h3 class="text-lg font-medium text-green-800">Cuenta de Mercado Pago Vinculada</h3>
+                                <p class="text-green-700">Los pagos se transfieren automáticamente a tu cuenta</p>
+                                <p class="text-sm text-green-600">Vinculada el {{ terma.fecha_vinculacion_mp|date:"d/m/Y" }}</p>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <button type="button" class="px-4 py-2 border border-green-300 text-green-700 rounded-md hover:bg-green-50 transition-colors">
+                                Desvincular
+                            </button>
+                        </div>
+                    </div>
+                {% else %}
+                    <!-- Cuenta no vinculada -->
+                    <div class="text-center py-8">
+                        <div class="mx-auto w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mb-4">
+                            <svg class="w-8 h-8 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">Vincula tu cuenta de Mercado Pago</h3>
+                        <p class="text-gray-600 mb-6 max-w-md mx-auto">
+                            Para recibir los pagos directamente en tu cuenta, necesitas vincular tu cuenta de Mercado Pago. 
+                            Los fondos se transferirán automáticamente según tu plan de suscripción.
+                        </p>
+                        <a href="{% url 'usuarios:vincular_mercadopago' %}" 
+                           class="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10 2L3 7v11a1 1 0 001 1h12a1 1 0 001-1V7l-7-5zM9 14a1 1 0 112 0v1a1 1 0 11-2 0v-1z"></path>
+                            </svg>
+                            Vincular Cuenta de Mercado Pago
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Información del plan actual -->
+            {% if suscripcion_actual %}
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">Plan Actual</h2>
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900">{{ suscripcion_actual.nombre }}</h3>
+                        <p class="text-gray-600">Comisión: {{ terma.porcentaje_comision_actual }}%</p>
+                        <p class="text-sm text-gray-500">{{ suscripcion_actual.descripcion }}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-2xl font-bold text-orange-600">${{ suscripcion_actual.precio }}</p>
+                        <p class="text-sm text-gray-500">por mes</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </main>
+</body>
+</html>

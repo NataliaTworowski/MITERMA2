@@ -31,4 +31,5 @@ urlpatterns = [
     path('calendario_termas/', views.calendario_termas, name='calendario_termas'),
     path('vista_termas/', views.vista_termas, name='vista_termas'),
     path('comprar/<int:terma_id>/', views.vista_terma, name='vista_terma'),
+    path('suscripcion/', views.suscripcion, name='suscripcion'),
 ]

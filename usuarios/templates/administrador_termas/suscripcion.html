@@ -1,0 +1,239 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>Suscripción - MiTerma</title>
+    {% include 'partials/head.html' %}
+</head>
+<body class="flex min-h-screen bg-gray-50">
+    <!-- navbar / sidebar -->
+    {% include 'partials/navbar_adm_termas.html' %}
+    
+    <!-- Contenido principal -->
+    <main class="flex-1 md:ml-4 p-6">
+        <div class="max-w-4xl mx-auto">
+            <!-- Header -->
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">Mi Suscripción</h1>
+                <p class="text-gray-600">Gestiona tu plan y beneficios en MiTerma</p>
+            </div>
+
+            <!-- Plan Actual -->
+            {% if plan_actual %}
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-16 h-16 bg-gradient-to-br 
+                                    {% if plan_actual.nombre == 'Básico' %}from-blue-500 to-blue-600{% endif %}
+                                    {% if plan_actual.nombre == 'Estándar' %}from-green-500 to-green-600{% endif %}
+                                    {% if plan_actual.nombre == 'Premium' %}from-purple-500 to-purple-600{% endif %}
+                                    rounded-full flex items-center justify-center">
+                            <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                {% if plan_actual.nombre == 'Premium' %}
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                {% else %}
+                                <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm3 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                {% endif %}
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl font-bold text-gray-900">Plan {{ plan_actual.nombre }}</h2>
+                            <p class="text-gray-600">{{ plan_actual.descripcion }}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="text-right">
+                        <div class="text-3xl font-bold 
+                                    {% if plan_actual.nombre == 'Básico' %}text-blue-600{% endif %}
+                                    {% if plan_actual.nombre == 'Estándar' %}text-green-600{% endif %}
+                                    {% if plan_actual.nombre == 'Premium' %}text-purple-600{% endif %}">
+                            {{ plan_actual.porcentaje_comision }}%
+                        </div>
+                        <p class="text-sm text-gray-500">Comisión por venta</p>
+                    </div>
+                </div>
+
+                <!-- Estado de la suscripción -->
+                <div class="flex items-center justify-between p-4 bg-green-50 rounded-lg mb-6">
+                    <div class="flex items-center space-x-3">
+                        <svg class="w-6 h-6 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                        </svg>
+                        <div>
+                            <p class="font-semibold text-green-800">Plan Activo</p>
+                            <p class="text-sm text-green-600">Solo pagas comisión por venta. Sin mensualidades.</p>
+                        </div>
+                    </div>
+                    
+                    <span class="px-3 py-1 bg-green-100 text-green-800 text-sm font-medium rounded-full">
+                        Comisión: {{ plan_actual.porcentaje_comision }}%
+                    </span>
+                </div>
+
+                <!-- Beneficios del Plan -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Beneficios Incluidos</h3>
+                        <ul class="space-y-3">
+                            <li class="flex items-center space-x-3">
+                                <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="text-gray-700">
+                                    {% if plan_actual.limite_fotos == -1 %}
+                                        Fotos ilimitadas
+                                    {% else %}
+                                        Hasta {{ plan_actual.limite_fotos }} fotos
+                                    {% endif %}
+                                    (usadas: {{ fotos_utilizadas }})
+                                </span>
+                            </li>
+                            
+                            {% if plan_actual.posicion_preferencial %}
+                            <li class="flex items-center space-x-3">
+                                <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="text-gray-700">Posición preferencial en búsquedas</span>
+                            </li>
+                            {% endif %}
+                            
+                            {% if plan_actual.marketing_premium %}
+                            <li class="flex items-center space-x-3">
+                                <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="text-gray-700">Marketing premium en la plataforma</span>
+                            </li>
+                            {% endif %}
+                            
+                            {% if plan_actual.dashboard_avanzado %}
+                            <li class="flex items-center space-x-3">
+                                <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="text-gray-700">Dashboard avanzado con reportes</span>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Características Adicionales</h3>
+                        <ul class="space-y-3">
+                            {% if plan_actual.soporte_prioritario %}
+                            <li class="flex items-center space-x-3">
+                                <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="text-gray-700">Soporte prioritario</span>
+                            </li>
+                            {% endif %}
+                            
+                            {% if plan_actual.aparece_destacadas %}
+                            <li class="flex items-center space-x-3">
+                                <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="text-gray-700">Aparece en termas destacadas</span>
+                            </li>
+                            {% endif %}
+                            
+                            <li class="flex items-center space-x-3">
+                                <svg class="w-5 h-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="text-gray-700">Solo pago por comisión (sin mensualidad)</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            {% else %}
+            <!-- Sin Plan -->
+            <div class="bg-white rounded-lg shadow-lg p-8 text-center mb-6">
+                <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">Sin Plan Activo</h2>
+                <p class="text-gray-600 mb-6">Tu terma no tiene un plan de suscripción asignado</p>
+                <a href="{% url 'core:planes' %}" class="inline-block px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors">
+                    Ver Planes Disponibles
+                </a>
+            </div>
+            {% endif %}
+
+            <!-- Estadísticas de Comisiones -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-blue-100 rounded-lg">
+                            <svg class="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z"/>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Ingresos Totales</p>
+                            <p class="text-2xl font-bold text-gray-900">${{ ingresos_mes|floatformat:0 }}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-green-100 rounded-lg">
+                            <svg class="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Comisión Actual</p>
+                            <p class="text-2xl font-bold text-gray-900">
+                                {% if plan_actual %}
+                                    {{ plan_actual.porcentaje_comision }}%
+                                {% else %}
+                                    5,00%
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-2 bg-purple-100 rounded-lg">
+                            <svg class="w-6 h-6 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"/>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Total Visitantes</p>
+                            <p class="text-2xl font-bold text-gray-900">{{ visitantes_mes }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Acciones -->
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Gestionar Suscripción</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <a href="{% url 'core:planes' %}" class="flex items-center justify-center px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                        </svg>
+                        Cambiar Plan
+                    </a>
+                    
+                    <a href="{% url 'termas:analisis_terma' %}" class="flex items-center justify-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                        </svg>
+                        Ver Reportes
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

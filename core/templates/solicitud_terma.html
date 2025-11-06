@@ -1,0 +1,201 @@
+{% load static %}
+{% load widget_tweaks %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>Solicitar Plan - MiTerma</title>
+    {% include 'partials/head.html' %}
+</head>
+<body class="flex flex-col min-h-screen font-sans bg-sky-100">
+    {% include 'partials/navbar.html' with navbar_mode='planes' %}
+    
+    <div class="w-full bg-sky-100 pt-0">
+        <main class="flex-grow pt-24 md:pt-28 lg:pt-32">
+            <section class="py-20 bg-gray-100">
+                <div class="container mx-auto px-6">
+                    <div class="max-w-4xl mx-auto">
+                        
+                        <!-- Header -->
+                        <div class="text-center mb-8">
+                            <h1 class="text-4xl font-bold text-gray-800 mb-4">Solicita tu Plan</h1>
+                            <p class="text-lg text-gray-600">Únete a nuestra plataforma y potencia tu centro termal</p>
+                            
+                            {% if plan_seleccionado %}
+                            <div class="mt-6 inline-block bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-lg">
+                                <span class="text-sm font-medium">Plan seleccionado:</span>
+                                <span class="text-lg font-bold ml-2">{{ plan_seleccionado.get_nombre_display }}</span>
+                                <span class="text-sm ml-2">({{ plan_seleccionado.porcentaje_comision }}% comisión)</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Formulario -->
+                        <div class="bg-white rounded-lg shadow-xl p-8">
+                            
+                            {% if messages %}
+                            <div class="mb-6">
+                                {% for message in messages %}
+                                    <div class="p-4 mb-4 rounded-lg {% if message.tags == 'success' %}bg-green-100 text-green-700 border border-green-400{% elif message.tags == 'error' %}bg-red-100 text-red-700 border border-red-400{% else %}bg-blue-100 text-blue-700 border border-blue-400{% endif %}">
+                                        {{ message }}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+
+                            <form method="post" class="space-y-6">
+                                {% csrf_token %}
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {% for field in form %}
+                                    <div class="{% if field.name == 'descripcion' or field.name == 'direccion' %}md:col-span-2{% endif %}">
+                                        <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
+                                            {{ field.label }}
+                                            {% if field.field.required %}<span class="text-red-500">*</span>{% endif %}
+                                        </label>
+                                        
+                                        {% if field.name == 'region' %}
+                                            {% render_field field class="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" %}
+                                        {% elif field.name == 'comuna' %}
+                                            {% render_field field class="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" disabled=True %}
+                                        {% elif field.name == 'descripcion' or field.name == 'direccion' %}
+                                            {% render_field field class="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none" rows="4" %}
+                                        {% elif field.name == 'plan_seleccionado' %}
+                                            {% render_field field class="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-gray-100" readonly=True %}
+                                        {% else %}
+                                            {% render_field field class="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" %}
+                                        {% endif %}
+                                        
+                                        {% if field.help_text %}
+                                            <p class="mt-2 text-sm text-gray-500">{{ field.help_text }}</p>
+                                        {% endif %}
+                                        {% if field.errors %}
+                                            {% for error in field.errors %}
+                                                <p class="mt-2 text-sm text-red-600">{{ error }}</p>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <!-- Botones -->
+                                <div class="flex flex-col sm:flex-row gap-4 pt-6">
+                                    <a href="{% url 'core:planes' %}" class="flex-1 bg-gray-500 text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-600 transition-colors text-center">
+                                        Volver a Planes
+                                    </a>
+                                    <button type="submit" class="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white py-3 px-6 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-300 shadow-lg">
+                                        Enviar Solicitud
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                        
+                        <!-- Información adicional -->
+                        {% if plan_seleccionado %}
+                        <div class="mt-8 bg-blue-50 rounded-lg p-6">
+                            <h3 class="text-lg font-semibold text-blue-800 mb-4">Beneficios del Plan {{ plan_seleccionado.get_nombre_display }}</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <ul class="space-y-2 text-blue-700">
+                                    <li class="flex items-center">
+                                        <svg class="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        {{ plan_seleccionado.porcentaje_comision }}% de comisión por venta
+                                    </li>
+                                    <li class="flex items-center">
+                                        <svg class="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        {% if plan_seleccionado.limite_fotos == -1 %}Fotos ilimitadas{% else %}Hasta {{ plan_seleccionado.limite_fotos }} fotos{% endif %}
+                                    </li>
+                                    {% if plan_seleccionado.posicion_preferencial %}
+                                    <li class="flex items-center">
+                                        <svg class="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        Posición preferencial en búsquedas
+                                    </li>
+                                    {% endif %}
+                                </ul>
+                                <ul class="space-y-2 text-blue-700">
+                                    {% if plan_seleccionado.marketing_premium %}
+                                    <li class="flex items-center">
+                                        <svg class="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        Marketing premium en la plataforma
+                                    </li>
+                                    {% endif %}
+                                    {% if plan_seleccionado.dashboard_avanzado %}
+                                    <li class="flex items-center">
+                                        <svg class="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        Dashboard avanzado con reportes
+                                    </li>
+                                    {% endif %}
+                                    {% if plan_seleccionado.soporte_prioritario %}
+                                    <li class="flex items-center">
+                                        <svg class="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        Soporte prioritario
+                                    </li>
+                                    {% endif %}
+                                    {% if plan_seleccionado.aparece_destacadas %}
+                                    <li class="flex items-center">
+                                        <svg class="w-5 h-5 text-green-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                        </svg>
+                                        Aparece en termas destacadas
+                                    </li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    {% include 'partials/footer.html' %}
+    
+    <script src="{% static 'js/base.js' %}"></script>
+    
+    <!-- Script para manejar region/comuna -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const regionSelect = document.querySelector('select[name="region"]');
+            const comunaSelect = document.querySelector('select[name="comuna"]');
+            
+            if (regionSelect && comunaSelect) {
+                regionSelect.addEventListener('change', function() {
+                    const regionId = this.value;
+                    if (regionId) {
+                        fetch(`/api/comunas/${regionId}/`)
+                            .then(response => response.json())
+                            .then(data => {
+                                comunaSelect.innerHTML = '<option value="">Selecciona una comuna</option>';
+                                comunaSelect.disabled = false;
+                                data.forEach(comuna => {
+                                    const option = document.createElement('option');
+                                    option.value = comuna.id;
+                                    option.textContent = comuna.nombre;
+                                    comunaSelect.appendChild(option);
+                                });
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                                comunaSelect.innerHTML = '<option value="">Error al cargar comunas</option>';
+                            });
+                    } else {
+                        comunaSelect.innerHTML = '<option value="">Selecciona una región primero</option>';
+                        comunaSelect.disabled = true;
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

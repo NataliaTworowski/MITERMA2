@@ -8,12 +8,19 @@ from django.contrib.auth.hashers import make_password
 from django.utils.crypto import get_random_string
 from django.urls import path
 from django.utils.html import format_html
-from .models import Terma, Calificacion, ImagenTerma, ServicioTerma, SolicitudTerma
+from .models import (
+    Terma, Calificacion, ImagenTerma, ServicioTerma, SolicitudTerma,
+    PlanSuscripcion, SuscripcionTerma, ConfiguracionSplit, 
+    PagoSuscripcion, HistorialSuscripcion
+)
 
 @admin.register(Terma)
 class TermaAdmin(admin.ModelAdmin):
-    list_display = ['nombre_terma', 'comuna', 'estado_suscripcion', 'calificacion_promedio', 'administrador']
-    list_filter = ['estado_suscripcion', 'comuna', 'fecha_suscripcion']
+    list_display = [
+        'nombre_terma', 'comuna', 'estado_suscripcion', 'plan_actual',
+        'porcentaje_comision_actual', 'calificacion_promedio', 'administrador'
+    ]
+    list_filter = ['estado_suscripcion', 'plan_actual', 'comuna', 'fecha_suscripcion']
     search_fields = ['nombre_terma', 'descripcion_terma', 'direccion_terma', 'email_terma']
     list_editable = ['estado_suscripcion']
     ordering = ['nombre_terma']
@@ -23,10 +30,19 @@ class TermaAdmin(admin.ModelAdmin):
             'fields': ('nombre_terma', 'descripcion_terma', 'direccion_terma', 'comuna')
         }),
         ('Contacto', {
-            'fields': ('telefono_terma', 'email_terma')
+            'fields': ('telefono_terma', 'email_terma', 'rut_empresa')
         }),
         ('Suscripción', {
             'fields': ('estado_suscripcion', 'fecha_suscripcion', 'administrador')
+        }),
+        ('Plan y Configuración', {
+            'fields': (
+                'plan_actual', 'porcentaje_comision_actual', 
+                'limite_fotos_actual', 'fecha_ultimo_pago'
+            )
+        }),
+        ('Configuración Operativa', {
+            'fields': ('limite_ventas_diario',)
         }),
         ('Calificación', {
             'fields': ('calificacion_promedio',)
@@ -59,8 +75,11 @@ from django.utils.crypto import get_random_string
 
 @admin.register(SolicitudTerma)
 class SolicitudTermaAdmin(admin.ModelAdmin):
-    list_display = ['nombre_terma', 'correo_institucional', 'estado', 'fecha_solicitud']
-    list_filter = ['estado', 'fecha_solicitud']
+    list_display = [
+        'nombre_terma', 'correo_institucional', 'plan_seleccionado', 
+        'estado', 'fecha_solicitud'
+    ]
+    list_filter = ['estado', 'plan_seleccionado', 'fecha_solicitud']
     search_fields = ['nombre_terma', 'correo_institucional']
     readonly_fields = ['fecha_solicitud']
     exclude = ['usuario', 'terma']
@@ -108,7 +127,13 @@ class SolicitudTermaAdmin(admin.ModelAdmin):
                 rol=rol_admin_terma
             )
 
-            # Crear terma
+            # Obtener el plan seleccionado
+            plan_seleccionado = solicitud.plan_seleccionado
+            if not plan_seleccionado:
+                # Si no hay plan seleccionado, asignar plan básico por defecto
+                plan_seleccionado = PlanSuscripcion.objects.filter(nombre='basico').first()
+
+            # Crear terma con configuración del plan
             terma = Terma.objects.create(
                 nombre_terma=solicitud.nombre_terma,
                 descripcion_terma=solicitud.descripcion,
@@ -116,10 +141,27 @@ class SolicitudTermaAdmin(admin.ModelAdmin):
                 comuna=solicitud.comuna,
                 telefono_terma=solicitud.telefono_contacto,
                 email_terma=solicitud.correo_institucional,
+                rut_empresa=solicitud.rut_empresa,
                 estado_suscripcion='activa',
                 fecha_suscripcion=timezone.now(),
-                administrador=usuario
+                administrador=usuario,
+                plan_actual=plan_seleccionado,
+                porcentaje_comision_actual=plan_seleccionado.porcentaje_comision if plan_seleccionado else 5.00,
+                limite_fotos_actual=plan_seleccionado.limite_fotos if plan_seleccionado else 5
             )
+
+            # Crear suscripción activa
+            if plan_seleccionado:
+                from datetime import date, timedelta
+                SuscripcionTerma.objects.create(
+                    terma=terma,
+                    plan=plan_seleccionado,
+                    fecha_inicio=date.today(),
+                    fecha_fin=date.today() + timedelta(days=30),  # 30 días de prueba
+                    tipo_periodo='mensual',
+                    estado='activa',
+                    auto_renovacion=True
+                )
 
             # Actualizar solicitud
             solicitud.estado = 'aceptada'
@@ -170,3 +212,110 @@ class SolicitudTermaAdmin(admin.ModelAdmin):
             messages.success(request, f'Solicitud rechazada para {solicitud.nombre_terma}')
         except Exception as e:
             messages.error(request, f'Error al rechazar la solicitud: {str(e)}')
+
+
+# Nuevos admins para sistema de suscripciones
+
+@admin.register(PlanSuscripcion)
+class PlanSuscripcionAdmin(admin.ModelAdmin):
+    list_display = [
+        'nombre', 'porcentaje_comision', 'limite_fotos', 
+        'posicion_preferencial', 'marketing_premium', 'activo'
+    ]
+    list_filter = ['activo', 'posicion_preferencial', 'marketing_premium']
+    list_editable = ['activo']
+    ordering = ['porcentaje_comision']
+    
+    fieldsets = (
+        ('Información Básica', {
+            'fields': ('nombre', 'descripcion', 'activo')
+        }),
+        ('Comisión (Solo se cobra por venta)', {
+            'fields': ('porcentaje_comision',)
+        }),
+        ('Límites y Beneficios', {
+            'fields': (
+                'limite_fotos', 'posicion_preferencial', 'marketing_premium',
+                'dashboard_avanzado', 'soporte_prioritario', 'aparece_destacadas'
+            )
+        }),
+        ('Precios (No se usan - Solo para referencia)', {
+            'fields': ('precio_mensual', 'precio_anual'),
+            'classes': ('collapse',),
+            'description': 'Estos campos no se usan ya que solo se cobra comisión por venta.'
+        }),
+    )
+
+
+@admin.register(SuscripcionTerma)
+class SuscripcionTermaAdmin(admin.ModelAdmin):
+    list_display = [
+        'terma', 'plan', 'fecha_inicio', 'fecha_fin', 'tipo_periodo',
+        'estado', 'auto_renovacion', 'dias_restantes_display'
+    ]
+    list_filter = ['estado', 'tipo_periodo', 'plan', 'auto_renovacion']
+    search_fields = ['terma__nombre_terma']
+    ordering = ['-fecha_inicio']
+    date_hierarchy = 'fecha_inicio'
+    
+    def dias_restantes_display(self, obj):
+        dias = obj.dias_restantes()
+        if dias > 0:
+            return f"{dias} días"
+        elif dias == 0:
+            return "Vence hoy"
+        else:
+            return "Vencida"
+    dias_restantes_display.short_description = "Días restantes"
+
+
+@admin.register(ConfiguracionSplit)
+class ConfiguracionSplitAdmin(admin.ModelAdmin):
+    list_display = [
+        'terma', 'porcentaje_comision_actual', 'mercado_pago_user_id',
+        'activo', 'fecha_configuracion'
+    ]
+    list_filter = ['activo', 'porcentaje_comision_actual']
+    search_fields = ['terma__nombre_terma', 'mercado_pago_user_id']
+    ordering = ['-fecha_configuracion']
+    
+    fieldsets = (
+        ('Terma', {
+            'fields': ('terma', 'activo')
+        }),
+        ('Configuración Mercado Pago', {
+            'fields': ('mercado_pago_access_token', 'mercado_pago_user_id')
+        }),
+        ('Comisión', {
+            'fields': ('porcentaje_comision_actual',)
+        }),
+    )
+
+
+@admin.register(PagoSuscripcion)
+class PagoSuscripcionAdmin(admin.ModelAdmin):
+    list_display = [
+        'suscripcion', 'monto', 'periodo_inicio', 'periodo_fin',
+        'estado', 'fecha_pago', 'mercado_pago_payment_id'
+    ]
+    list_filter = ['estado', 'periodo_inicio']
+    search_fields = [
+        'suscripcion__terma__nombre_terma', 
+        'mercado_pago_payment_id', 
+        'mercado_pago_preference_id'
+    ]
+    ordering = ['-fecha_creacion']
+    date_hierarchy = 'fecha_creacion'
+    readonly_fields = ['fecha_creacion']
+
+
+@admin.register(HistorialSuscripcion)
+class HistorialSuscripcionAdmin(admin.ModelAdmin):
+    list_display = [
+        'terma', 'plan_anterior', 'plan_nuevo', 'fecha_cambio', 'usuario_admin'
+    ]
+    list_filter = ['plan_anterior', 'plan_nuevo', 'fecha_cambio']
+    search_fields = ['terma__nombre_terma', 'motivo']
+    ordering = ['-fecha_cambio']
+    date_hierarchy = 'fecha_cambio'
+    readonly_fields = ['fecha_cambio']

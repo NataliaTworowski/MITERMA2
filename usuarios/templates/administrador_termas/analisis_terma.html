@@ -18,24 +18,24 @@
         <!-- Estadísticas -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mt-8">
             <div class="bg-white p-6 rounded-xl shadow text-center">
-                <h3 class="text-sm font-semibold text-gray-500 mb-1">Total Ventas</h3>
-                <p class="text-3xl font-bold text-green-600">${{ total_ventas }}</p>
-                <span class="text-xs text-green-500">+5.2%</span>
+                <h3 class="text-sm font-semibold text-gray-500 mb-1">Total Ingresos</h3>
+                <p class="text-3xl font-bold text-green-600">${{ total_ingresos_mes|floatformat:0 }}</p>
+                <span class="text-xs text-green-500">Este mes ({{ total_ventas_mes }} ventas)</span>
             </div>
             <div class="bg-white p-6 rounded-xl shadow text-center">
                 <h3 class="text-sm font-semibold text-gray-500 mb-1">Tickets Vendidos</h3>
                 <p class="text-3xl font-bold text-blue-600">{{ total_ventas }}</p>
-                <span class="text-xs text-blue-500">+8.1%</span>
+                <span class="text-xs text-blue-500">Últimos {{ rango }} días</span>
             </div>
             <div class="bg-white p-6 rounded-xl shadow text-center">
                 <h3 class="text-sm font-semibold text-gray-500 mb-1">Promedio Diario</h3>
-                <p class="text-3xl font-bold text-orange-500">${{ promedio_ventas }}</p>
-                <span class="text-xs text-orange-500">-1.3%</span>
+                <p class="text-3xl font-bold text-orange-500">${{ promedio_ingresos|floatformat:0 }}</p>
+                <span class="text-xs text-orange-500">Últimos {{ rango }} días</span>
             </div>
             <div class="bg-white p-6 rounded-xl shadow text-center">
                 <h3 class="text-sm font-semibold text-gray-500 mb-1">Mejor Día</h3>
                 <p class="text-3xl font-bold text-purple-600">{{ mejor_dia }}</p>
-                <span class="text-xs text-green-500">+12%</span>
+                <span class="text-xs text-green-500">Ventas máximas ({{ rango }} días)</span>
             </div>
         </div>
         <!-- Gráficos -->
@@ -71,25 +71,44 @@
                 </div>
             </div>
         </div>
-                <div class="bg-white p-6 rounded-xl shadow">
-                    <div class="flex items-center justify-between mb-4">
-                        <h2 class="text-lg font-bold text-gray-800">Servicios Más Vendidos</h2>
-                    </div>
-                    <div>
-                        {% for servicio in servicios_populares %}
-                            <div class="mb-2">
-                                <div class="flex justify-between text-sm font-medium text-gray-700">
-                                    <span>{{ servicio.servicio }}</span>
-                                    <span>
-                                        {% widthratio servicio.total_vendidos servicios_populares_total 100 as porcentaje %}
-                                        {{ porcentaje|default:"0" }}%
-                                    </span>
-                                </div>
-                                <!-- Barra visual eliminada para evitar errores de CSS -->
-                            </div>
-                        {% endfor %}
+        
+        <!-- Análisis adicional: Tendencias por día de la semana -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+            <div class="bg-white p-6 rounded-xl shadow">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-bold text-gray-800">Tendencias por Día de la Semana</h2>
+                    <div class="flex items-center">
+                        <span class="text-sm text-gray-500">Últimos {{ rango }} días</span>
                     </div>
                 </div>
+                <div style="height: 300px;">
+                    <canvas id="diaSemanaChart"></canvas>
+                </div>
+                <!-- Información adicional -->
+                <div class="mt-4 text-sm text-gray-600">
+                    <p>Muestra qué días de la semana tienen más actividad en tu terma.</p>
+                </div>
+            </div>
+            
+                <div class="bg-white p-6 rounded-xl shadow">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-lg font-bold text-gray-800">Entradas Más Vendidas</h2>
+                        <div class="flex items-center">
+                            <span class="text-sm text-gray-500">Últimos {{ rango }} días</span>
+                        </div>
+                    </div>
+                    <div style="height: 300px;">
+                        <canvas id="entradasChart"></canvas>
+                    </div>
+                    <!-- Lista de entradas populares -->
+                    <div class="mt-4 space-y-2">
+                        <div class="text-sm text-gray-600 font-medium mb-2">Detalles por tipo:</div>
+                        <div id="entradas-detalles" class="space-y-1">
+                            <!-- Se llenará dinámicamente con JavaScript -->
+                        </div>
+                    </div>
+                </div>
+        </div>
     </main>
 
     <!-- Scripts -->
@@ -105,6 +124,12 @@
         // Datos para el gráfico de servicios populares
         const serviciosLabels = JSON.parse('{{ servicios_labels_json|escapejs }}');
         const serviciosValues = JSON.parse('{{ servicios_values_json|escapejs }}');
+        // Datos para el gráfico de días de la semana
+        const diasSemanaLabels = JSON.parse('{{ dias_semana_json|escapejs }}');
+        const ventasDiaSemanaValues = JSON.parse('{{ ventas_dia_semana_json|escapejs }}');
+        // Datos para el gráfico de entradas más vendidas
+        const entradasLabels = JSON.parse('{{ tipos_labels_json|escapejs }}');
+        const entradasValues = JSON.parse('{{ tipos_values_json|escapejs }}');
 
         document.addEventListener('DOMContentLoaded', function() {
             // Crear el gráfico de ventas
@@ -153,6 +178,184 @@
                     }
                 }
             });
+
+            // Crear el gráfico de tendencias por día de la semana
+            const ctxDiaSemana = document.getElementById('diaSemanaChart').getContext('2d');
+            new Chart(ctxDiaSemana, {
+                type: 'bar',
+                data: {
+                    labels: diasSemanaLabels,
+                    datasets: [{
+                        label: 'Ventas por Día',
+                        data: ventasDiaSemanaValues,
+                        backgroundColor: [
+                            '#FF6B6B', // Lunes - Rojo suave
+                            '#4ECDC4', // Martes - Turquesa
+                            '#45B7D1', // Miércoles - Azul
+                            '#96CEB4', // Jueves - Verde suave
+                            '#FFEAA7', // Viernes - Amarillo
+                            '#DDA0DD', // Sábado - Lila
+                            '#FF9FF3'  // Domingo - Rosa
+                        ],
+                        borderColor: [
+                            '#FF5252',
+                            '#26A69A',
+                            '#2196F3',
+                            '#66BB6A',
+                            '#FFCA28',
+                            '#BA68C8',
+                            '#E91E63'
+                        ],
+                        borderWidth: 2,
+                        borderRadius: 8,
+                        borderSkipped: false,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            titleColor: 'white',
+                            bodyColor: 'white',
+                            callbacks: {
+                                label: function(context) {
+                                    return `Ventas: ${context.parsed.y}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1,
+                                color: '#6B7280'
+                            },
+                            grid: {
+                                color: '#E5E7EB'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#6B7280',
+                                maxRotation: 45
+                            },
+                            grid: {
+                                display: false
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeOutQuart'
+                    }
+                }
+            });
+
+            // Crear el gráfico de entradas más vendidas
+            const ctxEntradas = document.getElementById('entradasChart').getContext('2d');
+            new Chart(ctxEntradas, {
+                type: 'doughnut',
+                data: {
+                    labels: entradasLabels,
+                    datasets: [{
+                        label: 'Entradas Vendidas',
+                        data: entradasValues,
+                        backgroundColor: [
+                            '#3B82F6', // Azul
+                            '#10B981', // Verde esmeralda
+                            '#F59E0B', // Ámbar
+                            '#EF4444', // Rojo
+                            '#8B5CF6', // Violeta
+                            '#06B6D4', // Cian
+                            '#84CC16', // Lima
+                            '#F97316', // Naranja
+                            '#EC4899', // Rosa
+                            '#6366F1'  // Índigo
+                        ],
+                        borderColor: '#ffffff',
+                        borderWidth: 3,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            titleColor: 'white',
+                            bodyColor: 'white',
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = ((value / total) * 100).toFixed(1);
+                                    return `${label}: ${value} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    },
+                    animation: {
+                        animateRotate: true,
+                        duration: 1000
+                    }
+                }
+            });
+
+            // Llenar los detalles de entradas
+            function llenarDetallesEntradas() {
+                const contenedor = document.getElementById('entradas-detalles');
+                if (!contenedor) return;
+                
+                let html = '';
+                const total = entradasValues.reduce((a, b) => a + b, 0);
+                
+                for (let i = 0; i < entradasLabels.length; i++) {
+                    const porcentaje = total > 0 ? ((entradasValues[i] / total) * 100).toFixed(1) : 0;
+                    html += `
+                        <div class="flex justify-between items-center text-sm py-1">
+                            <div class="flex items-center">
+                                <div class="w-3 h-3 rounded-full mr-2" style="background-color: ${getColorForIndex(i)}"></div>
+                                <span class="text-gray-700">${entradasLabels[i]}</span>
+                            </div>
+                            <div class="text-right">
+                                <span class="font-medium text-gray-900">${entradasValues[i]}</span>
+                                <span class="text-gray-500 ml-1">(${porcentaje}%)</span>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                contenedor.innerHTML = html;
+            }
+            
+            function getColorForIndex(index) {
+                const colors = [
+                    '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
+                    '#06B6D4', '#84CC16', '#F97316', '#EC4899', '#6366F1'
+                ];
+                return colors[index % colors.length];
+            }
+            
+            // Llenar detalles después de crear el gráfico
+            llenarDetallesEntradas();
 
             // Animar las estadísticas
             setTimeout(() => {

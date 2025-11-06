@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.contrib.auth.hashers import make_password, check_password
 from .models import Usuario, Rol, TokenRestablecerContrasena  # Agregar esta importación
@@ -10,6 +11,85 @@ from django.views.decorators.http import require_http_methods
 from ventas.models import Compra 
 from django.utils import timezone
 from termas.models import Terma, ServicioTerma
+
+
+def get_current_user(request):
+    """
+    Función helper para obtener el usuario actual tanto del sistema antiguo como del nuevo.
+    Permite migración gradual.
+    """
+    # Primero intentar con Django Auth (sistema nuevo)
+    if hasattr(request, 'user') and request.user.is_authenticated:
+        return request.user
+    
+    # Si no, usar el sistema de sesiones anterior
+    if 'usuario_id' in request.session:
+        try:
+            return Usuario.objects.get(id=request.session['usuario_id'])
+        except Usuario.DoesNotExist:
+            return None
+    
+    return None
+
+
+def is_user_authenticated(request):
+    """
+    Función helper para verificar autenticación en ambos sistemas.
+    """
+    # Django Auth
+    if hasattr(request, 'user') and request.user.is_authenticated:
+        return True
+    
+    # Sistema de sesiones anterior
+    if 'usuario_id' in request.session:
+        return True
+    
+    return False
+
+
+def login_usuario_nuevo(request):
+    """
+    Vista de login mejorada usando Django Auth (más segura).
+    Mantiene compatibilidad con sesiones antiguas para migración gradual.
+    """
+    if request.method == 'POST':
+        email = request.POST.get('email', '').strip().lower()
+        password = request.POST.get('password', '')
+        
+        # Validaciones básicas
+        if not email or not password:
+            messages.error(request, 'Por favor ingresa email y contraseña.')
+            return redirect('core:home')
+        
+        # Intentar autenticación con Django Auth (más seguro)
+        usuario = authenticate(request, email=email, password=password)
+        
+        if usuario:
+            # Login exitoso con Django Auth
+            login(request, usuario)
+            
+            # Mantener compatibilidad con sistema anterior (temporal)
+            request.session['usuario_id'] = usuario.id
+            request.session['usuario_nombre'] = usuario.nombre
+            request.session['usuario_email'] = usuario.email
+            request.session['usuario_rol'] = usuario.rol.id
+            
+            messages.success(request, f'¡Bienvenid@ {usuario.nombre}!')
+            
+            # Redirigir según el rol del usuario
+            if usuario.rol.nombre == 'administrador_terma':
+                return redirect('usuarios:adm_termas')
+            elif usuario.rol.nombre == 'administrador_general':
+                return redirect('usuarios:admin_general')
+            elif usuario.rol.nombre == 'trabajador':
+                return redirect('usuarios:empleado')
+            else:  # Usuario Cliente
+                return redirect('usuarios:inicio')
+        else:
+            messages.error(request, 'Email o contraseña incorrectos.')
+            return redirect('core:home')
+    
+    return redirect('core:home')
 
 
 def login_usuario(request):
@@ -216,18 +296,24 @@ def registro_usuario(request):
 
 def adm_termas(request):
     """Vista para mostrar la página de administración de termas."""
-    # Verificar si el usuario está logueado
-    if 'usuario_id' not in request.session:
+    # Verificar autenticación usando función helper
+    if not is_user_authenticated(request):
         messages.error(request, 'Debes iniciar sesión para acceder.')
         return redirect('core:home')
     
-    # Verificar si el usuario tiene el rol correcto (ID=2)
-    if request.session.get('usuario_rol') != 2:
-        messages.error(request, 'No tienes permisos para acceder a esta sección.')
-        return redirect('usuarios:inicio')
-    
     try:
-        usuario = Usuario.objects.get(id=request.session['usuario_id'])
+        # Obtener usuario usando función helper
+        usuario = get_current_user(request)
+        
+        if not usuario:
+            messages.error(request, 'Usuario no encontrado.')
+            return redirect('core:home')
+        
+        # Verificar si el usuario tiene el rol correcto (administrador_terma)
+        if usuario.rol.id != 2:
+            messages.error(request, 'No tienes permisos para acceder a esta sección.')
+            return redirect('usuarios:inicio')
+        
         terma = usuario.terma
         # métricas de la terma
         if terma:
@@ -265,7 +351,8 @@ def adm_termas(request):
     except Usuario.DoesNotExist:
         messages.error(request, 'Sesión inválida.')
         return redirect('core:home')
-    
+
+
 
 def admin_general(request):
     """Vista para mostrar la página de administración general del sistema."""
@@ -335,8 +422,15 @@ def solicitudes_pendientes(request):
         return redirect('core:home')
 
 def logout_usuario(request):
-    """Vista para cerrar sesión del usuario."""
-    # Limpiar todas las variables de sesión
+    """
+    Vista para cerrar sesión del usuario.
+    Sistema híbrido: cierra sesión tanto en Django Auth como en sesiones personalizadas.
+    """
+    # Cerrar sesión en Django Auth si está activo
+    if hasattr(request, 'user') and request.user.is_authenticated:
+        logout(request)
+    
+    # Limpiar todas las variables de sesión personalizadas
     request.session.flush()
     
     messages.success(request, 'Has cerrado sesión correctamente.')
@@ -469,6 +563,155 @@ def cargar_comentarios_filtrados(request, terma_id):
         return JsonResponse({'error': str(e)}, status=500)
     
 
+def billetera(request):
+    """
+    Vista para mostrar la billetera del administrador de termas
+    Sistema híbrido: soporta tanto autenticación Django como sesiones personalizadas
+    """
+    # Verificar autenticación usando función helper
+    if not is_user_authenticated(request):
+        messages.error(request, 'Debes iniciar sesión para acceder.')
+        return redirect('core:home')
+    
+    try:
+        # Obtener usuario usando función helper
+        usuario = get_current_user(request)
+        
+        if not usuario:
+            messages.error(request, 'Usuario no encontrado.')
+            return redirect('core:home')
+        
+        # Verificar que el usuario tenga una terma asociada
+        if not usuario.terma:
+            messages.error(request, 'No tienes una terma asociada para acceder a la billetera.')
+            return redirect('usuarios:adm_termas')
+        
+        terma = usuario.terma
+        
+        # Obtener información de la suscripción actual
+        suscripcion_actual = None
+        if hasattr(terma, 'suscripcion_actual') and terma.suscripcion_actual:
+            suscripcion_actual = terma.suscripcion_actual
+        
+        # Calcular estadísticas de ingresos
+        from ventas.models import Compra
+        from django.db.models import Sum
+        from decimal import Decimal
+        from django.utils.timezone import now
+        
+        # Ingresos del mes actual
+        current_time = now()
+        inicio_mes = current_time.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        
+        ingresos_mes = Compra.objects.filter(
+            terma=terma,
+            fecha_compra__gte=inicio_mes,
+            estado_pago='pagado'
+        ).aggregate(total=Sum('total'))['total'] or Decimal('0.00')
+        
+        # Total de ventas completadas
+        total_ventas = Compra.objects.filter(
+            terma=terma,
+            estado_pago='pagado'
+        ).count()
+        
+        context = {
+            'terma': terma,
+            'suscripcion_actual': suscripcion_actual,
+            'usuario': usuario,
+            'title': 'Billetera - MiTerma',
+            'ingresos_mes': ingresos_mes,
+            'total_ventas': total_ventas,
+        }
+        
+        return render(request, 'administrador_termas/billetera.html', context)
+        
+    except Exception as e:
+        messages.error(request, f'Error al cargar la billetera: {str(e)}')
+        return redirect('usuarios:adm_termas')
 
+
+def vincular_mercadopago(request):
+    """
+    Vista para iniciar el proceso de vinculación con Mercado Pago
+    """
+    # Verificar autenticación
+    if not is_user_authenticated(request):
+        messages.error(request, 'Debes iniciar sesión para acceder.')
+        return redirect('core:home')
+    
+    try:
+        usuario = get_current_user(request)
+        
+        if not usuario or not usuario.terma:
+            messages.error(request, 'No tienes una terma asociada.')
+            return redirect('usuarios:adm_termas')
+        
+        terma = usuario.terma
+        
+        # URL de autorización de Mercado Pago
+        # En producción, esto debería usar el Client ID real de Mercado Pago
+        mp_auth_url = f"https://auth.mercadopago.com.ar/authorization?client_id=TEST-CLIENT-ID&response_type=code&platform_id=mp&state={terma.id}&redirect_uri=http://localhost:8000/usuarios/mercadopago-callback/"
+        
+        context = {
+            'terma': terma,
+            'mp_auth_url': mp_auth_url,
+            'title': 'Vincular Mercado Pago - MiTerma',
+        }
+        
+        return render(request, 'administrador_termas/vincular_mercadopago.html', context)
+        
+    except Exception as e:
+        messages.error(request, f'Error al procesar la solicitud: {str(e)}')
+        return redirect('usuarios:billetera')
+
+
+def mercadopago_callback(request):
+    """
+    Vista para manejar el callback de autorización de Mercado Pago
+    """
+    if not is_user_authenticated(request):
+        messages.error(request, 'Debes iniciar sesión para acceder.')
+        return redirect('core:home')
+    
+    try:
+        # Obtener parámetros del callback
+        authorization_code = request.GET.get('code')
+        state = request.GET.get('state')  # ID de la terma
+        error = request.GET.get('error')
+        
+        if error:
+            messages.error(request, f'Error en la autorización: {error}')
+            return redirect('usuarios:billetera')
+        
+        if not authorization_code or not state:
+            messages.error(request, 'Parámetros de autorización inválidos.')
+            return redirect('usuarios:billetera')
+        
+        # Buscar la terma
+        from termas.models import Terma
+        terma = get_object_or_404(Terma, id=state)
+        
+        # Verificar que el usuario actual es el administrador de esta terma
+        usuario = get_current_user(request)
+        if usuario.terma != terma:
+            messages.error(request, 'No tienes permisos para vincular esta cuenta.')
+            return redirect('usuarios:billetera')
+        
+        # Aquí normalmente intercambiarías el código por un access token
+        # Por ahora, simularemos que la vinculación fue exitosa
+        from django.utils.timezone import now
+        terma.mercadopago_user_id = f"MP_USER_{terma.id}"
+        terma.mercadopago_access_token = f"ENCRYPTED_TOKEN_{authorization_code}"
+        terma.mercadopago_cuenta_vinculada = True
+        terma.fecha_vinculacion_mp = now()
+        terma.save()
+        
+        messages.success(request, '¡Cuenta de Mercado Pago vinculada exitosamente!')
+        return redirect('usuarios:billetera')
+        
+    except Exception as e:
+        messages.error(request, f'Error al procesar la autorización: {str(e)}')
+        return redirect('usuarios:billetera')
 
 

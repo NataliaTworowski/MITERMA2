@@ -1,10 +1,45 @@
 // Funciones para el modal de solicitud de terma
-function openSolicitudModal() {
-    document.getElementById('solicitudModal').classList.remove('hidden');
+function openSolicitudModal(planId = null) {
+    console.log('base.js - openSolicitudModal llamada con planId:', planId);
+    const modal = document.getElementById('solicitudModal');
+    console.log('Modal encontrado:', modal);
+    
+    if (modal) {
+        // Mostrar el modal
+        modal.style.display = 'flex';
+        modal.classList.remove('hidden');
+        console.log('Modal mostrado');
+        
+        // Si hay un plan seleccionado, preseleccionar en el formulario
+        if (planId) {
+            setTimeout(() => {
+                const planSelect = document.querySelector('select[name="plan_seleccionado"]');
+                console.log('base.js - Select de plan encontrado:', planSelect);
+                if (planSelect) {
+                    planSelect.value = planId;
+                    console.log('base.js - Plan seleccionado establecido a:', planId);
+                }
+            }, 100);
+        }
+        
+        // Prevent body scroll
+        document.body.style.overflow = 'hidden';
+    } else {
+        console.error('Modal no encontrado!');
+    }
 }
 
 function closeSolicitudModal() {
-    document.getElementById('solicitudModal').classList.add('hidden');
+    console.log('base.js - closeSolicitudModal llamada');
+    const modal = document.getElementById('solicitudModal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.add('hidden');
+        
+        // Restore body scroll
+        document.body.style.overflow = 'auto';
+        console.log('Modal cerrado');
+    }
 }
 
 // Función para mostrar popup de éxito

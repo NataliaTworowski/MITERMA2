@@ -1,0 +1,106 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>{{ title }}</title>
+    {% include 'partials/head.html' %}
+</head>
+<body class="flex min-h-screen bg-gray-50">
+    <!-- navbar / sidebar -->
+    {% include 'partials/navbar_adm_termas.html' %}
+    
+    <!-- Contenido principal -->
+    <main class="flex-1 ml-0 md:ml-4 transition-all duration-300">
+        <!-- Header -->
+        <div class="bg-white shadow-sm border-b border-gray-200">
+            <div class="px-6 py-4">
+                <h1 class="text-2xl font-bold text-gray-900">Vincular Mercado Pago</h1>
+                <p class="text-gray-600">Conecta tu cuenta para recibir pagos automáticamente</p>
+            </div>
+        </div>
+
+        <!-- Contenido -->
+        <div class="p-6">
+            <div class="max-w-2xl mx-auto">
+                <!-- Información del proceso -->
+                <div class="bg-white rounded-lg shadow-md p-8">
+                    <div class="text-center mb-8">
+                        <div class="mx-auto w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                            <svg class="w-10 h-10 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z"></path>
+                            </svg>
+                        </div>
+                        <h2 class="text-2xl font-bold text-gray-900 mb-4">Conecta con Mercado Pago</h2>
+                        <p class="text-gray-600 mb-6">
+                            Al vincular tu cuenta de Mercado Pago, los pagos de las reservas se transferirán automáticamente a tu cuenta,
+                            después de descontar nuestra comisión según tu plan de suscripción.
+                        </p>
+                    </div>
+
+                    <!-- Beneficios -->
+                    <div class="mb-8">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Beneficios de vincular tu cuenta:</h3>
+                        <ul class="space-y-3">
+                            <li class="flex items-start">
+                                <svg class="w-5 h-5 text-green-500 mt-0.5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                </svg>
+                                <span class="text-gray-700">Recibe pagos automáticamente en tu cuenta</span>
+                            </li>
+                            <li class="flex items-start">
+                                <svg class="w-5 h-5 text-green-500 mt-0.5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                </svg>
+                                <span class="text-gray-700">Procesamiento seguro con Split Payments</span>
+                            </li>
+                            <li class="flex items-start">
+                                <svg class="w-5 h-5 text-green-500 mt-0.5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                </svg>
+                                <span class="text-gray-700">Transferencias instantáneas</span>
+                            </li>
+                            <li class="flex items-start">
+                                <svg class="w-5 h-5 text-green-500 mt-0.5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                </svg>
+                                <span class="text-gray-700">Control total desde tu panel de Mercado Pago</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Información del plan actual -->
+                    <div class="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
+                        <h4 class="text-sm font-medium text-orange-800 mb-2">Tu plan actual: {{ terma.plan_actual.nombre|default:"Sin plan" }}</h4>
+                        <p class="text-sm text-orange-700">
+                            Comisión por transacción: <span class="font-semibold">{{ terma.porcentaje_comision_actual }}%</span>
+                        </p>
+                    </div>
+
+                    <!-- Botones de acción -->
+                    <div class="flex space-x-4">
+                        <a href="{{ mp_auth_url }}" 
+                           class="flex-1 inline-flex justify-center items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors">
+                            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M10 2L3 7v11a1 1 0 001 1h12a1 1 0 001-1V7l-7-5zM9 14a1 1 0 112 0v1a1 1 0 11-2 0v-1z"></path>
+                            </svg>
+                            Autorizar con Mercado Pago
+                        </a>
+                        <a href="{% url 'usuarios:billetera' %}" 
+                           class="flex-1 inline-flex justify-center items-center px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                            Cancelar
+                        </a>
+                    </div>
+
+                    <!-- Nota de seguridad -->
+                    <div class="mt-6 p-4 bg-gray-50 rounded-lg">
+                        <p class="text-xs text-gray-600">
+                            🔒 <strong>Seguro y confiable:</strong> Tu información se maneja de forma segura. 
+                            MiTerma nunca tiene acceso a tu información bancaria, solo procesamos los pagos a través de Mercado Pago.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>

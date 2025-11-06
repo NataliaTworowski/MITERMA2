@@ -22,6 +22,28 @@ class Usuario(models.Model):
     rol = models.ForeignKey(Rol, on_delete=models.CASCADE)
     estado = models.BooleanField(default=True)
     terma = models.ForeignKey('termas.Terma', on_delete=models.SET_NULL, null=True, blank=True)
+    
+    # Campos requeridos para compatibilidad con Django Auth
+    last_login = models.DateTimeField(null=True, blank=True)
+    
+    # Propiedades requeridas por Django Auth
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ['nombre', 'apellido']
+    
+    @property
+    def is_authenticated(self):
+        return True
+    
+    @property
+    def is_anonymous(self):
+        return False
+    
+    @property
+    def is_active(self):
+        return self.estado
+    
+    def get_username(self):
+        return self.email
 
     def __str__(self):
         return f"{self.nombre} {self.apellido}"

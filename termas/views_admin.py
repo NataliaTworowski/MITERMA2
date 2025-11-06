@@ -59,6 +59,20 @@ def aprobar_solicitud(request, solicitud_id):
         )
         print(f"[DEBUG] Terma creada con ID: {terma.id}")
 
+        # Si la solicitud incluye un plan seleccionado, asignarlo a la terma
+        try:
+            plan_seleccionado = solicitud.plan_seleccionado
+            if plan_seleccionado:
+                terma.plan_actual = plan_seleccionado
+                # Actualizar campos derivados del plan en la terma
+                terma.porcentaje_comision_actual = plan_seleccionado.porcentaje_comision
+                terma.limite_fotos_actual = plan_seleccionado.limite_fotos
+                terma.save()
+                print(f"[DEBUG] Plan asignado a la terma: {plan_seleccionado.nombre} (ID {plan_seleccionado.id})")
+        except Exception as e:
+            # No bloquear la aprobación por un fallo al asignar plan; solo loguear
+            print(f"[DEBUG] No se pudo asignar plan a la terma automáticamente: {e}")
+
         # Gestión del usuario administrador
         usuario_admin = None
         password_temporal = None  

@@ -1,4 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
+from django.http import JsonResponse
 from django.db.models import Q
 from django.contrib import messages
 from .models import Terma, Region, Comuna, ImagenTerma
@@ -123,19 +124,55 @@ def subir_fotos(request):
             foto = request.FILES.get('foto')
             descripcion = request.POST.get('descripcion', '').strip()
             
+            # Verificar si es una petición AJAX
+            is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+            
             if not foto:
-                messages.error(request, 'Por favor selecciona una foto.')
+                error_msg = 'Por favor selecciona una foto.'
+                if is_ajax:
+                    return JsonResponse({'success': False, 'message': error_msg})
+                messages.error(request, error_msg)
                 return redirect('termas:subir_fotos')
             
             # Validar tipo de archivo
             allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp']
             if foto.content_type not in allowed_types:
-                messages.error(request, 'Solo se permiten archivos JPG, PNG y WEBP.')
+                error_msg = 'Solo se permiten archivos JPG, PNG y WEBP.'
+                if is_ajax:
+                    return JsonResponse({'success': False, 'message': error_msg})
+                messages.error(request, error_msg)
                 return redirect('termas:subir_fotos')
             
             # Validar tamaño (10MB máximo)
             if foto.size > 10 * 1024 * 1024:  # 10MB
-                messages.error(request, 'La foto no puede superar los 10MB.')
+                error_msg = 'La foto no puede superar los 10MB.'
+                if is_ajax:
+                    return JsonResponse({'success': False, 'message': error_msg})
+                messages.error(request, error_msg)
+                return redirect('termas:subir_fotos')
+            
+            # Validar límite de fotos según el plan
+            fotos_actuales = ImagenTerma.objects.filter(terma=usuario.terma).count()
+            limite_fotos = None
+            
+            # Obtener límite del plan actual
+            if usuario.terma.plan_actual:
+                limite_fotos = usuario.terma.plan_actual.limite_fotos
+            else:
+                # Plan por defecto (básico) si no tiene plan asignado
+                limite_fotos = usuario.terma.limite_fotos_actual or 5
+            
+            # Verificar si puede subir más fotos (-1 significa ilimitado)
+            if limite_fotos != -1 and fotos_actuales >= limite_fotos:
+                plan_nombre = usuario.terma.plan_actual.nombre if usuario.terma.plan_actual else "Básico"
+                if limite_fotos == 5:
+                    error_msg = f'Has alcanzado el límite de {limite_fotos} fotos de tu plan {plan_nombre}. Considera actualizar a un plan superior.'
+                else:
+                    error_msg = f'Has alcanzado el límite de {limite_fotos} fotos de tu plan {plan_nombre}.'
+                
+                if is_ajax:
+                    return JsonResponse({'success': False, 'message': error_msg})
+                messages.error(request, error_msg)
                 return redirect('termas:subir_fotos')
             
             try:
@@ -162,21 +199,48 @@ def subir_fotos(request):
                     descripcion=descripcion if descripcion else None
                 )
                 
-                messages.success(request, 'Foto subida exitosamente.')
+                success_msg = 'Foto subida exitosamente.'
+                if is_ajax:
+                    return JsonResponse({'success': True, 'message': success_msg})
+                messages.success(request, success_msg)
                 return redirect('termas:subir_fotos')
                 
             except Exception as e:
-                messages.error(request, f'Error al subir la foto: {str(e)}')
+                error_msg = f'Error al subir la foto: {str(e)}'
+                if is_ajax:
+                    return JsonResponse({'success': False, 'message': error_msg})
+                messages.error(request, error_msg)
                 return redirect('termas:subir_fotos')
         
         # Obtener todas las fotos de la terma
         fotos = ImagenTerma.objects.filter(terma=usuario.terma).order_by('-id')
+        
+        # Calcular información del límite de fotos
+        fotos_actuales = fotos.count()
+        if usuario.terma.plan_actual:
+            limite_fotos = usuario.terma.plan_actual.limite_fotos
+            plan_nombre = usuario.terma.plan_actual.nombre
+        else:
+            limite_fotos = usuario.terma.limite_fotos_actual or 5
+            plan_nombre = "Básico"
+        
+        # Calcular fotos restantes
+        fotos_restantes = None
+        porcentaje_uso = 0
+        if limite_fotos != -1:
+            fotos_restantes = max(0, limite_fotos - fotos_actuales)
+            porcentaje_uso = min(100, (fotos_actuales / limite_fotos * 100)) if limite_fotos > 0 else 0
         
         context = {
             'title': 'Gestión de Fotos - MiTerma',
             'usuario': usuario,
             'terma': usuario.terma,
             'fotos': fotos,
+            'fotos_actuales': fotos_actuales,
+            'limite_fotos': limite_fotos,
+            'fotos_restantes': fotos_restantes,
+            'plan_nombre': plan_nombre,
+            'porcentaje_uso': porcentaje_uso,
         }
         return render(request, 'administrador_termas/subir_fotos.html', context)
         
@@ -189,21 +253,31 @@ def eliminar_foto(request, foto_id):
     
     # Verificar si el usuario está logueado
     if 'usuario_id' not in request.session:
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'message': 'Debes iniciar sesión para acceder.'})
         messages.error(request, 'Debes iniciar sesión para acceder.')
         return redirect('core:home')
     
     # Verificar si el usuario tiene el rol correcto (ID=2)
     if request.session.get('usuario_rol') != 2:
-        messages.error(request, 'No tienes permisos para realizar esta acción.')
+        error_msg = 'No tienes permisos para realizar esta acción.'
+        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+            return JsonResponse({'success': False, 'message': error_msg})
+        messages.error(request, error_msg)
         return redirect('usuarios:inicio')
     
     if request.method == 'POST':
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+        
         try:
             usuario = Usuario.objects.get(id=request.session['usuario_id'])
             
             # Verificar que el usuario tenga una terma asignada
             if not usuario.terma:
-                messages.error(request, 'No tienes una terma asignada.')
+                error_msg = 'No tienes una terma asignada.'
+                if is_ajax:
+                    return JsonResponse({'success': False, 'message': error_msg})
+                messages.error(request, error_msg)
                 return redirect('usuarios:adm_termas')
             
             # Obtener la imagen y verificar que pertenezca a la terma del usuario
@@ -222,13 +296,22 @@ def eliminar_foto(request, foto_id):
             # Eliminar el registro de la base de datos
             imagen.delete()
             
-            messages.success(request, 'Foto eliminada exitosamente.')
+            success_msg = 'Foto eliminada exitosamente.'
+            if is_ajax:
+                return JsonResponse({'success': True, 'message': success_msg})
+            messages.success(request, success_msg)
             
         except Usuario.DoesNotExist:
-            messages.error(request, 'Sesión inválida.')
+            error_msg = 'Sesión inválida.'
+            if is_ajax:
+                return JsonResponse({'success': False, 'message': error_msg})
+            messages.error(request, error_msg)
             return redirect('core:home')
         except Exception as e:
-            messages.error(request, f'Error al eliminar la foto: {str(e)}')
+            error_msg = f'Error al eliminar la foto: {str(e)}'
+            if is_ajax:
+                return JsonResponse({'success': False, 'message': error_msg})
+            messages.error(request, error_msg)
     
     return redirect('termas:subir_fotos')
 
@@ -258,18 +341,51 @@ def analisis_terma(request):
         hoy = datetime.now().date()
         fechas = []
         ventas_por_dia = []
+        ingresos_por_dia = []
+        
         for i in range(rango-1, -1, -1):
             fecha = hoy - timedelta(days=i)
             fechas.append(fecha.strftime('%d/%m'))
+            
+            # Contar número de ventas
             ventas_dia = Compra.objects.filter(
                 fecha_compra__date=fecha,
-                estado_pago='aprobado',
+                estado_pago='pagado',
                 terma=terma
             ).count()
             ventas_por_dia.append(ventas_dia)
-        total_ventas = sum(ventas_por_dia)
-        promedio_ventas = total_ventas / rango if ventas_por_dia else 0
+            
+            # Calcular ingresos del día
+            ingresos_dia = Compra.objects.filter(
+                fecha_compra__date=fecha,
+                estado_pago='pagado',
+                terma=terma
+            ).aggregate(total=Sum('total'))['total'] or 0
+            ingresos_por_dia.append(float(ingresos_dia))
+        
+        # Estadísticas
+        total_ventas_cantidad = sum(ventas_por_dia)  # Número de ventas
+        total_ingresos = sum(ingresos_por_dia)  # Dinero total del rango seleccionado
+        promedio_ventas_cantidad = total_ventas_cantidad / rango if ventas_por_dia else 0
+        promedio_ingresos_diario = total_ingresos / rango if ingresos_por_dia else 0
         mejor_dia = max(ventas_por_dia) if ventas_por_dia else 0
+        
+        # Cálculo de ingresos del mes actual
+        primer_dia_mes = hoy.replace(day=1)
+        ingresos_mes_actual = Compra.objects.filter(
+            terma=terma,
+            estado_pago='pagado',
+            fecha_compra__date__gte=primer_dia_mes,
+            fecha_compra__date__lte=hoy
+        ).aggregate(total=Sum('total'))['total'] or 0
+        
+        # Cálculo de ventas del mes actual
+        ventas_mes_actual = Compra.objects.filter(
+            terma=terma,
+            estado_pago='pagado',
+            fecha_compra__date__gte=primer_dia_mes,
+            fecha_compra__date__lte=hoy
+        ).count()
         fecha_inicio = hoy - timedelta(days=rango-1)
         detalles = DetalleCompra.objects.filter(
             compra__terma=terma,
@@ -304,14 +420,33 @@ def analisis_terma(request):
 
         servicios_labels = [s['servicio'] for s in servicios_populares]
         servicios_values = [s['total_vendidos'] for s in servicios_populares]
+        
+        # Análisis por día de la semana
+        dias_semana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+        ventas_por_dia_semana = [0] * 7
+        
+        compras_periodo = Compra.objects.filter(
+            terma=terma,
+            estado_pago='pagado',
+            fecha_compra__date__gte=fecha_inicio,
+            fecha_compra__date__lte=hoy
+        )
+        
+        for compra in compras_periodo:
+            dia_semana = compra.fecha_compra.weekday()  # 0=Lunes, 6=Domingo
+            ventas_por_dia_semana[dia_semana] += 1
         context = {
             'title': 'Análisis de Terma - MiTerma',
             'usuario': usuario,
             'terma': terma,
             'fechas_json': json.dumps(fechas),
             'ventas_por_dia_json': json.dumps(ventas_por_dia),
-            'total_ventas': total_ventas,
-            'promedio_ventas': round(promedio_ventas, 1),
+            'total_ventas': total_ventas_cantidad,  # Número de ventas del rango
+            'total_ingresos_rango': round(total_ingresos, 2),  # Dinero del rango seleccionado
+            'total_ingresos_mes': round(float(ingresos_mes_actual), 2),  # Dinero del mes actual
+            'total_ventas_mes': ventas_mes_actual,  # Ventas del mes actual
+            'promedio_ventas': round(promedio_ventas_cantidad, 1),  # Promedio de ventas por día
+            'promedio_ingresos': round(promedio_ingresos_diario, 2),  # Promedio de ingresos por día
             'mejor_dia': mejor_dia,
             'rango': rango,
             'tipos_labels_json': json.dumps(tipos_labels),
@@ -320,6 +455,9 @@ def analisis_terma(request):
             'servicios_populares_total': servicios_populares_total,
             'servicios_labels_json': json.dumps(servicios_labels),
             'servicios_values_json': json.dumps(servicios_values),
+            # Análisis por día de la semana
+            'dias_semana_json': json.dumps(dias_semana),
+            'ventas_dia_semana_json': json.dumps(ventas_por_dia_semana),
         }
         return render(request, 'administrador_termas/analisis_terma.html', context)
     except Usuario.DoesNotExist:
@@ -669,4 +807,100 @@ def vista_terma(request, terma_id):
         'usuario': usuario,
     }
     return render(request, 'administrador_termas/vista_terma.html', context)
+
+def suscripcion(request):
+    """Vista para gestionar la suscripción de la terma."""
+    # Verificar si el usuario está logueado
+    if 'usuario_id' not in request.session:
+        messages.error(request, 'Debes iniciar sesión para acceder.')
+        return redirect('core:home')
+    
+    # Verificar si el usuario tiene el rol correcto (ID=2)
+    if request.session.get('usuario_rol') != 2:
+        messages.error(request, 'No tienes permisos para acceder a esta sección.')
+        return redirect('usuarios:inicio')
+    
+    try:
+        from django.db.models import Sum, Count
+        from datetime import datetime, timedelta
+        
+        usuario = Usuario.objects.get(id=request.session['usuario_id'])
+        
+        # Verificar que el usuario tenga una terma asignada
+        if not usuario.terma:
+            messages.error(request, 'No tienes una terma asignada. Contacta al administrador.')
+            return redirect('usuarios:adm_termas')
+        
+        terma = usuario.terma
+        
+        # Obtener el plan actual de la terma
+        from .models import PlanSuscripcion
+        
+        # La terma tiene plan_actual directamente
+        plan_actual = terma.plan_actual
+        
+        # Si no tiene plan, asignar el plan básico por defecto
+        if not plan_actual:
+            plan_basico = PlanSuscripcion.objects.filter(nombre='Básico').first()
+            if plan_basico:
+                terma.plan_actual = plan_basico
+                terma.porcentaje_comision_actual = plan_basico.porcentaje_comision
+                terma.limite_fotos_actual = plan_basico.limite_fotos
+                terma.save()
+                plan_actual = plan_basico
+        
+        # Obtener todos los planes disponibles
+        planes_disponibles = PlanSuscripcion.objects.filter(activo=True).order_by('porcentaje_comision')
+        
+        # Calcular estadísticas de la terma
+        hoy = datetime.now().date()
+        inicio_mes = hoy.replace(day=1)
+        
+        # Fotos utilizadas vs límite
+        fotos_utilizadas = ImagenTerma.objects.filter(terma=terma).count()
+        limite_fotos = plan_actual.limite_fotos if plan_actual else 5
+        
+        # Ingresos del mes actual
+        from ventas.models import Compra
+        ingresos_mes = Compra.objects.filter(
+            terma=terma,
+            estado_pago='pagado',
+            fecha_compra__date__gte=inicio_mes,
+            fecha_compra__date__lte=hoy
+        ).aggregate(total=Sum('total'))['total'] or 0
+        
+        # Visitantes del mes actual
+        visitantes_mes = Compra.objects.filter(
+            terma=terma,
+            estado_pago='pagado',
+            fecha_compra__date__gte=inicio_mes,
+            fecha_compra__date__lte=hoy
+        ).aggregate(total=Sum('cantidad'))['total'] or 0
+        
+        # Comisión que se cobraría con el plan actual
+        comision_mes = 0
+        if plan_actual and ingresos_mes > 0:
+            comision_mes = (ingresos_mes * plan_actual.porcentaje_comision) / 100
+        
+        context = {
+            'title': 'Gestión de Suscripción - MiTerma',
+            'usuario': usuario,
+            'terma': terma,
+            'plan_actual': plan_actual,
+            'planes_disponibles': planes_disponibles,
+            'fotos_utilizadas': fotos_utilizadas,
+            'limite_fotos': limite_fotos,
+            'ingresos_mes': ingresos_mes,
+            'visitantes_mes': visitantes_mes,
+            'comision_mes': comision_mes,
+        }
+        
+        return render(request, 'administrador_termas/suscripcion.html', context)
+        
+    except Usuario.DoesNotExist:
+        messages.error(request, 'Sesión inválida.')
+        return redirect('core:home')
+    except Exception as e:
+        messages.error(request, f'Error al cargar la página de suscripción: {str(e)}')
+        return redirect('usuarios:adm_termas')
 

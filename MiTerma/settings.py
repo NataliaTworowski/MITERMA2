@@ -71,6 +71,14 @@ INSTALLED_APPS = [
     'entradas.apps.EntradasConfig',
 ]
 
+# Configuración de autenticación personalizada
+AUTHENTICATION_BACKENDS = [
+    'usuarios.auth_backend.CustomAuthBackend',
+]
+
+# Custom user model for Django Auth integration
+AUTH_USER_MODEL = 'usuarios.Usuario'
+
 # Rest Framework settings
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
