@@ -9,6 +9,7 @@ from django.utils import timezone
 from termas.models import Terma
 from usuarios.models import Usuario
 from usuarios.models import Usuario
+from usuarios.decorators import cliente_required
 
 # Cargar variables de entorno
 load_dotenv()
@@ -61,9 +62,11 @@ def pago(request, terma_id=None):
             datos['extras_descripcion'] = '-'
             datos['servicio_extra_id'] = None        # Obtener usuario
         usuario = None
-        if 'usuario_id' in request.session:
-            usuario = Usuario.objects.filter(id=request.session['usuario_id']).first()
+        if request.user.is_authenticated:
+            # Usuario autenticado con Django Auth
+            usuario = request.user
         else:
+            # Fallback para casos especiales (si aplica)
             usuario_id = request.POST.get('usuario_id')
             if usuario_id:
                 usuario = Usuario.objects.filter(id=usuario_id).first()

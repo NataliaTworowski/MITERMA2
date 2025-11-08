@@ -1,64 +1,345 @@
 <!DOCTYPE html>
+{% load humanize %}
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Editar Tipo de Entrada</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editar Tipo de Entrada - MiTerma</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'terma-blue': '#0c4a6e',
+                        'terma-green': '#059669',
+                        'terma-orange': '#ea580c',
+                    }
+                }
+            }
+        }
+    </script>
 </head>
-<body class="bg-gray-100 min-h-screen">
-<div class="max-w-2xl mx-auto mt-12 bg-white p-10 rounded-2xl shadow-xl">
-    <div class="flex items-center mb-8 gap-3">
-        <div class="bg-sky-100 rounded-full p-3">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-sky-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13l6.536-6.536a2 2 0 112.828 2.828L11.828 15H9v-2.828z" /></svg>
-        </div>
-        <h2 class="text-3xl font-extrabold text-gray-800">Editar Tipo de Entrada</h2>
-    </div>
-    <form method="post" class="space-y-6">
-        {% csrf_token %}
-        <div>
-            <label class="block text-gray-700 font-semibold mb-2">Nombre</label>
-            <input type="text" name="nombre" value="{{ entrada.nombre }}" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-sky-400 focus:outline-none transition" required />
-        </div>
-        <div>
-            <label class="block text-gray-700 font-semibold mb-2">Precio</label>
-            <div class="relative">
-                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 text-lg">$</span>
-                <input type="number" name="precio" value="{{ entrada.precio|floatformat:0 }}" class="pl-8 w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-sky-400 focus:outline-none transition" required step="1" min="0" />
-            </div>
-            {% if messages %}
-                <div class="mt-2">
-                    {% for message in messages %}
-                        <div class="text-red-500 text-sm">{{ message }}</div>
-                    {% endfor %}
+<body class="bg-gradient-to-br from-slate-100 to-blue-50 min-h-screen">
+    <!-- Header con navegación -->
+    <div class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <a href="{% url 'termas:precios_terma' %}" class="flex items-center text-gray-600 hover:text-terma-blue transition-colors">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                        Volver a Precios
+                    </a>
                 </div>
-            {% endif %}
-        </div>
-        <div>
-            <label class="block text-gray-700 font-semibold mb-2">Duración (horas)</label>
-            <input type="number" name="duracion_horas" value="{{ entrada.duracion_horas }}" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-sky-400 focus:outline-none transition" required />
-        </div>
-        <div>
-            <label class="block text-gray-700 font-semibold mb-2">Descripción</label>
-            <textarea name="descripcion" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-sky-400 focus:outline-none transition" rows="3">{{ entrada.descripcion }}</textarea>
-        </div>
-        <div>
-            <label class="block text-gray-700 font-semibold mb-2">Servicios incluidos</label>
-            <div class="grid grid-cols-1 gap-2">
-                {% for servicio in servicios_disponibles %}
-                    <label class="flex items-center bg-gray-50 rounded-lg px-3 py-2 hover:bg-sky-50 transition">
-                        <input type="checkbox" name="servicios" value="{{ servicio.id }}" {% if servicio.id in servicios_seleccionados %}checked{% endif %} class="mr-2 accent-sky-500">
-                        <span class="text-gray-700">{{ servicio.servicio }}</span>
-                    </label>
-                {% empty %}
-                    <span class="text-gray-400">No hay servicios disponibles para esta terma.</span>
-                {% endfor %}
+                <div class="flex items-center space-x-2">
+                    <div class="w-2 h-2 bg-terma-green rounded-full"></div>
+                    <span class="text-sm text-gray-600">Sistema Activo</span>
+                </div>
             </div>
         </div>
-        <div class="flex items-center gap-4 pt-4">
-            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-8 py-3 rounded-lg shadow transition">Guardar Cambios</button>
-            <a href="{% url 'termas:precios_terma' %}" class="text-gray-500 hover:text-gray-700 font-semibold">Cancelar</a>
+    </div>
+
+    <div class="max-w-4xl mx-auto p-6">
+        <!-- Título Principal -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-terma-blue to-blue-600 rounded-full mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13l6.536-6.536a2 2 0 112.828 2.828L11.828 15H9v-2.828z" />
+                </svg>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">Editar Tipo de Entrada</h1>
+            <p class="text-gray-600">Modifica los detalles de tu tipo de entrada</p>
         </div>
-    </form>
-</div>
+
+        <!-- Formulario Principal -->
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+            <div class="bg-gradient-to-r from-terma-blue to-blue-600 px-8 py-6">
+                <h2 class="text-xl font-semibold text-white flex items-center">
+                    <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Información de la Entrada
+                </h2>
+                <p class="text-blue-100 mt-2">{{ entrada.nombre }} - {{ entrada.terma.nombre_terma }}</p>
+            </div>
+
+            <form method="post" class="p-8 space-y-8" id="editarEntradaForm">
+                {% csrf_token %}
+                
+                <!-- Información Básica -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Nombre -->
+                    <div class="md:col-span-2">
+                        <label for="nombre" class="block text-sm font-semibold text-gray-700 mb-3">
+                            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a2 2 0 012-2z"></path>
+                            </svg>
+                            Nombre del Tipo de Entrada
+                        </label>
+                        <input 
+                            type="text" 
+                            id="nombre"
+                            name="nombre" 
+                            value="{{ entrada.nombre }}" 
+                            class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-terma-blue focus:ring-4 focus:ring-blue-50 transition-all duration-200 font-medium"
+                            placeholder="Ej: Entrada General, VIP, Familiar..."
+                            required 
+                        />
+                    </div>
+
+                    <!-- Precio -->
+                    <div>
+                        <label for="precio" class="block text-sm font-semibold text-gray-700 mb-3">
+                            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                            </svg>
+                            Precio (CLP)
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
+                                <span class="text-gray-500 text-lg font-bold">$</span>
+                            </div>
+                            <input 
+                                type="text" 
+                                id="precio"
+                                name="precio" 
+                                value="{{ entrada.precio|floatformat:0 }}" 
+                                class="w-full pl-10 pr-20 py-3 border-2 border-gray-200 rounded-xl focus:border-terma-green focus:ring-4 focus:ring-green-50 transition-all duration-200 font-bold text-lg text-right"
+                                placeholder="15000"
+                                required 
+                                oninput="formatearPrecio(this)"
+                            />
+                            <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none z-10">
+                                <span class="text-gray-400 text-sm font-medium">CLP</span>
+                            </div>
+                        </div>
+                        <p class="text-sm text-gray-500 mt-2">Precio actual: <span class="font-semibold text-terma-green">${{ entrada.precio|floatformat:0|intcomma }} CLP</span></p>
+                        {% if messages %}
+                            <div class="mt-3">
+                                {% for message in messages %}
+                                    <div class="flex items-center p-3 bg-red-50 border border-red-200 rounded-lg">
+                                        <svg class="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        <span class="text-red-700 text-sm">{{ message }}</span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Duración -->
+                    <div>
+                        <label for="duracion_horas" class="block text-sm font-semibold text-gray-700 mb-3">
+                            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Duración (horas)
+                        </label>
+                        <div class="relative">
+                            <input 
+                                type="number" 
+                                id="duracion_horas"
+                                name="duracion_horas" 
+                                value="{{ entrada.duracion_horas }}" 
+                                class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-terma-orange focus:ring-4 focus:ring-orange-50 transition-all duration-200 font-medium"
+                                min="1" 
+                                max="24"
+                                required 
+                            />
+                            <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                                <span class="text-gray-400 text-sm font-medium">hrs</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Descripción -->
+                <div>
+                    <label for="descripcion" class="block text-sm font-semibold text-gray-700 mb-3">
+                        <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path>
+                        </svg>
+                        Descripción
+                    </label>
+                    <textarea 
+                        id="descripcion"
+                        name="descripcion" 
+                        rows="4"
+                        class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-terma-blue focus:ring-4 focus:ring-blue-50 transition-all duration-200 resize-none"
+                        placeholder="Describe los beneficios y características de esta entrada..."
+                    >{{ entrada.descripcion }}</textarea>
+                </div>
+
+                <!-- Servicios Incluidos -->
+                <div class="border-t border-gray-200 pt-8">
+                    <label class="block text-sm font-semibold text-gray-700 mb-4">
+                        <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
+                        </svg>
+                        Servicios Incluidos
+                    </label>
+                    {% if servicios_disponibles %}
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {% for servicio in servicios_disponibles %}
+                                <label class="flex items-center bg-gray-50 rounded-xl px-4 py-3 hover:bg-blue-50 transition-all duration-200 cursor-pointer border-2 border-transparent hover:border-blue-200 group">
+                                    <input 
+                                        type="checkbox" 
+                                        name="servicios" 
+                                        value="{{ servicio.id }}" 
+                                        {% if servicio.id in servicios_seleccionados %}checked{% endif %} 
+                                        class="w-4 h-4 text-terma-blue bg-gray-100 border-gray-300 rounded focus:ring-terma-blue focus:ring-2"
+                                    >
+                                    <div class="ml-3 flex-1">
+                                        <span class="font-medium text-gray-800 group-hover:text-terma-blue transition-colors">{{ servicio.servicio }}</span>
+                                        {% if servicio.precio and servicio.precio > 0 %}
+                                            <span class="block text-sm text-terma-green font-semibold">
+                                                +${{ servicio.precio|floatformat:0|intcomma }} CLP
+                                            </span>
+                                        {% else %}
+                                            <span class="block text-sm text-gray-500">Incluido</span>
+                                        {% endif %}
+                                        {% if servicio.descripcion %}
+                                            <span class="block text-xs text-gray-400 mt-1">{{ servicio.descripcion|truncatechars:50 }}</span>
+                                        {% endif %}
+                                    </div>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-8">
+                            <svg class="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                            </svg>
+                            <p class="text-gray-500">No hay servicios disponibles para esta terma.</p>
+                            <p class="text-sm text-gray-400 mt-1">Agrega servicios en la sección "Editar Terma"</p>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Botones de Acción -->
+                <div class="flex flex-col sm:flex-row items-center gap-4 pt-8 border-t border-gray-200">
+                    <button 
+                        type="submit" 
+                        class="w-full sm:w-auto bg-gradient-to-r from-terma-blue to-blue-600 hover:from-blue-700 hover:to-blue-800 text-white font-bold px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center"
+                    >
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        Guardar Cambios
+                    </button>
+                    <a 
+                        href="{% url 'termas:precios_terma' %}" 
+                        class="w-full sm:w-auto bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-8 py-3 rounded-xl transition-all duration-200 flex items-center justify-center"
+                    >
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                        Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JavaScript para formateo de precio chileno -->
+    <script>
+        function formatearPrecio(input) {
+            // Guardar la posición del cursor
+            const cursorPosition = input.selectionStart;
+            const oldValue = input.value;
+            
+            // Remover todo excepto números
+            let value = input.value.replace(/[^0-9]/g, '');
+            
+            if (value) {
+                let number = parseInt(value);
+                // Formatear con puntos como separadores de miles (formato chileno)
+                let formatted = formatearPrecioChileno(number);
+                
+                // Solo actualizar si el valor cambió para evitar saltos
+                if (formatted !== oldValue) {
+                    input.value = formatted;
+                    
+                    // Calcular nueva posición del cursor
+                    const lengthDifference = formatted.length - oldValue.length;
+                    const newCursorPosition = cursorPosition + lengthDifference;
+                    
+                    // Restaurar la posición del cursor
+                    setTimeout(() => {
+                        input.setSelectionRange(newCursorPosition, newCursorPosition);
+                    }, 0);
+                }
+                
+                // Actualizar vista previa del precio
+                actualizarVistaPreviaPrecio(number);
+            } else {
+                // Si no hay valor, limpiar vista previa
+                const preview = document.getElementById('precio-preview');
+                if (preview) {
+                    preview.remove();
+                }
+            }
+        }
+
+        function actualizarVistaPreviaPrecio(precio) {
+            // Crear o actualizar elemento de vista previa
+            let preview = document.getElementById('precio-preview');
+            if (!preview) {
+                preview = document.createElement('div');
+                preview.id = 'precio-preview';
+                preview.className = 'mt-2 p-3 bg-green-50 border border-green-200 rounded-lg';
+                document.getElementById('precio').parentNode.appendChild(preview);
+            }
+            
+            preview.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <span class="text-sm font-medium text-green-700">Vista previa:</span>
+                    <span class="text-lg font-bold text-green-800">$${formatearPrecioChileno(precio)} CLP</span>
+                </div>
+            `;
+        }
+
+        // Formatear precio con separadores de miles estilo chileno (puntos)
+        function formatearPrecioChileno(numero) {
+            return numero.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        }
+
+        // Al enviar el formulario, limpiar formato del precio
+        document.getElementById('editarEntradaForm').addEventListener('submit', function(e) {
+            const precioInput = document.getElementById('precio');
+            precioInput.value = precioInput.value.replace(/[^0-9]/g, '');
+        });
+
+        // Formatear precio inicial al cargar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            const precioInput = document.getElementById('precio');
+            if (precioInput.value) {
+                // Formatear el valor inicial
+                let valorInicial = precioInput.value.replace(/[^0-9]/g, '');
+                if (valorInicial) {
+                    let numero = parseInt(valorInicial);
+                    precioInput.value = formatearPrecioChileno(numero);
+                    actualizarVistaPreviaPrecio(numero);
+                }
+            }
+        });
+
+        // Animaciones de hover para los checkboxes
+        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const label = this.closest('label');
+                if (this.checked) {
+                    label.classList.add('bg-blue-50', 'border-blue-300');
+                    label.classList.remove('bg-gray-50');
+                } else {
+                    label.classList.remove('bg-blue-50', 'border-blue-300');
+                    label.classList.add('bg-gray-50');
+                }
+            });
+        });
+    </script>
 </body>
 </html>

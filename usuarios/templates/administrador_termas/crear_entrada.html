@@ -3,51 +3,292 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <title>{{ title }}</title>
-    {% include 'partials/head.html' %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - MiTerma</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'terma-blue': '#0c4a6e',
+                        'terma-green': '#059669',
+                        'terma-orange': '#ea580c',
+                    }
+                }
+            }
+        }
+    </script>
 </head>
-<body class="flex min-h-screen bg-gray-100 font-sans">
-    {% include 'partials/navbar_adm_termas.html' %}
-
-    <main class="flex-1 md:ml-8 pl-4 pr-2 py-2">
-        <div class="bg-white rounded-xl shadow p-8 mt-8">
-            <div class="flex justify-between items-center mb-6">
-                <div>
-                    <h1 class="text-3xl font-extrabold text-gray-800 mb-2">Crear Nueva Entrada</h1>
-                    <p class="text-gray-500">Agrega un nuevo tipo de entrada para tu spa.</p>
+<body class="bg-gradient-to-br from-slate-100 to-blue-50 min-h-screen">
+    <!-- Header con navegación -->
+    <div class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <a href="{% url 'termas:precios_terma' %}" class="flex items-center text-gray-600 hover:text-terma-blue transition-colors">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                        Volver a Precios
+                    </a>
                 </div>
-                <a href="{% url 'termas:precios_terma' %}" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold px-5 py-2 rounded-lg shadow transition">← Volver a Precios</a>
+                <div class="flex items-center space-x-2">
+                    <div class="w-2 h-2 bg-terma-green rounded-full"></div>
+                    <span class="text-sm text-gray-600">Sistema Activo</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-4xl mx-auto p-6">
+        <!-- Título Principal -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-terma-green to-green-600 rounded-full mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">Crear Nueva Entrada</h1>
+            <p class="text-gray-600">Agrega un nuevo tipo de entrada para {{ terma.nombre_terma }}</p>
+        </div>
+
+        <!-- Formulario Principal -->
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
+            <div class="bg-gradient-to-r from-terma-green to-green-600 px-8 py-6">
+                <h2 class="text-xl font-semibold text-white flex items-center">
+                    <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Nueva Entrada
+                </h2>
+                <p class="text-green-100 mt-2">Completa la información para el nuevo tipo de entrada</p>
             </div>
 
-            <!-- Mostrar mensajes de error si los hay -->
+            <!-- Mostrar errores del formulario -->
             {% if form.errors %}
-                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                    <strong>Error en el formulario:</strong>
-                    <ul class="mt-2">
-                        {% for field, errors in form.errors.items %}
-                            {% for error in errors %}
-                                <li>{{ field|capfirst }}: {{ error }}</li>
+                <div class="mx-8 mt-6">
+                    <div class="bg-red-50 border border-red-200 rounded-xl p-4">
+                        <div class="flex items-center mb-3">
+                            <svg class="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <h3 class="text-red-800 font-semibold">Errores en el formulario:</h3>
+                        </div>
+                        <ul class="space-y-1">
+                            {% for field, errors in form.errors.items %}
+                                {% for error in errors %}
+                                    <li class="text-red-700 text-sm">• {{ field|capfirst }}: {{ error }}</li>
+                                {% endfor %}
                             {% endfor %}
-                        {% endfor %}
-                    </ul>
+                        </ul>
+                    </div>
                 </div>
             {% endif %}
 
-            <form method="post" class="space-y-6">
+            <form method="post" class="p-8 space-y-8" id="crearEntradaForm">
                 {% csrf_token %}
                 
-                <!-- Nombre de la entrada -->
-                <div>
-                    <label for="{{ form.nombre.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
-                        {{ form.nombre.label }}
-                    </label>
-                    {{ form.nombre }}
-                    {% if form.nombre.help_text %}
-                        <p class="mt-1 text-sm text-gray-500">{{ form.nombre.help_text }}</p>
-                    {% endif %}
+                <!-- Información Básica -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Nombre -->
+                    <div class="md:col-span-2">
+                        <label for="id_nombre" class="block text-sm font-semibold text-gray-700 mb-3">
+                            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a2 2 0 012-2z"></path>
+                            </svg>
+                            Nombre del Tipo de Entrada *
+                        </label>
+                        {{ form.nombre }}
+                        {% if form.nombre.help_text %}
+                            <p class="text-sm text-gray-500 mt-2">{{ form.nombre.help_text }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Precio -->
+                    <div>
+                        <label for="id_precio" class="block text-sm font-semibold text-gray-700 mb-3">
+                            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                            </svg>
+                            Precio (CLP) *
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                <span class="text-gray-500 text-lg font-bold">$</span>
+                            </div>
+                            {{ form.precio }}
+                            <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                                <span class="text-gray-400 text-sm font-medium">CLP</span>
+                            </div>
+                        </div>
+                        {% if form.precio.help_text %}
+                            <p class="text-sm text-gray-500 mt-2">{{ form.precio.help_text }}</p>
+                        {% endif %}
+                    </div>
+
+                    <!-- Duración -->
+                    <div>
+                        <label for="id_duracion_horas" class="block text-sm font-semibold text-gray-700 mb-3">
+                            <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Duración (horas) *
+                        </label>
+                        <div class="relative">
+                            {{ form.duracion_horas }}
+                            <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                                <span class="text-gray-400 text-sm font-medium">hrs</span>
+                            </div>
+                        </div>
+                        {% if form.duracion_horas.help_text %}
+                            <p class="text-sm text-gray-500 mt-2">{{ form.duracion_horas.help_text }}</p>
+                        {% endif %}
+                    </div>
                 </div>
 
                 <!-- Descripción -->
+                <div>
+                    <label for="id_descripcion" class="block text-sm font-semibold text-gray-700 mb-3">
+                        <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path>
+                        </svg>
+                        Descripción
+                    </label>
+                    {{ form.descripcion }}
+                    {% if form.descripcion.help_text %}
+                        <p class="text-sm text-gray-500 mt-2">{{ form.descripcion.help_text }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Servicios Incluidos -->
+                <div class="border-t border-gray-200 pt-8">
+                    <label class="block text-sm font-semibold text-gray-700 mb-4">
+                        <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
+                        </svg>
+                        Servicios Incluidos
+                    </label>
+                    {{ form.servicios }}
+                    {% if form.servicios.help_text %}
+                        <p class="text-sm text-gray-500 mt-2">{{ form.servicios.help_text }}</p>
+                    {% endif %}
+                </div>
+
+                <!-- Botones de Acción -->
+                <div class="flex flex-col sm:flex-row items-center gap-4 pt-8 border-t border-gray-200">
+                    <button 
+                        type="submit" 
+                        class="w-full sm:w-auto bg-gradient-to-r from-terma-green to-green-600 hover:from-green-700 hover:to-green-800 text-white font-bold px-8 py-3 rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 flex items-center justify-center"
+                    >
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        Crear Entrada
+                    </button>
+                    <a 
+                        href="{% url 'termas:precios_terma' %}" 
+                        class="w-full sm:w-auto bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-8 py-3 rounded-xl transition-all duration-200 flex items-center justify-center"
+                    >
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                        Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JavaScript para formateo de precio chileno -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Aplicar estilos a los campos del formulario
+            const nombre = document.getElementById('id_nombre');
+            const precio = document.getElementById('id_precio');
+            const duracion = document.getElementById('id_duracion_horas');
+            const descripcion = document.getElementById('id_descripcion');
+            const servicios = document.getElementById('id_servicios');
+
+            if (nombre) {
+                nombre.className = 'w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-terma-blue focus:ring-4 focus:ring-blue-50 transition-all duration-200 font-medium';
+                nombre.placeholder = 'Ej: Entrada General, VIP, Familiar...';
+            }
+
+            if (precio) {
+                precio.className = 'w-full pl-10 pr-16 py-3 border-2 border-gray-200 rounded-xl focus:border-terma-green focus:ring-4 focus:ring-green-50 transition-all duration-200 font-bold text-lg text-right';
+                precio.placeholder = '15000';
+                precio.type = 'text';
+                precio.oninput = function() { formatearPrecio(this); };
+            }
+
+            if (duracion) {
+                duracion.className = 'w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-terma-orange focus:ring-4 focus:ring-orange-50 transition-all duration-200 font-medium';
+                duracion.min = '1';
+                duracion.max = '24';
+            }
+
+            if (descripcion) {
+                descripcion.className = 'w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-terma-blue focus:ring-4 focus:ring-blue-50 transition-all duration-200 resize-none';
+                descripcion.placeholder = 'Describe los beneficios y características de esta entrada...';
+            }
+
+            // Estilizar checkboxes de servicios
+            const checkboxes = document.querySelectorAll('#id_servicios input[type="checkbox"]');
+            checkboxes.forEach(function(checkbox, index) {
+                const label = checkbox.closest('label');
+                if (label) {
+                    label.className = 'flex items-center bg-gray-50 rounded-xl px-4 py-3 hover:bg-blue-50 transition-all duration-200 cursor-pointer border-2 border-transparent hover:border-blue-200 group';
+                    checkbox.className = 'w-4 h-4 text-terma-blue bg-gray-100 border-gray-300 rounded focus:ring-terma-blue focus:ring-2';
+                }
+            });
+        });
+
+        function formatearPrecio(input) {
+            // Guardar la posición del cursor
+            const cursorPosition = input.selectionStart;
+            const oldValue = input.value;
+            
+            // Remover todo excepto números
+            let value = input.value.replace(/[^0-9]/g, '');
+            
+            if (value) {
+                let number = parseInt(value);
+                // Formatear con puntos como separadores de miles (formato chileno)
+                let formatted = formatearPrecioChileno(number);
+                
+                // Solo actualizar si el valor cambió para evitar saltos
+                if (formatted !== oldValue) {
+                    input.value = formatted;
+                    
+                    // Calcular nueva posición del cursor
+                    const lengthDifference = formatted.length - oldValue.length;
+                    const newCursorPosition = cursorPosition + lengthDifference;
+                    
+                    // Restaurar la posición del cursor
+                    setTimeout(() => {
+                        input.setSelectionRange(newCursorPosition, newCursorPosition);
+                    }, 0);
+                }
+            }
+        }
+
+        // Formatear precio con separadores de miles estilo chileno (puntos)
+        function formatearPrecioChileno(numero) {
+            return numero.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        }
+
+        // Al enviar el formulario, limpiar formato del precio
+        document.getElementById('crearEntradaForm').addEventListener('submit', function(e) {
+            const precioInput = document.getElementById('id_precio');
+            if (precioInput) {
+                precioInput.value = precioInput.value.replace(/[^0-9]/g, '');
+            }
+        });
+    </script>
+</body>
+</html>
                 <div>
                     <label for="{{ form.descripcion.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-2">
                         {{ form.descripcion.label }}

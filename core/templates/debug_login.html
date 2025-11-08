@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Login</title>
+</head>
+<body>
+    <h1>Debug Login</h1>
+    <form method="post">
+        {% csrf_token %}
+        <p>Email: <input type="email" name="email" required></p>
+        <p>Contraseña: <input type="password" name="password" required></p>
+        <p><input type="submit" value="Login Debug"></p>
+    </form>
+    
+    <hr>
+    <p><a href="/debug/status/">Ver estado actual del usuario</a></p>
+</body>
+</html>

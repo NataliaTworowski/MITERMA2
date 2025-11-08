@@ -3,14 +3,25 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 from django.contrib import messages
 from django.contrib.auth.hashers import make_password, check_password
-from .models import Usuario, Rol, TokenRestablecerContrasena  # Agregar esta importación
+from .models import Usuario, Rol, TokenRestablecerContrasena
+from .decorators import (
+    admin_terma_required, admin_general_required, cliente_required,
+    empleado_required, role_required, any_authenticated_required
+)
 import re
-from .utils import enviar_email_confirmacion, enviar_email_reset_password  # Agregar enviar_email_reset_password
+from .utils import enviar_email_confirmacion, enviar_email_reset_password
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.cache import never_cache
+from django.contrib.auth.forms import AuthenticationForm
+from django.core.exceptions import ValidationError
 from ventas.models import Compra 
 from django.utils import timezone
 from termas.models import Terma, ServicioTerma
+import logging
+
+logger = logging.getLogger('security')
 
 
 def get_current_user(request):
@@ -47,116 +58,219 @@ def is_user_authenticated(request):
     return False
 
 
-def login_usuario_nuevo(request):
+@csrf_protect
+@never_cache
+def login_usuario(request):
     """
-    Vista de login mejorada usando Django Auth (más segura).
-    Mantiene compatibilidad con sesiones antiguas para migración gradual.
+    Vista de login segura usando Django Auth.
+    Reemplaza completamente el sistema de sesiones manuales.
     """
+    # Si ya está autenticado, redirigir
+    if request.user.is_authenticated:
+        logger.info(f"Usuario ya autenticado: {request.user.email}, rol: {request.user.rol.nombre if request.user.rol else 'sin rol'}")
+        return _redirect_by_role(request.user, request)
+    
     if request.method == 'POST':
         email = request.POST.get('email', '').strip().lower()
         password = request.POST.get('password', '')
         
+        logger.info(f"Intento de login para email: {email}")
+        
         # Validaciones básicas
         if not email or not password:
+            logger.warning(f"Login fallido - datos faltantes: email={bool(email)}, password={bool(password)}")
             messages.error(request, 'Por favor ingresa email y contraseña.')
             return redirect('core:home')
         
-        # Intentar autenticación con Django Auth (más seguro)
+        # Validar formato de email
+        if not _is_valid_email(email):
+            logger.warning(f"Login fallido - email inválido: {email}")
+            messages.error(request, 'Por favor ingresa un email válido.')
+            return redirect('core:home')
+        
+        # Intentar autenticación con Django Auth
+        logger.info(f"Intentando autenticación para: {email}")
         usuario = authenticate(request, email=email, password=password)
         
         if usuario:
             # Login exitoso con Django Auth
-            login(request, usuario)
+            print(f"\n🔒 AUTENTICACIÓN EXITOSA:")
+            print(f"   Email: {email}")
+            print(f"   Usuario ID: {usuario.id}")
+            print(f"   Usuario Rol: {usuario.rol.nombre if usuario.rol else 'None'}")
+            print(f"   Usuario Rol ID: {usuario.rol.id if usuario.rol else 'None'}")
             
-            # Mantener compatibilidad con sistema anterior (temporal)
-            request.session['usuario_id'] = usuario.id
-            request.session['usuario_nombre'] = usuario.nombre
-            request.session['usuario_email'] = usuario.email
-            request.session['usuario_rol'] = usuario.rol.id
+            logger.info(f"Autenticación exitosa para: {email}")
+            logger.info(f"USUARIO AUTENTICADO - ID: {usuario.id}, Email: {usuario.email}, Rol: {usuario.rol.nombre if usuario.rol else 'None'}")
+            
+            login(request, usuario)
+            logger.info(f"Login de Django completado para: {email}")
+            
+            # Verificación crítica antes de redireccionar
+            current_user = request.user
+            print(f"\n🔍 VERIFICACIÓN POST-LOGIN:")
+            print(f"   request.user.email: {current_user.email}")
+            print(f"   request.user.rol: {current_user.rol.nombre if current_user.rol else 'None'}")
+            print(f"   request.user.id: {current_user.id}")
+            
+            logger.info(f"VERIFICACIÓN POST-LOGIN - request.user.email: {current_user.email}, rol: {current_user.rol.nombre if current_user.rol else 'None'}")
+            
+            # Log del evento de login
+            logger.info(f"Login exitoso: {usuario.email} ({usuario.rol.nombre if usuario.rol else 'sin rol'})")
             
             messages.success(request, f'¡Bienvenid@ {usuario.nombre}!')
             
             # Redirigir según el rol del usuario
-            if usuario.rol.nombre == 'administrador_terma':
-                return redirect('usuarios:adm_termas')
-            elif usuario.rol.nombre == 'administrador_general':
-                return redirect('usuarios:admin_general')
-            elif usuario.rol.nombre == 'trabajador':
-                return redirect('usuarios:empleado')
-            else:  # Usuario Cliente
-                return redirect('usuarios:inicio')
+            print(f"\n🔄 INICIANDO REDIRECCIÓN...")
+            logger.info(f"Redirigiendo usuario por rol...")
+            redirect_response = _redirect_by_role(usuario, request)
+            print(f"   Respuesta: {redirect_response}")
+            print(f"   URL: {redirect_response.url if hasattr(redirect_response, 'url') else 'N/A'}")
+            logger.info(f"Respuesta de redirección obtenida: {redirect_response}")
+            return redirect_response
         else:
+            # Log del intento fallido (ya se registra en el backend, pero agregamos contexto)
+            logger.warning(f"Intento de login fallido para email: {email}")
             messages.error(request, 'Email o contraseña incorrectos.')
             return redirect('core:home')
     
+    logger.info("Mostrando formulario de login (GET request)")
     return redirect('core:home')
 
 
-def login_usuario(request):
-    """Vista para iniciar sesión."""
-    if request.method == 'POST':
-        email = request.POST.get('email', '').strip().lower()
-        password = request.POST.get('password', '')
-        
-        # Validaciones básicas
-        if not email or not password:
-            messages.error(request, 'Por favor ingresa email y contraseña.')
-            return redirect('core:home')
-        
-        try:
-            # Buscar usuario por email
-            usuario = Usuario.objects.get(email=email)
-            
-            # Verificar contraseña
-            if check_password(password, usuario.password):
-                # Login exitoso
-                # Aquí normalmente usarías Django sessions, pero por simplicidad:
-                request.session['usuario_id'] = usuario.id
-                request.session['usuario_nombre'] = usuario.nombre
-                request.session['usuario_email'] = usuario.email
-                request.session['usuario_rol'] = usuario.rol.id
-                
-                messages.success(request, f'¡Bienvenid@ {usuario.nombre}!')
-                # Redirigir según el rol del usuario
-                if usuario.rol.nombre == 'administrador_terma':
-                    return redirect('usuarios:adm_termas')
-                elif usuario.rol.nombre == 'administrador_general':
-                    return redirect('usuarios:admin_general')
-                elif usuario.rol.nombre == 'trabajador':
-                    return redirect('usuarios:empleado')
-                else:  # Usuario Cliente
-                    return redirect('usuarios:inicio')
-            else:
-                messages.error(request, 'Email o contraseña incorrectos.')
-                return redirect('core:home')
-                
-        except Usuario.DoesNotExist:
-            messages.error(request, 'Email o contraseña incorrectos.')
-            return redirect('core:home')
-        except Exception as e:
-            messages.error(request, f'Error al iniciar sesión: {str(e)}')
-            return redirect('core:home')
-        
-    return redirect('core:home')
-
-def inicio(request):
-    """Vista para mostrar la página de inicio del usuario autenticado."""
-    # Verificar si el usuario está logueado
-    if 'usuario_id' not in request.session:
-        messages.error(request, 'Debes iniciar sesión para acceder.')
+def _redirect_by_role(user, request=None):
+    """
+    Función helper para redirigir usuarios según su rol de forma segura.
+    """
+    import time
+    session_id = f"{user.id}_{int(time.time())}"
+    
+    print(f"\n🎯 _redirect_by_role INICIADO [SESSION: {session_id}]")
+    print(f"   Usuario: {user.email}")
+    print(f"   Usuario ID: {user.id}")
+    print(f"   Usuario rol: {user.rol.nombre if user.rol else 'None'}")
+    print(f"   Usuario rol ID: {user.rol.id if user.rol else 'None'}")
+    print(f"   IP: {request.META.get('REMOTE_ADDR') if request else 'N/A'}")
+    
+    logger.info(f"=== INICIANDO _redirect_by_role [SESSION: {session_id}] ===")
+    logger.info(f"Usuario: {user.email}")
+    logger.info(f"Usuario ID: {user.id}")
+    logger.info(f"Usuario rol object: {user.rol}")
+    logger.info(f"IP del request: {request.META.get('REMOTE_ADDR') if request else 'N/A'}")
+    logger.info(f"User agent: {request.META.get('HTTP_USER_AGENT', 'N/A')[:100] if request else 'N/A'}")
+    
+    if not user.rol:
+        print(f"   ❌ ERROR: Usuario sin rol!")
+        logger.error(f"[SESSION: {session_id}] Usuario {user.email} sin rol durante redirección")
+        if request:
+            messages.error(request, 'Tu cuenta no tiene un rol asignado. Contacta al administrador.')
+            logout(request)
         return redirect('core:home')
     
-    # Solo redirigir si HAY búsqueda real (no parámetros vacíos)
-    busqueda = request.GET.get('busqueda', '').strip()
-    region = request.GET.get('region', '').strip()
-    comuna = request.GET.get('comuna', '').strip()
-
+    rol_nombre = user.rol.nombre
+    print(f"   📋 Rol detectado: '{rol_nombre}' (ID: {user.rol.id})")
+    logger.info(f"[SESSION: {session_id}] Rol del usuario: '{rol_nombre}' (ID: {user.rol.id})")
+    
+    # Diccionario actualizado con los roles correctos
+    role_redirects = {
+        'administrador_terma': 'usuarios:adm_termas',
+        'administrador_general': 'usuarios:admin_general', 
+        'trabajador': 'usuarios:empleado',
+        'cliente': 'usuarios:inicio',
+        'admin': 'usuarios:dashboard_admin',
+        'admin_terma': 'usuarios:dashboard_admin_terma'
+    }
+    
+    redirect_url = role_redirects.get(rol_nombre, 'usuarios:inicio')
+    print(f"   🔗 URL calculada: {redirect_url}")
+    logger.info(f"[SESSION: {session_id}] URL de redirección calculada: {redirect_url}")
+    
+    # Verificación crítica de seguridad
+    if rol_nombre == 'administrador_terma' and redirect_url != 'usuarios:adm_termas':
+        print(f"   🚨 ERROR CRÍTICO: Admin terma debería ir a adm_termas!")
+        logger.error(f"[SESSION: {session_id}] ERROR CRÍTICO: Admin terma redirigido a URL incorrecta!")
+        
+    if rol_nombre == 'administrador_general' and redirect_url != 'usuarios:admin_general':
+        print(f"   🚨 ERROR CRÍTICO: Admin general debería ir a admin_general!")
+        logger.error(f"[SESSION: {session_id}] ERROR CRÍTICO: Admin general redirigido a URL incorrecta!")
+        
+    if rol_nombre == 'cliente' and redirect_url != 'usuarios:inicio':
+        print(f"   🚨 ERROR CRÍTICO: Cliente debería ir a inicio!")
+        logger.error(f"[SESSION: {session_id}] ERROR CRÍTICO: Cliente redirigido a URL incorrecta!")
+    
     try:
-        usuario = Usuario.objects.get(id=request.session['usuario_id'])
+        # Verificar que la URL existe
+        from django.urls import reverse
+        resolved_url = reverse(redirect_url)
+        print(f"   ✅ URL resuelta: {resolved_url}")
+        logger.info(f"[SESSION: {session_id}] URL resuelta: {resolved_url}")
+        return redirect(redirect_url)
+    except Exception as e:
+        print(f"   ❌ ERROR resolviendo URL: {e}")
+        logger.error(f"[SESSION: {session_id}] Error resolviendo URL {redirect_url}: {str(e)}")
+        logger.error(f"[SESSION: {session_id}] Tipo de error: {type(e)}")
+        import traceback
+        logger.error(f"[SESSION: {session_id}] Traceback: {traceback.format_exc()}")
+        return redirect('core:home')
+
+
+def _is_valid_email(email):
+    """
+    Validación básica de formato de email.
+    """
+    import re
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return re.match(pattern, email) is not None
+
+
+@csrf_protect
+def logout_usuario(request):
+    """
+    Vista de logout segura que limpia completamente la sesión.
+    """
+    if request.user.is_authenticated:
+        logger.info(f"Logout: {request.user.email}")
+        messages.success(request, 'Has cerrado sesión correctamente.')
+    
+    # Logout de Django Auth
+    logout(request)
+    
+    # Limpiar cualquier dato de sesión restante
+    request.session.flush()
+    
+    return redirect('core:home')
+
+@login_required
+def inicio(request):
+    """
+    Vista de inicio para usuarios clientes usando Django Auth.
+    """
+    try:
+        usuario = request.user
+        
+        # Verificar que el usuario tenga rol de cliente
+        if not hasattr(usuario, 'rol') or not usuario.rol:
+            logger.error(f"Usuario {usuario.email} sin rol asignado")
+            messages.error(request, 'Tu cuenta no tiene un rol asignado. Contacta al administrador.')
+            return redirect('core:home')
+        
+        if usuario.rol.nombre != 'cliente':
+            logger.error(f"Usuario {usuario.email} con rol {usuario.rol.nombre} intentó acceder a vista de cliente")
+            messages.error(request, 'No tienes permisos para acceder a esta página.')
+            return redirect('core:home')
+        
+        logger.info(f"Usuario cliente autenticado correctamente: {usuario.email}")
+        
+        # Solo redirigir si HAY búsqueda real (no parámetros vacíos)
+        busqueda = request.GET.get('busqueda', '').strip()
+        region = request.GET.get('region', '').strip()
+        comuna = request.GET.get('comuna', '').strip()
+
         from termas.models import Region, Comuna, Terma
         regiones = Region.objects.all().order_by('nombre')
         comunas = Comuna.objects.all().select_related('region').order_by('region__nombre', 'nombre')
         termas_qs = Terma.objects.filter(estado_suscripcion="activa")
+        
         if busqueda:
             from django.db.models import Q
             termas_qs = termas_qs.filter(
@@ -166,8 +280,10 @@ def inicio(request):
             termas_qs = termas_qs.filter(comuna__region__id=region)
         if comuna:
             termas_qs = termas_qs.filter(comuna__id=comuna)
+        
         # Solo termas con calificación válida
         termas_qs = termas_qs.filter(calificacion_promedio__isnull=False)
+        
         orden = request.GET.get('orden', 'populares')
         if orden == 'populares':
             termas_qs = termas_qs.order_by('-calificacion_promedio')
@@ -180,7 +296,7 @@ def inicio(request):
             termas_lista = list(termas_qs)
             termas_lista.sort(key=lambda t: t.precio_minimo() if t.precio_minimo() is not None else float('inf'))
             termas_destacadas = termas_lista[:4]
-        print('DEBUG termas_destacadas:', [(t.id, t.nombre_terma, t.calificacion_promedio) for t in termas_destacadas])
+        
         context = {
             'title': 'Inicio - MiTerma',
             'usuario': usuario,
@@ -194,8 +310,12 @@ def inicio(request):
             'total_resultados': termas_qs.count() if (busqueda or region or comuna) else None,
         }
         return render(request, 'clientes/Inicio_cliente.html', context)
-    except Usuario.DoesNotExist:
-        messages.error(request, 'Sesión inválida.')
+        
+    except Exception as e:
+        logger.error(f"Error en vista inicio para usuario {request.user.email}: {str(e)}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        messages.error(request, 'Ocurrió un error al cargar el dashboard.')
         return redirect('core:home')
 
 def registro_usuario(request):
@@ -294,29 +414,24 @@ def registro_usuario(request):
     return redirect('core:home')
 
 
+@admin_terma_required
 def adm_termas(request):
-    """Vista para mostrar la página de administración de termas."""
-    # Verificar autenticación usando función helper
-    if not is_user_authenticated(request):
-        messages.error(request, 'Debes iniciar sesión para acceder.')
-        return redirect('core:home')
-    
+    """
+    Vista para mostrar la página de administración de termas usando Django Auth.
+    """
     try:
-        # Obtener usuario usando función helper
-        usuario = get_current_user(request)
-        
-        if not usuario:
-            messages.error(request, 'Usuario no encontrado.')
-            return redirect('core:home')
-        
-        # Verificar si el usuario tiene el rol correcto (administrador_terma)
-        if usuario.rol.id != 2:
-            messages.error(request, 'No tienes permisos para acceder a esta sección.')
-            return redirect('usuarios:inicio')
-        
+        # El decorador ya verificó autenticación y permisos
+        usuario = request.user
         terma = usuario.terma
-        # métricas de la terma
+        
+        # Obtener filtro de comentarios desde GET parameter
+        filtro_comentarios = request.GET.get('filtro_comentarios', 'recientes')
+        
+        # Métricas de la terma
         if terma:
+            from ventas.models import Compra
+            from datetime import date
+            
             # Calcular métricas usando los métodos del modelo
             terma.ingresos_totales = terma.ingresos_totales()
             terma.total_visitantes = terma.total_visitantes()
@@ -325,55 +440,64 @@ def adm_termas(request):
             # Usar el promedio ya calculado
             terma.calificacion_promedio = terma.calificacion_promedio or 0
             terma.total_calificaciones = terma.total_calificaciones()
-        
-        # Obtener filtro de comentarios desde GET parameter
-        filtro_comentarios = request.GET.get('filtro_comentarios', 'recientes')
+            
+            # Reservas de hoy 
+            reservas_hoy = Compra.objects.filter(
+                terma=terma, 
+                fecha_visita=date.today(),
+                estado_pago='pagado'
+            ).count()
+        else:
+            reservas_hoy = 0
         
         context = {
-            'title': 'Administración de Termas - MiTerma',
+            'title': f'Administrador - {terma.nombre_terma if terma else "Mi Terma"}',
             'usuario': usuario,
+            'terma': terma,
+            'filtro_comentarios': filtro_comentarios,
             'now': timezone.now(),
         }
         
+        # Agregar datos específicos de la terma si existe
         if terma:
-            from ventas.models import Compra
-            from datetime import date
-            reservas_hoy = Compra.objects.filter(terma=terma, fecha_visita=date.today()).count()
             context.update({
-                'terma': terma,
                 'calificaciones_filtradas': terma.filtro_calificaciones(filtro_comentarios),
                 'estadisticas_calificaciones': terma.estadisticas_calificaciones(),
                 'filtro_actual': filtro_comentarios,
                 'reservas_hoy': reservas_hoy,
             })
         
+        # Log de acceso exitoso
+        logger.info(f"Acceso dashboard admin terma: {usuario.email} - Terma: {terma.nombre_terma if terma else 'N/A'}")
+        
         return render(request, 'administrador_termas/adm_termas.html', context)
-    except Usuario.DoesNotExist:
-        messages.error(request, 'Sesión inválida.')
+        
+    except Exception as e:
+        logger.error(f"Error en vista adm_termas para usuario {request.user.email}: {str(e)}")
+        messages.error(request, 'Ocurrió un error al cargar el dashboard.')
         return redirect('core:home')
 
 
 
+@admin_general_required
 def admin_general(request):
-    """Vista para mostrar la página de administración general del sistema."""
-    # Verificar si el usuario está logueado
-    if 'usuario_id' not in request.session:
-        messages.error(request, 'Debes iniciar sesión para acceder.')
-        return redirect('core:home')
-    
-    # Verificar si el usuario tiene el rol correcto (ID=4 para administrador_general)
-    if request.session.get('usuario_rol') != 4:
-        messages.error(request, 'No tienes permisos para acceder a esta sección.')
-        return redirect('usuarios:inicio')
-    
+    """
+    Vista para mostrar la página de administración general del sistema usando Django Auth.
+    """
     try:
         from termas.models import SolicitudTerma, Terma
-        usuario = Usuario.objects.get(id=request.session['usuario_id'])
+        
+        # El decorador ya verificó autenticación y permisos
+        usuario = request.user
         
         # Obtener estadísticas para el dashboard
         total_termas = Terma.objects.count()
         solicitudes_pendientes = SolicitudTerma.objects.filter(estado='pendiente').count()
         total_usuarios = Usuario.objects.count()
+        
+        # Métricas adicionales
+        termas_activas = Terma.objects.filter(estado_suscripcion='activa').count()
+        termas_inactivas = total_termas - termas_activas
         
         context = {
             'title': 'Administración General - MiTerma',
@@ -381,30 +505,34 @@ def admin_general(request):
             'stats': {
                 'terma': Terma,
                 'total_termas': total_termas,
+                'termas_activas': termas_activas,
+                'termas_inactivas': termas_inactivas,
                 'solicitudes_pendientes': solicitudes_pendientes,
                 'total_usuarios': total_usuarios,
             }
         }
+        
+        # Log de acceso exitoso
+        logger.info(f"Acceso dashboard admin general: {usuario.email}")
+        
         return render(request, 'administrador_general/admin_general.html', context)
-    except Usuario.DoesNotExist:
-        messages.error(request, 'Sesión inválida.')
+        
+    except Exception as e:
+        logger.error(f"Error en vista admin_general para usuario {request.user.email}: {str(e)}")
+        messages.error(request, 'Ocurrió un error al cargar el dashboard.')
         return redirect('core:home')
 
+
+@admin_general_required
 def solicitudes_pendientes(request):
-    """Vista para mostrar las solicitudes pendientes."""
-    # Verificar si el usuario está logueado
-    if 'usuario_id' not in request.session:
-        messages.error(request, 'Debes iniciar sesión para acceder.')
-        return redirect('core:home')
-    
-    # Verificar si el usuario tiene el rol correcto (ID=4 para administrador_general)
-    if request.session.get('usuario_rol') != 4:
-        messages.error(request, 'No tienes permisos para acceder a esta sección.')
-        return redirect('usuarios:inicio')
-    
+    """
+    Vista para mostrar las solicitudes pendientes usando Django Auth.
+    """
     try:
         from termas.models import SolicitudTerma
-        usuario = Usuario.objects.get(id=request.session['usuario_id'])
+        
+        # El decorador ya verificó autenticación y permisos
+        usuario = request.user
         
         # Obtener todas las solicitudes pendientes
         solicitudes_pendientes = SolicitudTerma.objects.filter(
@@ -416,9 +544,15 @@ def solicitudes_pendientes(request):
             'usuario': usuario,
             'solicitudes': solicitudes_pendientes,
         }
+        
+        # Log de acceso
+        logger.info(f"Acceso solicitudes pendientes: {usuario.email}")
+        
         return render(request, 'administrador_termas/solicitudes_pendientes.html', context)
-    except Usuario.DoesNotExist:
-        messages.error(request, 'Sesión inválida.')
+        
+    except Exception as e:
+        logger.error(f"Error en vista solicitudes_pendientes para usuario {request.user.email}: {str(e)}")
+        messages.error(request, 'Ocurrió un error al cargar las solicitudes.')
         return redirect('core:home')
 
 def logout_usuario(request):
@@ -524,20 +658,18 @@ def reset_password_confirm(request):
 
 # Vista AJAX para cargar comentarios filtrados
 @require_http_methods(["GET"])
+@admin_terma_required
 def cargar_comentarios_filtrados(request, terma_id):
-    """Vista AJAX para cargar comentarios filtrados"""
-    # Verificar que el usuario esté logueado
-    if 'usuario_id' not in request.session:
-        return JsonResponse({'error': 'No autorizado'}, status=401)
-    
+    """Vista AJAX para cargar comentarios filtrados - Migrada a Django Auth"""
     try:
         from termas.models import Terma
         # Obtener la terma y verificar que el usuario tenga acceso
-        usuario = Usuario.objects.get(id=request.session['usuario_id'])
+        usuario = request.user
         terma = get_object_or_404(Terma, id=terma_id)
         
         # Verificar que es el administrador de la terma
         if usuario.terma != terma:
+            logger.warning(f"Usuario {usuario.email} sin permisos para ver comentarios de terma {terma.nombre_terma}")
             return JsonResponse({'error': 'Sin permisos'}, status=403)
         
         filtro = request.GET.get('filtro', 'recientes')
@@ -553,13 +685,14 @@ def cargar_comentarios_filtrados(request, terma_id):
                 'fecha_completa': calificacion.fecha.strftime('%d/%m/%Y %H:%M'),
             })
         
+        logger.info(f"Comentarios cargados para terma {terma.nombre_terma}, filtro: {filtro}, total: {len(calificaciones_data)}")
+        
         return JsonResponse({
             'calificaciones': calificaciones_data,
             'total': len(calificaciones_data)
         })
-    except Usuario.DoesNotExist:
-        return JsonResponse({'error': 'Usuario no encontrado'}, status=404)
     except Exception as e:
+        logger.error(f"Error al cargar comentarios filtrados para usuario {request.user.email}: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500)
     
 

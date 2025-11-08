@@ -20,42 +20,130 @@
                 </div>
                 <a href="{% url 'termas:crear_entrada' %}" class="bg-sky-500 hover:bg-sky-600 text-white font-semibold px-5 py-2 rounded-lg shadow transition">+ Crear una nueva Entrada</a>
             </div>
-
-            <div class="mb-4">
-                <input type="text" placeholder="Buscar por nombre de entrada..." class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-400" />
-            </div>
-            <div class="overflow-x-auto">
-                <table class="min-w-full bg-white rounded-lg shadow">
-                    <thead>
-                        <tr class="bg-gray-100 text-gray-700 text-sm">
-                            <th class="py-3 px-4 text-left font-semibold">Entrada nombre</th>
-                            <th class="py-3 px-4 text-left font-semibold">Precio</th>
-                            <th class="py-3 px-4 text-left font-semibold">Duración</th>
-                            <th class="py-3 px-4 text-left font-semibold">Servicios Incluidos</th>
-                            <th class="py-3 px-4 text-left font-semibold">Acciones</th>
+            <div class="overflow-x-auto shadow-lg rounded-lg border border-gray-200">
+                <table class="min-w-full bg-white">
+                    <thead class="bg-gradient-to-r from-sky-500 to-blue-600 text-white">
+                        <tr>
+                            <th class="py-4 px-6 text-left font-bold uppercase tracking-wider text-sm">
+                                <div class="flex items-center">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a2 2 0 012-2z"></path>
+                                    </svg>
+                                    Nombre de Entrada
+                                </div>
+                            </th>
+                            <th class="py-4 px-6 text-left font-bold uppercase tracking-wider text-sm">
+                                <div class="flex items-center">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                                    </svg>
+                                    Precio
+                                </div>
+                            </th>
+                            <th class="py-4 px-6 text-left font-bold uppercase tracking-wider text-sm">
+                                <div class="flex items-center">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    Duración
+                                </div>
+                            </th>
+                            <th class="py-4 px-6 text-left font-bold uppercase tracking-wider text-sm">
+                                <div class="flex items-center">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
+                                    </svg>
+                                    Servicios Incluidos
+                                </div>
+                            </th>
+                            <th class="py-4 px-6 text-center font-bold uppercase tracking-wider text-sm">
+                                <div class="flex items-center justify-center">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 100-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 100-4m0 4v2m0-6V4"></path>
+                                    </svg>
+                                    Acciones
+                                </div>
+                            </th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody class="divide-y divide-gray-200">
                         {% for entrada in terma.get_tipos_entrada %}
-                        <tr class="border-b hover:bg-gray-50">
-                            <td class="py-3 px-4 font-semibold">{{ entrada.nombre }}</td>
-                            <td class="py-3 px-4 text-sky-700 font-bold">${{ entrada.precio|intcomma }}</td>
-                            <td class="py-3 px-4">{{ entrada.duracion_horas }} Horas</td>
-                            <td class="py-3 px-4">
-                                {% for servicio in entrada.servicios.all %}
-                                    <span class="inline-block bg-orange-100 text-orange-600 text-xs font-semibold px-3 py-1 rounded-full mr-2 mb-1">{{ servicio.servicio }}</span>
-                                {% empty %}
-                                    <span class="text-gray-400 text-xs">No tiene servicios asociados</span>
-                                {% endfor %}
+                        <tr class="hover:bg-gray-50 transition-colors duration-200">
+                            <td class="py-4 px-6 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-10 w-10">
+                                        <div class="h-10 w-10 rounded-full bg-gradient-to-r from-sky-400 to-blue-500 flex items-center justify-center">
+                                            <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"></path>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium text-gray-900">{{ entrada.nombre }}</div>
+                                    </div>
+                                </div>
                             </td>
-                            <td class="py-3 px-4 flex gap-2">
-                                <a href="/termas/editar_entrada/{{ entrada.id }}/" class="text-sky-500 hover:text-sky-700" title="Editar">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536M9 13l6.536-6.536a2 2 0 112.828 2.828L11.828 15H9v-2.828z" /></svg>
-                                </a>
-                                <a href="{% url 'termas:gestionar_servicios_entrada' entrada.id %}" class="text-green-500 hover:text-green-700" title="Gestionar Servicios">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg>
-                                </a>
-                                <button type="button" class="text-red-500 hover:text-red-700" data-entrada-id="{{ entrada.id }}" data-entrada-nombre="{{ entrada.nombre|escapejs }}" onclick="mostrarModalEliminar(this.dataset.entradaId, this.dataset.entradaNombre)"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg></button>
+                            <td class="py-4 px-6 whitespace-nowrap">
+                                <div class="text-lg font-bold text-green-600 precio-chileno" data-precio="{{ entrada.precio }}">
+                                    ${{ entrada.precio|floatformat:0 }}
+                                </div>
+                                <div class="text-xs text-gray-500">CLP</div>
+                            </td>
+                            <td class="py-4 px-6 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                    </svg>
+                                    {% if entrada.duracion_horas == 1 %}
+                                        {{ entrada.duracion_horas }} Hora
+                                    {% else %}
+                                        {{ entrada.duracion_horas }} Horas
+                                    {% endif %}
+                                </span>
+                            </td>
+                            <td class="py-4 px-6">
+                                <div class="max-w-xs">
+                                    {% for servicio in entrada.servicios.all %}
+                                        <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-green-100 text-green-700 mr-1 mb-1">
+                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                            </svg>
+                                            {{ servicio.servicio }}
+                                        </span>
+                                    {% empty %}
+                                        <span class="text-gray-400 text-sm italic">No hay servicios asignados</span>
+                                    {% endfor %}
+                                </div>
+                            </td>
+                            <td class="py-4 px-6 whitespace-nowrap text-center">
+                                <div class="flex items-center justify-center space-x-2">
+                                    <a href="/termas/editar_entrada/{{ entrada.id }}/" 
+                                       class="inline-flex items-center px-3 py-2 border border-transparent text-xs leading-4 font-medium rounded-md text-white bg-sky-500 hover:bg-sky-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 transition duration-150 ease-in-out transform hover:scale-105"
+                                       title="Editar">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                        </svg>
+                                        Editar
+                                    </a>
+                                    <a href="{% url 'termas:gestionar_servicios_entrada' entrada.id %}" 
+                                       class="inline-flex items-center px-3 py-2 border border-transparent text-xs leading-4 font-medium rounded-md text-white bg-green-500 hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-150 ease-in-out transform hover:scale-105"
+                                       title="Gestionar Servicios">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                                        </svg>
+                                        Servicios
+                                    </a>
+                                    <button type="button" 
+                                            class="inline-flex items-center px-3 py-2 border border-transparent text-xs leading-4 font-medium rounded-md text-white bg-red-500 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition duration-150 ease-in-out transform hover:scale-105" 
+                                            data-entrada-id="{{ entrada.id }}" 
+                                            data-entrada-nombre="{{ entrada.nombre|escapejs }}" 
+                                            onclick="mostrarModalEliminar(this.dataset.entradaId, this.dataset.entradaNombre)">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                        </svg>
+                                        Eliminar
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}
@@ -181,7 +269,28 @@ document.addEventListener('DOMContentLoaded', function() {
             showNotification(msg.text || '', msg.tags || 'success');
         }
     });
+
+    // Formatear todos los precios con formato chileno
+    formatearPreciosChilenos();
 });
+
+// Función para formatear precios en formato chileno
+function formatearPreciosChilenos() {
+    const preciosElements = document.querySelectorAll('.precio-chileno');
+    
+    preciosElements.forEach(function(element) {
+        const precio = parseInt(element.getAttribute('data-precio'));
+        if (precio && !isNaN(precio)) {
+            const precioFormateado = formatearPrecioChileno(precio);
+            element.textContent = `$${precioFormateado} CLP`;
+        }
+    });
+}
+
+// Formatear precio con separadores de miles estilo chileno (puntos)
+function formatearPrecioChileno(numero) {
+    return numero.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
 </script>
 </body>
 </html>

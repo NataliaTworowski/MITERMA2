@@ -27,3 +27,11 @@ urlpatterns = [
     path('ventas/', include('ventas.urls')),
     path('reservas/', include('entradas.urls')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+# URLs de debug (solo para desarrollo)
+if settings.DEBUG:
+    from usuarios.debug_views import login_debug, check_user_status
+    urlpatterns += [
+        path('debug/login/', login_debug, name='debug_login'),
+        path('debug/status/', check_user_status, name='debug_status'),
+    ]

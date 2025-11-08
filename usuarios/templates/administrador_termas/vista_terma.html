@@ -11,8 +11,54 @@
 </head>
 <body class="bg-gray-200 text-gray-800">
     {% include 'partials/navbar_usuario2.html' %}
+    
+    <!-- MENSAJES DE FEEDBACK -->
+    {% if messages %}
+        <div class="fixed top-20 right-4 z-50 space-y-2" id="messages-container">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} bg-white border-l-4 rounded-lg shadow-lg p-4 max-w-sm
+                    {% if message.tags == 'success' %}border-green-500 bg-green-50{% elif message.tags == 'error' %}border-red-500 bg-red-50{% elif message.tags == 'warning' %}border-yellow-500 bg-yellow-50{% else %}border-blue-500 bg-blue-50{% endif %}" 
+                    data-message>
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            {% if message.tags == 'success' %}
+                                <svg class="h-5 w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                            {% elif message.tags == 'error' %}
+                                <svg class="h-5 w-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                                </svg>
+                            {% elif message.tags == 'warning' %}
+                                <svg class="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                </svg>
+                            {% else %}
+                                <svg class="h-5 w-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                                </svg>
+                            {% endif %}
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium {% if message.tags == 'success' %}text-green-800{% elif message.tags == 'error' %}text-red-800{% elif message.tags == 'warning' %}text-yellow-800{% else %}text-blue-800{% endif %}">
+                                {{ message }}
+                            </p>
+                        </div>
+                        <div class="ml-auto pl-3">
+                            <button type="button" class="inline-flex rounded-md p-1.5 {% if message.tags == 'success' %}text-green-500 hover:bg-green-100{% elif message.tags == 'error' %}text-red-500 hover:bg-red-100{% elif message.tags == 'warning' %}text-yellow-500 hover:bg-yellow-100{% else %}text-blue-500 hover:bg-blue-100{% endif %} focus:outline-none" onclick="this.closest('[data-message]').remove()">
+                                <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    
     <!-- HEADER -->
-    <header class="bg-gradient-to-r from-emerald-800 to-green-700 shadow-lg py-6 px-8 flex items-center justify-between">
+    <header class="shadow-lg py-6 px-8 flex items-center justify-between" style="background-color: #005350;">
         <button onclick="window.history.back()" class="mr-4 flex items-center justify-center w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 text-white transition-all duration-300 backdrop-blur-sm">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
         </button>
@@ -21,243 +67,403 @@
         </div>
     </header>
 
-    <div class="w-full">
-    <!-- Contenido principal -->
-    <main class="max-w-full mx-auto py-12 px-8 grid grid-cols-1 lg:grid-cols-3 gap-12 bg-gradient-to-br from-white to-green-50">
-        <aside class="lg:col-span-1 order-2 lg:order-1 bg-white rounded-3xl shadow-xl p-8 hover:shadow-2xl transition-shadow duration-300">
-            <div class="bg-white rounded-2xl shadow-lg p-6 mb-8">
-                <div class="relative w-full h-64 rounded-xl overflow-hidden shadow mb-4" id="carrusel-terma">
+    <!-- CARRUSEL LINEAL DE IMÁGENES -->
+    <section class="w-full bg-white py-8">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="relative overflow-hidden rounded-2xl shadow-xl">
+                <div class="flex transition-transform duration-500 ease-in-out" id="carrusel-contenedor">
                     {% if terma.imagenes.all %}
                         {% for imagen in terma.imagenes.all %}
-                            <img src="{{ imagen.url_imagen }}" 
-                                 class="carrusel-img absolute inset-0 w-full h-full object-cover transition-opacity duration-500 {% if not forloop.first %}opacity-0 pointer-events-none{% endif %}" 
-                                 alt="Imagen de {{ terma.nombre_terma }}">
+                            <div class="flex-none w-full">
+                                <img src="{{ imagen.url_imagen }}" 
+                                     class="w-full h-96 object-cover" 
+                                     alt="Imagen {{ forloop.counter }} de {{ terma.nombre_terma }}">
+                            </div>
                         {% endfor %}
-                        <button type="button" id="carrusel-prev" class="absolute left-2 top-1/2 -translate-y-1/2 bg-white/70 rounded-full p-2 shadow hover:bg-white z-10">&#8592;</button>
-                        <button type="button" id="carrusel-next" class="absolute right-2 top-1/2 -translate-y-1/2 bg-white/70 rounded-full p-2 shadow hover:bg-white z-10">&#8594;</button>
                     {% else %}
-                        <div class="flex items-center justify-center w-full h-full text-gray-400">No hay imágenes disponibles para esta terma.</div>
+                        <div class="flex-none w-full h-96 flex items-center justify-center bg-gray-200 text-gray-500">
+                            <p class="text-xl">No hay imágenes disponibles para esta terma</p>
+                        </div>
                     {% endif %}
                 </div>
                 
-                <form method="post" action="{% url 'ventas:pago' terma.id %}" class="space-y-4">
-                    {% csrf_token %}
-                    <input type="hidden" name="terma_id" value="{{ terma.id }}">
-                    <input type="hidden" id="entrada_id" name="entrada_id" value="">
-                    <input type="hidden" id="experiencia" name="experiencia" value="">
-                    <div>
-                        <label for="fecha" class="block font-semibold mb-1 flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>Selecciona la Fecha</label>
-                        <input type="date" id="fecha" name="fecha" class="w-full border rounded-lg px-3 py-2 text-lg" required>
-                    </div>
-                    <div>
-                        <label for="cantidad" class="block font-semibold mb-1">Cantidad de Personas</label>
-                        <div class="flex items-center gap-2">
-                            <input type="number" id="cantidad" name="cantidad" min="1" value="1" class="w-24 border rounded-lg px-2 py-2 text-center text-lg" required>
-                        </div>
-                    </div>
-                    <div class="bg-blue-50 rounded-lg p-4 mt-4">
-                        <div class="mb-2 flex justify-between">
-                            <span class="font-semibold">Experiencia:</span>
-                            <span id="resumen-experiencia" class="text-gray-700">-</span>
-                        </div>
-                        <input type="hidden" id="input-experiencia" name="input_experiencia" value="">
-                        <div class="mb-2 flex justify-between">
-                            <span class="font-semibold">Precio unitario:</span>
-                            <span id="resumen-precio" class="text-gray-700">$0</span>
-                        </div>
-                        <input type="hidden" id="input-precio" name="input_precio" value="">
-                        <div class="mb-2 flex justify-between">
-                            <span class="font-semibold">Servicios incluidos:</span>
-                            <span id="resumen-incluidos" class="text-green-700">-</span>
-                        </div>
-                        <input type="hidden" id="input-incluidos" name="input_incluidos" value="">
-                        <div class="mb-2 flex justify-between">
-                            <span class="font-semibold">Servicios extra:</span>
-                            <span id="resumen-extras" class="text-blue-700"></span>
-                        </div>
-                        <input type="hidden" id="input-extras" name="input_extras" value="">
-                        <div class="flex justify-between text-xl font-bold text-blue-700">
-                            <span>Total:</span>
-                            <span id="resumen-total">$0</span>
-                        </div>
-                        <input type="hidden" id="input-total" name="input_total" value="">
-                    </div>
-                    <button type="submit" id="btn-pagar" class="w-full bg-green-600 hover:bg-green-800 text-white font-bold py-3 rounded-lg text-xl mt-2 transition">Pagar</button>
-                <!-- Pop-up de login -->
-                <div id="popup-login" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
-                    <div class="bg-white border border-blue-400 rounded-2xl p-8 shadow-xl max-w-md w-full text-center">
-                        <h3 class="text-2xl font-bold text-blue-700 mb-4">Necesitas iniciar sesión</h3>
-                        <p class="mb-6 text-lg text-gray-700">Por favor, inicia sesión para completar tu reserva y pago.</p>
-                        <a href="{% url 'usuarios:inicio' %}" class="bg-blue-700 hover:bg-blue-800 text-white font-bold py-2 px-6 rounded-lg">Iniciar sesión</a>
-                        <button type="button" id="cerrar-popup-login" class="mt-4 text-blue-700 underline">Cancelar</button>
-                    </div>
+                <!-- Controles del carrusel -->
+                {% if terma.imagenes.all|length > 1 %}
+                <button type="button" id="carrusel-prev" class="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-3 shadow-lg transition-all">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                </button>
+                <button type="button" id="carrusel-next" class="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white rounded-full p-3 shadow-lg transition-all">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                </button>
+                
+                <!-- Indicadores -->
+                <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2" id="carrusel-indicadores">
+                    {% for imagen in terma.imagenes.all %}
+                        <button class="w-3 h-3 rounded-full bg-white/50 hover:bg-white transition-colors {% if forloop.first %}bg-white{% endif %}" 
+                                data-slide="{{ forloop.counter0 }}"></button>
+                    {% endfor %}
                 </div>
-                </form>
+                {% endif %}
             </div>
-        </aside>
+        </div>
+    </section>
 
-        <!-- Sección de selección de entradas -->
-        <section class="lg:col-span-2 order-1 lg:order-2">
-            <h2 class="text-3xl font-bold text-emerald-800 mb-8">Elige tu Experiencia</h2>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                {% for entrada in entradas %}
-                <div class="bg-white rounded-2xl shadow-lg p-6 flex flex-col border-4 transition-all experiencia-card {% if forloop.first %}border-emerald-800{% else %}border-transparent{% endif %} hover:border-emerald-800 cursor-pointer" data-nombre="{{ entrada.nombre }}" data-precio="{{ entrada.precio }}" data-id="{{ entrada.id }}" data-duracion="{{ entrada.duracion_horas }}">
-                    <span class="text-xl font-bold text-emerald-800 mb-2">{{ entrada.nombre }}</span>
-                    <div class="text-gray-500 mb-2">{{ entrada.duracion_horas }} horas</div>
-                    <div class="flex flex-wrap gap-2 mb-4">
-                        {% for servicio in entrada.servicios.all %}
-                            <span class="inline-block bg-blue-50 text-blue-700 px-2 py-1 rounded-full text-xs">{{ servicio.servicio }}</span>
-                        {% empty %}<span class="text-gray-400">No incluye servicios</span>{% endfor %}
+    <!-- DESCRIPCIÓN DE LA TERMA -->
+    <section class="w-full bg-gray-50 py-12">
+        <div class="max-w-4xl mx-auto px-6">
+            <div class="bg-white rounded-2xl shadow-lg p-8">
+                <h2 class="text-2xl font-bold text-emerald-800 mb-4">Acerca de {{ terma.nombre_terma }}</h2>
+                <div class="text-gray-700 leading-relaxed">
+                    {% if terma.descripcion %}
+                        <p class="text-lg">{{ terma.descripcion }}</p>
+                    {% else %}
+                        <p class="text-lg">Disfruta de una experiencia única en nuestras aguas termales naturales. Un lugar perfecto para relajarse y conectar con la naturaleza, ofreciendo servicios de calidad en un ambiente tranquilo y revitalizante.</p>
+                    {% endif %}
+                </div>
+                <div class="mt-6 flex flex-wrap gap-4">
+                    <div class="flex items-center gap-2 text-emerald-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span>{{ terma.comuna.nombre }}, {{ terma.comuna.region.nombre }}</span>
                     </div>
-                    <span class="text-2xl font-bold text-orange-500 mt-auto">${{ entrada.precio }} CLP</span>
+                    {% if terma.telefono %}
+                    <div class="flex items-center gap-2 text-emerald-700">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                        </svg>
+                        <span>{{ terma.telefono }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CONTENIDO PRINCIPAL - EXPERIENCIAS Y RESERVA -->
+    <div class="w-full bg-gradient-to-br from-gray-50 to-green-50">
+    <main class="max-w-7xl mx-auto py-12 px-6 grid grid-cols-1 lg:grid-cols-3 gap-12">
+        <!-- Sección de selección de experiencias -->
+        <section class="lg:col-span-2">
+            <h2 class="text-3xl font-bold text-emerald-800 mb-8">Selecciona tu Experiencia</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+                {% for entrada in entradas %}
+                <div class="bg-white rounded-2xl shadow-lg p-6 border-4 transition-all experiencia-card cursor-pointer hover:shadow-xl {% if forloop.first %}border-emerald-500{% else %}border-transparent hover:border-emerald-300{% endif %}" 
+                     data-nombre="{{ entrada.nombre }}" data-precio="{{ entrada.precio }}" data-id="{{ entrada.id }}" data-duracion="{{ entrada.duracion_horas }}">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="text-xl font-bold text-emerald-800">{{ entrada.nombre }}</span>
+                        <span class="text-2xl font-bold text-orange-500">${{ entrada.precio|floatformat:0 }}</span>
+                    </div>
+                    <div class="text-gray-600 mb-3 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        {{ entrada.duracion_horas }} horas de acceso
+                    </div>
+                    <div class="space-y-2">
+                        <p class="text-sm font-medium text-gray-700 mb-2">Incluye:</p>
+                        {% for servicio in entrada.servicios.all %}
+                            <div class="flex items-center gap-2 text-sm text-gray-600">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                </svg>
+                                {{ servicio.servicio }}
+                            </div>
+                        {% empty %}
+                            <span class="text-gray-400 text-sm">Acceso básico</span>
+                        {% endfor %}
+                    </div>
                 </div>
                 {% endfor %}
             </div>
 
             <!-- Servicios Incluidos -->
-            <section class="mt-10">
-                <h3 class="text-3xl font-bold text-emerald-800 mb-8">Servicios Incluidos</h3>
-                <div id="servicios-incluidos-lista" class="flex flex-col gap-4 mb-8 items-center w-full">
+            <section class="mb-12">
+                <h3 class="text-2xl font-bold text-emerald-800 mb-6">Servicios Incluidos en tu Experiencia</h3>
+                <div id="servicios-incluidos-lista" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Se llenará dinámicamente -->
                 </div>
             </section>
 
             <!-- Servicios Extra -->
-            <section class="mt-10">
-                <h3 class="text-2xl font-bold text-green-800 mb-6">Personaliza tu Visita</h3>
-                <form id="form-servicios-extra" class="mb-6">
-                    <div id="servicios-extra" class="flex flex-col w-full gap-6">
-                        {% for servicio in servicios_extra %}
-                        <label class="bg-white rounded-2xl shadow-lg p-6 flex items-center gap-6 cursor-pointer border-2 border-transparent hover:border-blue-400 transition">
-                            <input type="checkbox" class="servicio-extra-checkbox mr-3 accent-blue-600" data-precio="{{ servicio.precio }}" data-nombre="{{ servicio.servicio }}" value="{{ servicio.id }}">
-                            <div class="flex flex-col items-center">
-                                <span class="text-xs text-gray-500 mb-1">Cantidad</span>
-                                <div class="flex items-center">
-                                    <input type="number" class="servicio-extra-cantidad w-20 border rounded-lg px-2 py-1 text-center text-lg focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition" min="1" value="1" data-precio="{{ servicio.precio }}" data-nombre="{{ servicio.servicio }}" data-id="{{ servicio.id }}">
-                                </div>
-                            </div>
-                            <div class="text-3xl text-blue-500">{{ servicio.icono_svg|safe }}</div>
+            <section>
+                <h3 class="text-2xl font-bold text-emerald-800 mb-6">Añade Servicios Extras</h3>
+                <div id="servicios-extra" class="space-y-4">
+                    {% for servicio in servicios_extra %}
+                    <div class="bg-white rounded-2xl shadow-lg p-6 border border-gray-200 hover:border-emerald-300 transition-all">
+                        <label class="flex items-center gap-4 cursor-pointer">
+                            <input type="checkbox" class="servicio-extra-checkbox w-5 h-5 text-emerald-600 rounded focus:ring-emerald-500" 
+                                   data-precio="{{ servicio.precio }}" data-nombre="{{ servicio.servicio }}" value="{{ servicio.id }}">
                             <div class="flex-1">
-                                <h3 class="text-xl font-bold text-gray-800">{{ servicio.servicio }}</h3>
-                                <p class="text-gray-600">{{ servicio.descripcion }}</p>
-                                <span class="text-orange-500 font-bold">+${{ servicio.precio }} CLP</span>
+                                <h4 class="text-lg font-bold text-gray-800">{{ servicio.servicio }}</h4>
+                                <p class="text-gray-600 text-sm mb-2">{{ servicio.descripcion }}</p>
+                                <span class="text-orange-500 font-bold text-lg">+${{ servicio.precio|floatformat:0 }} CLP</span>
+                            </div>
+                            <div class="flex flex-col items-center gap-2">
+                                <span class="text-xs text-gray-500">Cantidad</span>
+                                <input type="number" class="servicio-extra-cantidad w-16 border rounded-lg px-2 py-1 text-center focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500" 
+                                       min="1" value="1" data-precio="{{ servicio.precio }}" data-nombre="{{ servicio.servicio }}" data-id="{{ servicio.id }}">
                             </div>
                         </label>
-                        {% endfor %}
                     </div>
-                </form>
+                    {% endfor %}
+                </div>
             </section>
         </section>
-    </main>
 
-    <!-- SECCIÓN DE galeria de fotos -->
-    <section class="max-w-full mx-auto py-12 px-8 bg-gradient-to-br from-gray-50 to-green-50 rounded-3xl shadow-xl mb-12">
-        <h2 class="text-3xl font-bold mb-8 text-emerald-800 text-center">Galería de Fotos</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 p-4">
-            {% for imagen in terma.imagenes.all %}
-                <div class="rounded-lg overflow-hidden shadow cursor-pointer gallery-thumb" data-img="{{ imagen.url_imagen }}">
-                    <img src="{{ imagen.url_imagen }}" alt="Imagen de {{ terma.nombre_terma }}" class="w-full h-48 object-cover hover:scale-105 transition-transform duration-300">
-                </div>
-            {% endfor %}
-        </div>
-        <!-- Modal para imagen grande -->
-        <div id="modal-img" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden">
-            <div class="relative bg-white rounded-2xl shadow-2xl p-4 max-w-3xl w-full flex flex-col items-center">
-                <button id="close-modal-img" class="absolute top-4 right-4 text-gray-600 hover:text-blue-700 text-3xl font-bold">&times;</button>
-                <img id="modal-img-src" src="" alt="Imagen grande" class="w-full max-w-3xl max-h-[80vh] object-contain rounded-xl shadow-lg">
-            </div>
-        </div>
-    </section>
-    <!-- SECCIÓN DE dejar un comentario -->
-    <section class="max-w-full mx-auto py-12 px-8">
-    <h2 class="text-3xl font-bold mb-8 text-emerald-800 text-center">Deja tu Opinión</h2>
-    <form method="post" action="" class="bg-gradient-to-br from-white to-green-50 rounded-3xl border-2 border-emerald-100 shadow-xl p-12 max-w-2xl mx-auto backdrop-blur-sm" id="form-comentario">
-            {% csrf_token %}
-            <div class="mb-8">
-                <label class="block font-medium mb-4 text-gray-700 text-lg">Tu puntuación:</label>
-                <div class="flex items-center gap-2 justify-center" id="estrellas-container">
-                    {% for i in "12345" %}
-                        <input type="radio" id="estrella{{ forloop.counter }}" name="puntuacion" value="{{ forloop.counter }}" class="hidden" required>
-                        <label for="estrella{{ forloop.counter }}" class="cursor-pointer">
-                            <span class="text-4xl text-blue-200 transition-colors estrella" data-valor="{{ forloop.counter }}">★</span>
+        <!-- Panel de reserva lateral -->
+        <aside class="lg:col-span-1">
+            <div class="bg-white rounded-2xl shadow-xl p-6 sticky top-6">
+                <h3 class="text-xl font-bold text-emerald-800 mb-6">Resumen de tu Reserva</h3>
+                
+                <form method="post" action="{% url 'ventas:pago' terma.id %}" class="space-y-6">
+                    {% csrf_token %}
+                    <input type="hidden" name="terma_id" value="{{ terma.id }}">
+                    <input type="hidden" id="entrada_id" name="entrada_id" value="">
+                    <input type="hidden" id="input-experiencia" name="input_experiencia" value="">
+                    <input type="hidden" id="input-precio" name="input_precio" value="">
+                    <input type="hidden" id="input-incluidos" name="input_incluidos" value="">
+                    <input type="hidden" id="input-extras" name="input_extras" value="">
+                    <input type="hidden" id="input-total" name="input_total" value="">
+                    
+                    <div>
+                        <label for="fecha" class="block font-semibold mb-3 text-gray-700 flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            Fecha de visita
                         </label>
+                        <input type="date" id="fecha" name="fecha" class="w-full border border-gray-300 rounded-lg px-3 py-3 text-base focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" required>
+                    </div>
+                    
+                    <div>
+                        <label for="cantidad" class="block font-semibold mb-3 text-gray-700 flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                            Número de personas
+                        </label>
+                        <input type="number" id="cantidad" name="cantidad" min="1" value="1" class="w-full border border-gray-300 rounded-lg px-3 py-3 text-base text-center focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500" required>
+                    </div>
+                    
+                    <!-- Resumen de reserva -->
+                    <div class="bg-emerald-50 rounded-xl p-6 border border-emerald-200">
+                        <h4 class="font-bold text-emerald-800 mb-4">Resumen de tu reserva</h4>
+                        
+                        <div class="space-y-3 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Experiencia:</span>
+                                <span id="resumen-experiencia" class="font-medium text-gray-800">-</span>
+                            </div>
+                            
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Precio por persona:</span>
+                                <span id="resumen-precio" class="font-medium text-gray-800" data-precio="0">$0</span>
+                            </div>
+                            
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Servicios incluidos:</span>
+                                <span id="resumen-incluidos" class="font-medium text-emerald-700 text-right text-xs">-</span>
+                            </div>
+                            
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">Servicios extra:</span>
+                                <span id="resumen-extras" class="font-medium text-blue-700 text-right text-xs">-</span>
+                            </div>
+                            
+                            <hr class="border-emerald-200">
+                            
+                            <div class="flex justify-between text-lg font-bold text-emerald-800">
+                                <span>Total:</span>
+                                <span id="resumen-total">$0</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" id="btn-pagar" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-4 rounded-lg text-lg transition-colors duration-200 shadow-lg hover:shadow-xl">
+                        Proceder al Pago
+                    </button>
+                </form>
+                
+                <!-- Pop-up de login -->
+                <div id="popup-login" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+                    <div class="bg-white rounded-2xl p-8 shadow-2xl max-w-md w-full mx-4 text-center">
+                        <div class="mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-emerald-600 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-2xl font-bold text-emerald-800 mb-4">Inicia sesión para continuar</h3>
+                        <p class="mb-6 text-gray-600">Para completar tu reserva necesitas tener una cuenta.</p>
+                        <div class="space-y-3">
+                            <a href="{% url 'usuarios:inicio' %}" class="block w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-lg transition-colors">Iniciar sesión</a>
+                            <button type="button" id="cerrar-popup-login" class="w-full text-gray-500 hover:text-gray-700 py-2">Cancelar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </main>
+    </div>
+
+    <!-- SECCIÓN DE COMENTARIOS Y OPINIONES -->
+    <section class="w-full bg-white py-12">
+        <div class="max-w-4xl mx-auto px-6">
+            <!-- Estadísticas de opiniones -->
+            <div class="bg-gradient-to-r from-emerald-50 to-green-50 rounded-2xl p-8 mb-8">
+                <h2 class="text-3xl font-bold text-emerald-800 mb-6 text-center">Opiniones de los Huéspedes</h2>
+                <div class="flex flex-col md:flex-row items-center justify-center gap-8">
+                    <div class="text-center">
+                        <div class="text-5xl font-bold text-emerald-600 mb-2">{{ calificacion_promedio|floatformat:1 }}</div>
+                        <div class="flex justify-center mb-2">
+                            {% for i in "12345" %}
+                                {% if forloop.counter <= calificacion_promedio|floatformat:0 %}
+                                    <span class="text-yellow-400 text-2xl">★</span>
+                                {% else %}
+                                    <span class="text-gray-300 text-2xl">★</span>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        <p class="text-gray-600">Basado en {{ cantidad_opiniones }} opiniones</p>
+                    </div>
+                    
+                    <!-- Distribución de calificaciones -->
+                    <div class="flex-1 max-w-md w-full">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="text-sm text-gray-600 w-6">5★</span>
+                            <div class="flex-1 bg-gray-200 rounded-full h-2">
+                                <div class="bg-emerald-500 h-2 rounded-full w-3/4"></div>
+                            </div>
+                            <span class="text-sm text-gray-600 w-8">75%</span>
+                        </div>
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="text-sm text-gray-600 w-6">4★</span>
+                            <div class="flex-1 bg-gray-200 rounded-full h-2">
+                                <div class="bg-emerald-500 h-2 rounded-full w-1/5"></div>
+                            </div>
+                            <span class="text-sm text-gray-600 w-8">20%</span>
+                        </div>
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="text-sm text-gray-600 w-6">3★</span>
+                            <div class="flex-1 bg-gray-200 rounded-full h-2">
+                                <div class="bg-emerald-500 h-2 rounded-full w-1"></div>
+                            </div>
+                            <span class="text-sm text-gray-600 w-8">3%</span>
+                        </div>
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="text-sm text-gray-600 w-6">2★</span>
+                            <div class="flex-1 bg-gray-200 rounded-full h-2">
+                                <div class="bg-emerald-500 h-2 rounded-full w-1"></div>
+                            </div>
+                            <span class="text-sm text-gray-600 w-8">1%</span>
+                        </div>
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="text-sm text-gray-600 w-6">1★</span>
+                            <div class="flex-1 bg-gray-200 rounded-full h-2">
+                                <div class="bg-emerald-500 h-2 rounded-full w-1"></div>
+                            </div>
+                            <span class="text-sm text-gray-600 w-8">1%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Formulario para dejar comentario -->
+            <div class="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 mb-8">
+                <h3 class="text-2xl font-bold text-emerald-800 mb-6">Comparte tu Experiencia</h3>
+                <form method="post" action="" id="form-comentario">
+                    {% csrf_token %}
+                    <div class="mb-6">
+                        <label class="block font-medium mb-3 text-gray-700">Tu calificación:</label>
+                        <div class="flex justify-center gap-2" id="estrellas-container">
+                            {% for i in "12345" %}
+                                <input type="radio" id="estrella{{ forloop.counter }}" name="puntuacion" value="{{ forloop.counter }}" class="hidden" required>
+                                <label for="estrella{{ forloop.counter }}" class="cursor-pointer">
+                                    <span class="text-4xl text-gray-300 hover:text-yellow-400 transition-colors estrella" data-valor="{{ forloop.counter }}">★</span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="mb-6">
+                        <label for="comentario" class="block font-medium mb-3 text-gray-700">Tu comentario:</label>
+                        <textarea id="comentario" name="comentario" rows="4" 
+                                  class="w-full rounded-lg px-4 py-3 border border-gray-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 transition" 
+                                  required minlength="10" 
+                                  placeholder="Cuéntanos sobre tu experiencia en esta terma..."></textarea>
+                    </div>
+                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-8 rounded-lg transition-colors">
+                        Publicar Opinión
+                    </button>
+                </form>
+                
+                <!-- Pop-up de login para comentarios -->
+                <div id="popup-login-comentario" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+                    <div class="bg-white rounded-2xl p-8 shadow-2xl max-w-md w-full mx-4 text-center">
+                        <div class="mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-emerald-600 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-2xl font-bold text-emerald-800 mb-4">Inicia sesión para opinar</h3>
+                        <p class="mb-6 text-gray-600">Para dejar tu opinión necesitas tener una cuenta.</p>
+                        <div class="space-y-3">
+                            <a href="{% url 'usuarios:inicio' %}" class="block w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-lg transition-colors">Iniciar sesión</a>
+                            <button type="button" id="cerrar-popup-login-comentario" class="w-full text-gray-500 hover:text-gray-700 py-2">Cancelar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de opiniones -->
+            <div class="space-y-6">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xl font-bold text-gray-800">Todas las Opiniones</h3>
+                    <button id="btn-ver-opiniones" class="text-emerald-600 hover:text-emerald-700 font-medium" role="button" aria-expanded="false">
+                        Ver todas las opiniones
+                    </button>
+                </div>
+                
+                <div id="opiniones-lista" class="space-y-4 hidden">
+                    {% for calificacion in opiniones %}
+                        <div class="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                            <div class="flex items-start gap-4">
+                                <div class="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
+                                    <span class="text-emerald-600 font-bold text-lg">{{ calificacion.usuario.nombre.0|upper }}</span>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <span class="font-semibold text-gray-800">{{ calificacion.usuario.get_full_name }}</span>
+                                        <span class="text-sm text-gray-500">{{ calificacion.fecha|date:'d M Y' }}</span>
+                                    </div>
+                                    <div class="flex items-center gap-1 mb-3">
+                                        {% for i in "12345" %}
+                                            {% if forloop.counter <= calificacion.puntuacion %}
+                                                <span class="text-yellow-400 text-lg">★</span>
+                                            {% else %}
+                                                <span class="text-gray-300 text-lg">★</span>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                    <p class="text-gray-700 leading-relaxed">{{ calificacion.comentario }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="text-center py-12">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-400 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-3.582 8-8 8a8.013 8.013 0 01-4.79-1.6L3 21l2.6-5.21A8.013 8.013 0 013 12c0-4.418 3.582-8 8-8s8 3.582 8 8z" />
+                            </svg>
+                            <p class="text-gray-500">Aún no hay opiniones para esta terma.</p>
+                            <p class="text-gray-400 text-sm mt-1">¡Sé el primero en compartir tu experiencia!</p>
+                        </div>
                     {% endfor %}
                 </div>
             </div>
-            <div class="mb-4">
-                <label for="comentario" class="block font-medium mb-3 text-gray-700">Comentario:</label>
-                <textarea id="comentario" name="comentario" rows="3" class="w-full rounded-xl px-4 py-3 border border-gray-100 focus:border-blue-300 focus:ring-2 focus:ring-blue-100 transition placeholder-gray-400 text-base bg-white" required minlength="10" placeholder="Cuéntanos tu experiencia..."></textarea>
-            </div>
-            <button type="submit" class="bg-orange-500 hover:bg-orange-400 text-white font-bold py-2 px-6 rounded-lg">Enviar Opinión</button>
-        <style>
-        #form-comentario {
-            box-shadow: 0 4px 24px 0 rgba(30, 64, 175, 0.08);
-        }
-        </style>
-        </form>
-        <!-- Pop-up de login para comentarios -->
-        <div id="popup-login-comentario" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
-            <div class="bg-white border border-green-400 rounded-2xl p-8 shadow-xl max-w-md w-full text-center">
-                <h3 class="text-2xl font-bold text-green-700 mb-4">Necesitas iniciar sesión</h3>
-                <p class="mb-6 text-lg text-gray-700">Por favor, inicia sesión para dejar tu opinión.</p>
-                <a href="{% url 'usuarios:inicio' %}" class="bg-green-700 hover:bg-green-800 text-white font-bold py-2 px-6 rounded-lg">Ir al Login</a>
-                <button type="button" id="cerrar-popup-login-comentario" class="mt-4 text-green-700 underline">Cancelar</button>
-            </div>
-        </div>
-    </section>
-
-    <!-- SECCIÓN DE comentarios -->
-    <section class="max-w-full mx-auto py-8 px-8">
-        <h2 class="text-2xl font-bold mb-4 text-green-800">Opiniones de los Usuarios</h2>
-        <div class="flex items-center gap-4 bg-white rounded-xl shadow p-6">
-            <div class="flex items-center gap-2">
-                <span class="text-2xl font-bold text-yellow-400">★</span>
-                <span class="text-xl font-bold text-gray-800">{{ calificacion_promedio|floatformat:1 }}</span>
-                <span class="text-gray-500">({{ cantidad_opiniones }} opiniones)</span>
-            </div>
-        <a href="#" id="btn-ver-opiniones" class="ml-6 text-green-600 hover:underline font-semibold" role="button" aria-expanded="false">Ver todas las opiniones</a>
-        </div>
-    <div id="opiniones-lista" class="max-w-2xl mx-auto mt-6 space-y-4 hidden">
-    <script>
-    // Toggle opiniones list visibility
-    document.addEventListener('DOMContentLoaded', function() {
-        const btnVerOpiniones = document.getElementById('btn-ver-opiniones');
-        const opinionesLista = document.getElementById('opiniones-lista');
-        if (btnVerOpiniones && opinionesLista) {
-            btnVerOpiniones.addEventListener('click', function(e) {
-                e.preventDefault();
-                const isVisible = !opinionesLista.classList.contains('hidden');
-                if (isVisible) {
-                    opinionesLista.classList.add('hidden');
-                    btnVerOpiniones.setAttribute('aria-expanded', 'false');
-                } else {
-                    opinionesLista.classList.remove('hidden');
-                    btnVerOpiniones.setAttribute('aria-expanded', 'true');
-                }
-            });
-        }
-    });
-    </script>
-            <h2 class="text-2xl font-bold mb-4 text-green-700">Opiniones de {{ terma.nombre_terma }}</h2>
-            {% for calificacion in opiniones %}
-                <div class="bg-gray-50 rounded-lg p-4 shadow">
-                    <div class="flex items-center gap-2 mb-2">
-                        <span>
-                            {% for i in "12345" %}
-                                {% if forloop.counter <= calificacion.puntuacion %}
-                                    <span class="text-yellow-400">★</span>
-                                {% else %}
-                                    <span class="text-gray-300">★</span>
-                                {% endif %}
-                            {% endfor %}
-                        </span>
-                        <span class="font-semibold text-gray-800">{{ calificacion.usuario.nombre|default:calificacion.usuario.id }}</span>
-                        <span class="text-xs text-gray-500">{{ calificacion.fecha|date:'d M Y' }}</span>
-                    </div>
-                    <div class="text-gray-700">{{ calificacion.comentario }}</div>
-                </div>
-            {% empty %}
-                <div class="text-gray-400">No hay comentarios para esta terma.</div>
-            {% endfor %}
         </div>
     </section>
 
@@ -266,6 +472,11 @@
         {{ servicios_por_entrada_json|safe }}
     </script>
     <script>
+    // Función para obtener el icono apropiado según el tipo de servicio
+    function getIconoServicio(nombreServicio) {
+    return '🏔️';
+    }
+    
     document.addEventListener('DOMContentLoaded', function() {
         const entradaCards = document.querySelectorAll('.experiencia-card');
         const inputCantidad = document.getElementById('cantidad');
@@ -305,37 +516,81 @@
             if (serviciosIncluidosLista) {
                 if (servicios.length > 0) {
                     serviciosIncluidosLista.innerHTML = servicios.map(s => `
-                        <div class="servicio-incluido">
-                            <span class="servicio-nombre">${s.servicio || s.nombre}</span>
-                            <span class="servicio-descripcion">${s.descripcion || ''}</span>
+                        <div class="bg-white rounded-xl p-4 shadow-md border border-emerald-100">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h4 class="font-medium text-gray-800">${s.servicio || s.nombre}</h4>
+                                    ${s.descripcion ? `<p class="text-sm text-gray-600">${s.descripcion}</p>` : ''}
+                                </div>
+                            </div>
                         </div>
                     `).join('');
                 } else {
-                    serviciosIncluidosLista.innerHTML = '<div class="servicio-incluido">No hay servicios incluidos.</div>';
+                    serviciosIncluidosLista.innerHTML = `
+                        <div class="col-span-full text-center py-8">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-400 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2 2v-5m16 0h-2M4 13h2m13-8V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v1M7 7h10v4H7V7z" />
+                            </svg>
+                            <p class="text-gray-500">No hay servicios adicionales incluidos en esta experiencia</p>
+                        </div>
+                    `;
                 }
             }
             
             // Actualizar los servicios extra disponibles
-            const serviciosExtraContainer = document.querySelector('.servicios-extra-container');
+            const serviciosExtraContainer = document.getElementById('servicios-extra');
             if (serviciosExtraContainer) {
-                serviciosExtraContainer.innerHTML = serviciosExtra.map(servicio => `
-                    <label class="flex items-center space-x-3 py-2">
-                        <input type="checkbox" class="servicio-extra-checkbox" 
-                               data-id="${servicio.id}" 
-                               data-precio="${servicio.precio || 0}">
-                        <span>${servicio.servicio} (${servicio.precio ? '$' + parseInt(servicio.precio).toLocaleString('es-CL') + ' CLP' : 'Gratis'})</span>
-                        <input type="number" class="servicio-extra-cantidad w-16 text-center border rounded" 
-                               value="1" min="1" disabled
-                               data-nombre="${servicio.servicio}"
-                               data-precio="${servicio.precio || 0}">
-                    </label>
-                `).join('');
+                if (serviciosExtra && serviciosExtra.length > 0) {
+                    serviciosExtraContainer.innerHTML = serviciosExtra.map(servicio => `
+                        <div class="bg-white rounded-2xl shadow-lg p-6 border border-gray-200 hover:border-emerald-300 transition-all">
+                            <label class="flex items-center gap-4 cursor-pointer">
+                                <input type="checkbox" class="servicio-extra-checkbox w-5 h-5 text-emerald-600 rounded focus:ring-emerald-500" 
+                                       data-precio="${servicio.precio || 0}" data-nombre="${servicio.servicio}" value="${servicio.id}">
+                                
+                                <div class="text-4xl text-emerald-500">
+                                    ${getIconoServicio(servicio.servicio)}
+                                </div>
+                                
+                                <div class="flex-1">
+                                    <h4 class="text-lg font-bold text-gray-800">${servicio.servicio}</h4>
+                                    <p class="text-gray-600 text-sm mb-2">${servicio.descripcion || ''}</p>
+                                    <span class="text-orange-500 font-bold text-lg">+$${parseInt(servicio.precio || 0).toLocaleString('es-CL')} CLP</span>
+                                </div>
+                                
+                                <div class="flex flex-col items-center gap-2">
+                                    <span class="text-xs text-gray-500">Cantidad</span>
+                                    <input type="number" class="servicio-extra-cantidad w-16 border rounded-lg px-2 py-1 text-center focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500" 
+                                           min="1" value="1" disabled data-precio="${servicio.precio || 0}" data-nombre="${servicio.servicio}" data-id="${servicio.id}">
+                                </div>
+                            </label>
+                        </div>
+                    `).join('');
+                } else {
+                    serviciosExtraContainer.innerHTML = `
+                        <div class="text-center py-12">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-400 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2 2v-5m16 0h-2M4 13h2m13-8V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v1M7 7h10v4H7V7z" />
+                            </svg>
+                            <p class="text-gray-500">Todos los servicios están incluidos en esta experiencia</p>
+                            <p class="text-gray-400 text-sm mt-1">No hay servicios adicionales disponibles</p>
+                        </div>
+                    `;
+                }
                 
                 // Reactivar los event listeners para los nuevos elementos
                 document.querySelectorAll('.servicio-extra-checkbox').forEach(cb => {
                     cb.addEventListener('change', function() {
-                        const cantidadInput = cb.parentElement.querySelector('.servicio-extra-cantidad');
-                        cantidadInput.disabled = !cb.checked;
+                        const label = cb.closest('label');
+                        const cantidadInput = label.querySelector('.servicio-extra-cantidad');
+                        if (cantidadInput) {
+                            cantidadInput.disabled = !cb.checked;
+                            if (!cb.checked) cantidadInput.value = 1;
+                        }
                         actualizarTotal();
                     });
                 });
@@ -366,32 +621,36 @@
             const precioSeleccionado = getPrecioSeleccionado();
             let totalExtras = 0;
             let extrasNombres = [];
-            let extrasPrecios = [];
-            document.querySelectorAll('.servicio-extra-cantidad').forEach(input => {
-                const cb = input.closest('label').querySelector('.servicio-extra-checkbox');
-                if (cb && cb.checked) {
-                    let precio = parseInt(input.getAttribute('data-precio')) || 0;
-                    let cant = parseInt(input.value) || 1;
-                    let subtotal = precio * cant;
-                    totalExtras += subtotal;
-                    extrasNombres.push(`${input.getAttribute('data-nombre')} x${cant}`);
-                    extrasPrecios.push(`$${subtotal.toLocaleString('es-CL')} CLP`);
-                }
+            
+            document.querySelectorAll('.servicio-extra-checkbox:checked').forEach(checkbox => {
+                const label = checkbox.closest('label');
+                const cantidadInput = label.querySelector('.servicio-extra-cantidad');
+                const precio = parseInt(checkbox.getAttribute('data-precio')) || 0;
+                const cant = parseInt(cantidadInput.value) || 1;
+                const subtotal = precio * cant;
+                
+                totalExtras += subtotal;
+                extrasNombres.push(`${checkbox.getAttribute('data-nombre')} x${cant} ($${subtotal.toLocaleString('es-CL')})`);
             });
-            const totalCLP = precioSeleccionado * cantidad + totalExtras;
-            let resumenExtras = document.getElementById('resumen-extras');
+            
+            const totalCLP = (precioSeleccionado * cantidad) + totalExtras;
+            
+            // Actualizar resumen de extras
+            const resumenExtras = document.getElementById('resumen-extras');
             if (resumenExtras) {
                 if (extrasNombres.length > 0) {
-                    let extrasResumen = extrasNombres.map((nombre, i) => `${nombre} (${extrasPrecios[i]})`).join(', ');
-                    resumenExtras.textContent = extrasResumen;
+                    resumenExtras.textContent = extrasNombres.join(', ');
                 } else {
                     resumenExtras.textContent = '-';
                 }
             }
-            let resumenTotal = document.getElementById('resumen-total');
+            
+            // Actualizar total
+            const resumenTotal = document.getElementById('resumen-total');
             if (resumenTotal) {
-                resumenTotal.textContent = `$${totalCLP.toLocaleString('es-CL')} CLP`;
+                resumenTotal.textContent = `$${totalCLP.toLocaleString('es-CL')}`;
             }
+            
             // Actualizar inputs ocultos
             actualizarInputsResumen();
         }
@@ -399,11 +658,12 @@
         // Inicializar con la primera entrada seleccionada
         let selectedCard = entradaCards[0];
         if (selectedCard) {
-            selectedCard.classList.add('border-emerald-800');
+            selectedCard.classList.remove('border-transparent');
+            selectedCard.classList.add('border-emerald-500');
             // Establecer el ID de la entrada inicial
             document.getElementById('entrada_id').value = selectedCard.getAttribute('data-id');
             document.getElementById('resumen-experiencia').textContent = selectedCard.getAttribute('data-nombre');
-            document.getElementById('resumen-precio').textContent = `$${parseInt(selectedCard.getAttribute('data-precio')).toLocaleString('es-CL')} CLP`;
+            document.getElementById('resumen-precio').textContent = `$${parseInt(selectedCard.getAttribute('data-precio')).toLocaleString('es-CL')}`;
             document.getElementById('resumen-precio').setAttribute('data-precio', selectedCard.getAttribute('data-precio'));
             actualizarIncluidos(selectedCard.getAttribute('data-id'));
         }
@@ -411,16 +671,26 @@
 
         entradaCards.forEach(card => {
             card.addEventListener('click', function() {
-                entradaCards.forEach(c => c.classList.remove('border-emerald-800'));
-                card.classList.add('border-emerald-800');
+                entradaCards.forEach(c => {
+                    c.classList.remove('border-emerald-500');
+                    c.classList.add('border-transparent');
+                });
+                card.classList.remove('border-transparent');
+                card.classList.add('border-emerald-500');
+                
                 // Actualizar el ID de la entrada seleccionada
                 document.getElementById('entrada_id').value = card.getAttribute('data-id');
                 document.getElementById('resumen-experiencia').textContent = card.getAttribute('data-nombre');
-                document.getElementById('resumen-precio').textContent = `$${parseInt(card.getAttribute('data-precio')).toLocaleString('es-CL')} CLP`;
+                document.getElementById('resumen-precio').textContent = `$${parseInt(card.getAttribute('data-precio')).toLocaleString('es-CL')}`;
                 document.getElementById('resumen-precio').setAttribute('data-precio', card.getAttribute('data-precio'));
                 actualizarIncluidos(card.getAttribute('data-id'));
+                
                 // Reset extras
-                document.querySelectorAll('.servicio-extra-checkbox').forEach(cb => { cb.checked = false; });
+                document.querySelectorAll('.servicio-extra-checkbox').forEach(cb => { 
+                    cb.checked = false; 
+                    const cantidadInput = cb.closest('label').querySelector('.servicio-extra-cantidad');
+                    if (cantidadInput) cantidadInput.disabled = true;
+                });
                 document.querySelectorAll('.servicio-extra-cantidad').forEach(input => { input.value = 1; });
                 actualizarTotal();
             });
@@ -436,88 +706,180 @@
             actualizarTotal();
         });
 
-        // Servicios extra
+        // Servicios extra - Event listeners
         document.querySelectorAll('.servicio-extra-checkbox').forEach(cb => {
             cb.addEventListener('change', function() {
-                const cantidadInput = cb.parentElement.querySelector('.servicio-extra-cantidad');
-                cantidadInput.disabled = !cb.checked;
+                const cantidadInput = cb.closest('label').querySelector('.servicio-extra-cantidad');
+                if (cantidadInput) {
+                    cantidadInput.disabled = !cb.checked;
+                    if (!cb.checked) cantidadInput.value = 1;
+                }
                 actualizarTotal();
             });
         });
+        
         document.querySelectorAll('.servicio-extra-cantidad').forEach(input => {
             input.addEventListener('input', actualizarTotal);
         });
+        
         // Actualizar los inputs ocultos al cargar
         actualizarInputsResumen();
     });
-    </script>
-    <script>
-    // Galería: mostrar imagen en modal grande
+
+    // CARRUSEL LINEAL
     document.addEventListener('DOMContentLoaded', function() {
-        const thumbs = document.querySelectorAll('.gallery-thumb');
-        const modal = document.getElementById('modal-img');
-        const modalImg = document.getElementById('modal-img-src');
-        const closeModal = document.getElementById('close-modal-img');
-        thumbs.forEach(thumb => {
-            thumb.addEventListener('click', function() {
-                const src = thumb.getAttribute('data-img');
-                modalImg.src = src;
-                modal.classList.remove('hidden');
-            });
-        });
-        if (closeModal) {
-            closeModal.addEventListener('click', function() {
-                modal.classList.add('hidden');
-                modalImg.src = '';
+        const carruselContenedor = document.getElementById('carrusel-contenedor');
+        const btnPrev = document.getElementById('carrusel-prev');
+        const btnNext = document.getElementById('carrusel-next');
+        const indicadores = document.querySelectorAll('#carrusel-indicadores button');
+        
+        if (!carruselContenedor || !btnPrev || !btnNext) return;
+        
+        let currentSlide = 0;
+        const totalSlides = carruselContenedor.children.length;
+        
+        function updateCarousel() {
+            const translateX = -currentSlide * 100;
+            carruselContenedor.style.transform = `translateX(${translateX}%)`;
+            
+            // Actualizar indicadores
+            indicadores.forEach((indicator, index) => {
+                if (index === currentSlide) {
+                    indicator.classList.remove('bg-white/50');
+                    indicator.classList.add('bg-white');
+                } else {
+                    indicator.classList.remove('bg-white');
+                    indicator.classList.add('bg-white/50');
+                }
             });
         }
-        // Cerrar modal al hacer click fuera de la imagen
-        if (modal) {
-            modal.addEventListener('click', function(e) {
-                if (e.target === modal) {
-                    modal.classList.add('hidden');
-                    modalImg.src = '';
+        
+        function nextSlide() {
+            currentSlide = (currentSlide + 1) % totalSlides;
+            updateCarousel();
+        }
+        
+        function prevSlide() {
+            currentSlide = (currentSlide - 1 + totalSlides) % totalSlides;
+            updateCarousel();
+        }
+        
+        // Event listeners
+        btnNext.addEventListener('click', nextSlide);
+        btnPrev.addEventListener('click', prevSlide);
+        
+        // Indicadores
+        indicadores.forEach((indicator, index) => {
+            indicator.addEventListener('click', () => {
+                currentSlide = index;
+                updateCarousel();
+            });
+        });
+        
+        // Auto-play (opcional)
+        if (totalSlides > 1) {
+            setInterval(nextSlide, 5000); // Cambiar cada 5 segundos
+        }
+        
+        // Inicializar
+        updateCarousel();
+    });
+
+    // TOGGLE OPINIONES
+    document.addEventListener('DOMContentLoaded', function() {
+        const btnVerOpiniones = document.getElementById('btn-ver-opiniones');
+        const opinionesLista = document.getElementById('opiniones-lista');
+        
+        if (btnVerOpiniones && opinionesLista) {
+            btnVerOpiniones.addEventListener('click', function(e) {
+                e.preventDefault();
+                const isVisible = !opinionesLista.classList.contains('hidden');
+                
+                if (isVisible) {
+                    opinionesLista.classList.add('hidden');
+                    btnVerOpiniones.textContent = 'Ver todas las opiniones';
+                    btnVerOpiniones.setAttribute('aria-expanded', 'false');
+                } else {
+                    opinionesLista.classList.remove('hidden');
+                    btnVerOpiniones.textContent = 'Ocultar opiniones';
+                    btnVerOpiniones.setAttribute('aria-expanded', 'true');
                 }
             });
         }
     });
+    </script>
+    <script>
     // Estrellas funcionales en la sección de opinión
     document.addEventListener('DOMContentLoaded', function() {
         const estrellas = document.querySelectorAll('#estrellas-container .estrella');
         const radios = document.querySelectorAll('#estrellas-container input[type="radio"]');
+        
         estrellas.forEach((estrella, idx) => {
             estrella.addEventListener('click', function() {
                 radios[idx].checked = true;
-                estrellas.forEach((e, i) => {
-                    if (i <= idx) {
-                        e.classList.add('text-yellow-400');
-                        e.classList.remove('text-blue-200');
-                    } else {
-                        e.classList.remove('text-yellow-400');
-                        e.classList.add('text-blue-200');
-                    }
-                });
+                updateStars(idx);
+            });
+            
+            estrella.addEventListener('mouseenter', function() {
+                previewStars(idx);
             });
         });
+        
+        document.getElementById('estrellas-container').addEventListener('mouseleave', function() {
+            const checkedIndex = Array.from(radios).findIndex(radio => radio.checked);
+            if (checkedIndex >= 0) {
+                updateStars(checkedIndex);
+            } else {
+                resetStars();
+            }
+        });
+        
+        function updateStars(rating) {
+            estrellas.forEach((estrella, i) => {
+                if (i <= rating) {
+                    estrella.classList.remove('text-gray-300');
+                    estrella.classList.add('text-yellow-400');
+                } else {
+                    estrella.classList.remove('text-yellow-400');
+                    estrella.classList.add('text-gray-300');
+                }
+            });
+        }
+        
+        function previewStars(rating) {
+            estrellas.forEach((estrella, i) => {
+                if (i <= rating) {
+                    estrella.classList.remove('text-gray-300');
+                    estrella.classList.add('text-yellow-400');
+                } else {
+                    estrella.classList.remove('text-yellow-400');
+                    estrella.classList.add('text-gray-300');
+                }
+            });
+        }
+        
+        function resetStars() {
+            estrellas.forEach(estrella => {
+                estrella.classList.remove('text-yellow-400');
+                estrella.classList.add('text-gray-300');
+            });
+        }
+        
         // Si el usuario navega con teclado o el form se resetea
         radios.forEach((radio, idx) => {
             radio.addEventListener('change', function() {
-                estrellas.forEach((e, i) => {
-                    if (i <= idx && radio.checked) {
-                        e.classList.add('text-yellow-400');
-                        e.classList.remove('text-blue-200');
-                    } else {
-                        e.classList.remove('text-yellow-400');
-                        e.classList.add('text-blue-200');
-                    }
-                });
+                if (radio.checked) {
+                    updateStars(idx);
+                }
             });
         });
+        
         // Pop-up login control para comentarios
         const formComentario = document.getElementById('form-comentario');
         const popupLoginComentario = document.getElementById('popup-login-comentario');
         const cerrarPopupComentario = document.getElementById('cerrar-popup-login-comentario');
         const usuarioLogueado = "{{ usuario|yesno:'true,false'|lower }}";
+        
         if (formComentario && popupLoginComentario) {
             formComentario.addEventListener('submit', function(e) {
                 if (usuarioLogueado !== "true") {
@@ -526,6 +888,7 @@
                 }
             });
         }
+        
         if (cerrarPopupComentario) {
             cerrarPopupComentario.addEventListener('click', function() {
                 popupLoginComentario.classList.add('hidden');
@@ -534,13 +897,13 @@
     });
     </script>
     <script>
-    // Pop-up login control
+    // Pop-up login control para reservas
     document.addEventListener('DOMContentLoaded', function() {
         const btnPagar = document.getElementById('btn-pagar');
         const popupLogin = document.getElementById('popup-login');
         const cerrarPopup = document.getElementById('cerrar-popup-login');
-        // Simulación: reemplaza esto por tu lógica real de usuario
-    const usuarioLogueado = "{{ usuario|yesno:'true,false'|lower }}";
+        const usuarioLogueado = "{{ usuario|yesno:'true,false'|lower }}";
+        
         if (btnPagar && popupLogin) {
             btnPagar.closest('form').addEventListener('submit', function(e) {
                 if (usuarioLogueado !== "true") {
@@ -549,11 +912,42 @@
                 }
             });
         }
+        
         if (cerrarPopup) {
             cerrarPopup.addEventListener('click', function() {
                 popupLogin.classList.add('hidden');
             });
         }
+        
+        // Cerrar popup al hacer click fuera
+        if (popupLogin) {
+            popupLogin.addEventListener('click', function(e) {
+                if (e.target === popupLogin) {
+                    popupLogin.classList.add('hidden');
+                }
+            });
+        }
+    });
+    </script>
+    <script>
+    // Auto-dismiss de mensajes
+    document.addEventListener('DOMContentLoaded', function() {
+        const messages = document.querySelectorAll('[data-message]');
+        messages.forEach(function(message) {
+            // Auto-ocultar después de 5 segundos
+            setTimeout(function() {
+                if (message.parentNode) {
+                    message.style.transition = 'opacity 0.5s ease-out, transform 0.5s ease-out';
+                    message.style.opacity = '0';
+                    message.style.transform = 'translateX(100%)';
+                    setTimeout(function() {
+                        if (message.parentNode) {
+                            message.remove();
+                        }
+                    }, 500);
+                }
+            }, 5000);
+        });
     });
     </script>    
 <!-- Footer -->

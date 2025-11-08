@@ -7,7 +7,6 @@ app_name = 'usuarios'
 
 urlpatterns = [
     path('login/', views.login_usuario, name='login'),
-    path('login-seguro/', views.login_usuario_nuevo, name='login_seguro'),  # Nueva versión segura
     path('logout/', views.logout_usuario, name='logout'),
     path('inicio/', views.inicio, name='inicio'),
     path('registro/', views.registro_usuario, name='registro'),

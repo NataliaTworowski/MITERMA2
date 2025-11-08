@@ -266,6 +266,15 @@ class Calificacion(models.Model):
     comentario = models.TextField(null=True, blank=True)
     fecha = models.DateTimeField(auto_now_add=True)
 
+    class Meta:
+        unique_together = ('usuario', 'terma')
+        verbose_name = "Calificación"
+        verbose_name_plural = "Calificaciones"
+        ordering = ['-fecha']
+
+    def __str__(self):
+        return f"{self.usuario.get_full_name()} - {self.terma.nombre_terma} ({self.puntuacion}★)"
+
     def save(self, *args, **kwargs):
         """Sobrescribir save para actualizar calificacion_promedio de la terma."""
         super().save(*args, **kwargs)

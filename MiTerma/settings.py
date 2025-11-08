@@ -96,9 +96,37 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    # Middlewares personalizados de seguridad - TEMPORALMENTE DESACTIVADOS PARA DEBUG
+    # 'usuarios.middleware.AuthMigrationMiddleware',
+    # 'usuarios.middleware.SecurityAuditMiddleware', 
+    # 'usuarios.middleware.SessionTimeoutMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+# Configuraciones de seguridad mejoradas
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
+
+# En producción, habilitar estas configuraciones adicionales:
+# SECURE_SSL_REDIRECT = True
+# SECURE_HSTS_SECONDS = 31536000
+# SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+# SECURE_HSTS_PRELOAD = True
+# CSRF_COOKIE_SECURE = True
+# SESSION_COOKIE_SECURE = True
+
+# Configuración de autenticación
+AUTH_MAX_ATTEMPTS_PER_IP = 20
+AUTH_MAX_ATTEMPTS_PER_EMAIL = 5
+SESSION_TIMEOUT_MINUTES = 60
+
+# Configuración de sesiones más segura
+SESSION_COOKIE_AGE = 3600  # 1 hora
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_COOKIE_HTTPONLY = True
 
 ROOT_URLCONF = 'MiTerma.urls'
 
@@ -224,6 +252,21 @@ LOGGING = {
             'propagate': True,
         },
         'ventas': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'security': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'usuarios': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'usuarios.views': {
             'handlers': ['console'],
             'level': 'DEBUG',
             'propagate': True,

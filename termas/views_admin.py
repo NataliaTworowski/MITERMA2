@@ -11,29 +11,9 @@ from django.conf import settings
 import random
 import string
 from django.contrib.auth.hashers import make_password
+from usuarios.decorators import admin_general_required
 
-def verificar_admin_general(view_func):
-    """Decorador personalizado para verificar si el usuario es administrador general."""
-    def wrapper(request, *args, **kwargs):
-        # Verificar si el usuario está logueado
-        if 'usuario_id' not in request.session:
-            return JsonResponse({
-                'success': False,
-                'message': 'Debes iniciar sesión para acceder.'
-            }, status=401)
-        
-        # Verificar si el usuario tiene el rol correcto (ID=4 para administrador_general)
-        if request.session.get('usuario_rol') != 4:
-            return JsonResponse({
-                'success': False,
-                'message': 'No tienes permisos para realizar esta acción.'
-            }, status=403)
-        
-        return view_func(request, *args, **kwargs)
-    
-    return wrapper
-
-@verificar_admin_general
+@admin_general_required
 @require_http_methods(["POST"])
 def aprobar_solicitud(request, solicitud_id):
     """Vista para aprobar una solicitud de terma."""
@@ -192,7 +172,7 @@ def aprobar_solicitud(request, solicitud_id):
             'message': f'Error al procesar la solicitud: {str(e)}'
         }, status=500)
 
-@verificar_admin_general
+@admin_general_required
 @require_http_methods(["POST"])
 def rechazar_solicitud(request, solicitud_id):
     """Vista para rechazar una solicitud de terma."""
@@ -253,7 +233,7 @@ def rechazar_solicitud(request, solicitud_id):
             'message': f'Error al procesar la solicitud: {str(e)}'
         }, status=500)
 
-@verificar_admin_general
+@admin_general_required
 @require_http_methods(["GET"])
 def detalles_solicitud(request, solicitud_id):
     """Vista para obtener los detalles de una solicitud."""

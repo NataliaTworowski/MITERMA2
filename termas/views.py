@@ -5,8 +5,12 @@ from django.contrib import messages
 from django.views.decorators.http import require_http_methods
 from .models import Terma, Region, Comuna, ImagenTerma
 from usuarios.models import Usuario
+from usuarios.decorators import admin_terma_required
 import os
+import logging
 from entradas.models import EntradaTipo
+
+logger = logging.getLogger('seguridad')
 
 def lista_termas(request):
     """Vista para mostrar lista de termas."""
@@ -99,21 +103,12 @@ def buscar_termas(request):
         messages.error(request, 'Sesión inválida.')
         return redirect('core:home')
     
+@admin_terma_required
 def subir_fotos(request):
-    """Vista para gestionar las fotos de la terma."""
-    
-    # Verificar si el usuario está logueado
-    if 'usuario_id' not in request.session:
-        messages.error(request, 'Debes iniciar sesión para acceder.')
-        return redirect('core:home')
-    
-    # Verificar si el usuario tiene el rol correcto (ID=2)
-    if request.session.get('usuario_rol') != 2:
-        messages.error(request, 'No tienes permisos para acceder a esta sección.')
-        return redirect('usuarios:inicio')
-    
+    """Vista para gestionar las fotos de la terma - Migrada a Django Auth."""
     try:
-        usuario = Usuario.objects.get(id=request.session['usuario_id'])
+        # El decorador ya verificó que el usuario está autenticado y es admin_terma
+        usuario = request.user
         
         # Verificar que el usuario tenga una terma asignada
         if not usuario.terma:
@@ -322,22 +317,18 @@ def eliminar_foto(request, foto_id):
     
     return redirect('termas:subir_fotos')
 
+@admin_terma_required
 def analisis_terma(request):
-    """Vista para mostrar el análisis de la terma."""
-    # Verificar si el usuario está logueado
-    if 'usuario_id' not in request.session:
-        messages.error(request, 'Debes iniciar sesión para acceder.')
-        return redirect('core:home')
-    if request.session.get('usuario_rol') != 2:
-        messages.error(request, 'No tienes permisos para acceder a esta sección.')
-        return redirect('usuarios:inicio')
+    """Vista para mostrar el análisis de la terma - Migrada a Django Auth."""
     try:
         from django.db.models import Count, Sum
         from datetime import datetime, timedelta
         import json
         from ventas.models import Compra, DetalleCompra
         from entradas.models import EntradaTipo
-        usuario = Usuario.objects.get(id=request.session['usuario_id'])
+        
+        # El decorador ya verificó que el usuario está autenticado y es admin_terma
+        usuario = request.user
         terma = usuario.terma
         try:
             rango = int(request.GET.get('rango', 7))
@@ -349,12 +340,13 @@ def analisis_terma(request):
         fechas = []
         ventas_por_dia = []
         ingresos_por_dia = []
+        entradas_vendidas_por_dia = []  # Nueva variable para entradas vendidas
         
         for i in range(rango-1, -1, -1):
             fecha = hoy - timedelta(days=i)
             fechas.append(fecha.strftime('%d/%m'))
             
-            # Contar número de ventas
+            # Contar número de compras (transacciones)
             ventas_dia = Compra.objects.filter(
                 fecha_compra__date=fecha,
                 estado_pago='pagado',
@@ -369,11 +361,21 @@ def analisis_terma(request):
                 terma=terma
             ).aggregate(total=Sum('total'))['total'] or 0
             ingresos_por_dia.append(float(ingresos_dia))
+            
+            # Calcular cantidad de entradas vendidas (usando misma lógica del calendario)
+            entradas_dia = Compra.objects.filter(
+                fecha_compra__date=fecha,
+                estado_pago='pagado',
+                terma=terma
+            ).aggregate(total_entradas=Sum('cantidad'))['total_entradas'] or 0
+            entradas_vendidas_por_dia.append(int(entradas_dia))
         
         # Estadísticas
-        total_ventas_cantidad = sum(ventas_por_dia)  # Número de ventas
+        total_ventas_cantidad = sum(ventas_por_dia)  # Número de transacciones
+        total_entradas_vendidas = sum(entradas_vendidas_por_dia)  # Total de entradas vendidas
         total_ingresos = sum(ingresos_por_dia)  # Dinero total del rango seleccionado
         promedio_ventas_cantidad = total_ventas_cantidad / rango if ventas_por_dia else 0
+        promedio_entradas_diario = total_entradas_vendidas / rango if entradas_vendidas_por_dia else 0
         promedio_ingresos_diario = total_ingresos / rango if ingresos_por_dia else 0
         mejor_dia = max(ventas_por_dia) if ventas_por_dia else 0
         
@@ -448,11 +450,15 @@ def analisis_terma(request):
             'terma': terma,
             'fechas_json': json.dumps(fechas),
             'ventas_por_dia_json': json.dumps(ventas_por_dia),
-            'total_ventas': total_ventas_cantidad,  # Número de ventas del rango
+            'ingresos_por_dia_json': json.dumps(ingresos_por_dia),  # Ingresos por día
+            'entradas_vendidas_por_dia_json': json.dumps(entradas_vendidas_por_dia),  # Entradas vendidas por día
+            'total_ventas': total_ventas_cantidad,  # Número de transacciones del rango
+            'total_entradas_vendidas': total_entradas_vendidas,  # Total entradas vendidas del rango
             'total_ingresos_rango': round(total_ingresos, 2),  # Dinero del rango seleccionado
             'total_ingresos_mes': round(float(ingresos_mes_actual), 2),  # Dinero del mes actual
             'total_ventas_mes': ventas_mes_actual,  # Ventas del mes actual
-            'promedio_ventas': round(promedio_ventas_cantidad, 1),  # Promedio de ventas por día
+            'promedio_ventas': round(promedio_ventas_cantidad, 1),  # Promedio de transacciones por día
+            'promedio_entradas': round(promedio_entradas_diario, 1),  # Promedio de entradas por día
             'promedio_ingresos': round(promedio_ingresos_diario, 2),  # Promedio de ingresos por día
             'mejor_dia': mejor_dia,
             'rango': rango,
@@ -475,16 +481,12 @@ def analisis_terma(request):
         return redirect('usuarios:adm_termas')
 
 
+@admin_terma_required
 def editar_terma(request):
-    """Vista para editar la información de la terma."""
-    if 'usuario_id' not in request.session:
-        messages.error(request, 'Debes iniciar sesión para acceder.')
-        return redirect('core:home')
-    if request.session.get('usuario_rol') != 2:
-        messages.error(request, 'No tienes permisos para acceder a esta sección.')
-        return redirect('usuarios:inicio')
+    """Vista para editar la información de la terma - Migrada a Django Auth."""
     try:
-        usuario = Usuario.objects.get(id=request.session['usuario_id'])
+        # El decorador ya verificó que el usuario está autenticado y es admin_terma
+        usuario = request.user
         terma = usuario.terma
         if request.method == 'POST':
             descripcion = request.POST.get('descripcion_terma', '').strip()
@@ -513,14 +515,18 @@ def editar_terma(request):
         messages.error(request, 'Sesión inválida.')
         return redirect('core:home')
 
+@admin_terma_required
 def agregar_servicio(request):
-    """Vista para agregar un nuevo servicio a la terma."""
+    """Vista para agregar un nuevo servicio a la terma - Migrada a Django Auth."""
     if request.method == 'POST':
+        # El decorador ya verificó que el usuario está autenticado y es admin_terma
+        usuario = request.user
+        terma = usuario.terma
+        
         servicio = request.POST.get('servicio')
         descripcion = request.POST.get('descripcion_servicio')
         precio = request.POST.get('precio_servicio')
-        usuario = Usuario.objects.get(id=request.session['usuario_id'])
-        terma = usuario.terma
+        
         from termas.models import ServicioTerma
         nuevo_servicio = ServicioTerma(
             terma=terma,
@@ -530,46 +536,56 @@ def agregar_servicio(request):
         )
         nuevo_servicio.save()
         messages.success(request, 'Servicio agregado correctamente.')
+        logger.info(f"Usuario {usuario.nombre} (ID: {usuario.id}) agregó servicio {servicio} a terma {terma.nombre_terma}")
         return redirect('termas:editar_terma')
     return redirect('termas:editar_terma')
 
+@admin_terma_required
 def quitar_servicio(request, servicio_id):
-    """Vista para quitar un servicio de la terma."""
+    """Vista para quitar un servicio de la terma - Migrada a Django Auth."""
     if request.method == 'POST':
+        # El decorador ya verificó que el usuario está autenticado y es admin_terma
+        usuario = request.user
+        terma = usuario.terma
+        
         from termas.models import ServicioTerma
-        servicio = get_object_or_404(ServicioTerma, id=servicio_id)
+        servicio = get_object_or_404(ServicioTerma, id=servicio_id, terma=terma)
+        servicio_nombre = servicio.servicio
         servicio.delete()
-        messages.success(request, 'Servicio eliminado correctamente.')
+        messages.success(request, f'Servicio "{servicio_nombre}" eliminado correctamente.')
+        logger.info(f"Usuario {usuario.nombre} (ID: {usuario.id}) eliminó servicio {servicio_nombre} de terma {terma.nombre_terma}")
         return redirect('termas:editar_terma')
     return redirect('termas:editar_terma')
 
+@admin_terma_required
 def editar_servicio(request, servicio_id):
-    """Vista para editar un servicio de la terma."""
-    if 'usuario_id' not in request.session:
-        messages.error(request, 'Debes iniciar sesión para acceder.')
-        return redirect('core:home')
-    if request.session.get('usuario_rol') != 2:
-        messages.error(request, 'No tienes permisos para acceder a esta sección.')
-        return redirect('usuarios:inicio')
+    """Vista para editar un servicio de la terma - Migrada a Django Auth."""
+    # El decorador ya verificó que el usuario está autenticado y es admin_terma
+    usuario = request.user
+    terma = usuario.terma
+    
     from termas.models import ServicioTerma
-    servicio = get_object_or_404(ServicioTerma, id=servicio_id)
+    servicio = get_object_or_404(ServicioTerma, id=servicio_id, terma=terma)
+    
     if request.method == 'POST':
+        servicio_anterior = servicio.servicio
         servicio.servicio = request.POST.get('servicio', servicio.servicio)
         servicio.descripcion = request.POST.get('descripcion_servicio', servicio.descripcion)
         servicio.precio = request.POST.get('precio_servicio', servicio.precio)
         servicio.save()
         messages.success(request, 'Servicio editado correctamente.')
+        logger.info(f"Usuario {usuario.nombre} (ID: {usuario.id}) editó servicio {servicio_anterior} en terma {terma.nombre_terma}")
         return redirect('termas:editar_terma')
     messages.error(request, 'Método no permitido.')
     return redirect('termas:editar_terma')
 
+@admin_terma_required
 def precios_terma(request): 
-    usuario = None
-    terma = None
-    if 'usuario_id' in request.session:
-        from usuarios.models import Usuario
-        usuario = Usuario.objects.get(id=request.session['usuario_id'])
-        terma = usuario.terma
+    """Vista para mostrar precios de la terma - Migrada a Django Auth."""
+    # El decorador ya verificó que el usuario está autenticado y es admin_terma
+    usuario = request.user
+    terma = usuario.terma
+    
     context = {
         'title': 'Precios de la Terma - MiTerma',
         'usuario': usuario,
@@ -578,34 +594,49 @@ def precios_terma(request):
     }
     return render(request, 'administrador_termas/precios_terma.html', context)
 
+@admin_terma_required
 def editar_entrada(request, entrada_id):
-    """Vista para editar un tipo de entrada."""
-    if 'usuario_id' not in request.session:
-        messages.error(request, 'Debes iniciar sesión para acceder.')
-        return redirect('core:home')
-    if request.session.get('usuario_rol') != 2:
-        messages.error(request, 'No tienes permisos para acceder a esta sección.')
-        return redirect('usuarios:inicio')
-    entrada = get_object_or_404(EntradaTipo, id=entrada_id)
+    """Vista para editar un tipo de entrada - Migrada a Django Auth."""
+    # El decorador ya verificó que el usuario está autenticado y es admin_terma
+    usuario = request.user
+    terma = usuario.terma
+    
+    entrada = get_object_or_404(EntradaTipo, id=entrada_id, terma=terma)
     from termas.models import ServicioTerma
-    servicios_disponibles = ServicioTerma.objects.filter(terma=entrada.terma)
+    servicios_disponibles = ServicioTerma.objects.filter(terma=terma)
+    
     if request.method == 'POST':
+        entrada_anterior = entrada.nombre
         entrada.nombre = request.POST.get('nombre', entrada.nombre)
         entrada.descripcion = request.POST.get('descripcion', entrada.descripcion)
         from decimal import Decimal, InvalidOperation
+        import re
+        
         precio_str = request.POST.get('precio', None)
         duracion_str = request.POST.get('duracion_horas', None)
         error_messages = []
+        
         if precio_str:
             try:
-                entrada.precio = Decimal(precio_str)
-            except InvalidOperation:
-                error_messages.append('El precio ingresado no es válido.')
+                # Limpiar formato chileno (puntos y comas)
+                precio_limpio = re.sub(r'[^\d]', '', precio_str)
+                if precio_limpio:
+                    entrada.precio = Decimal(precio_limpio)
+                else:
+                    error_messages.append('El precio no puede estar vacío.')
+            except (InvalidOperation, ValueError):
+                error_messages.append('El precio ingresado no es válido. Use solo números.')
+        
         if duracion_str:
             try:
-                entrada.duracion_horas = int(duracion_str)
+                duracion_int = int(duracion_str)
+                if duracion_int < 1 or duracion_int > 24:
+                    error_messages.append('La duración debe ser entre 1 y 24 horas.')
+                else:
+                    entrada.duracion_horas = duracion_int
             except ValueError:
                 error_messages.append('La duración ingresada no es válida.')
+        
         if error_messages:
             context = {
                 'title': 'Editar Tipo de Entrada',
@@ -615,15 +646,20 @@ def editar_entrada(request, entrada_id):
                 'messages': error_messages
             }
             return render(request, 'administrador_termas/editar_entrada.html', context)
+        
         entrada.save()
         servicios_ids = request.POST.getlist('servicios')
         entrada.servicios.set(servicios_ids)
+        
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
             # Respuesta simple para AJAX
             from django.http import HttpResponse
             return HttpResponse('OK')
+        
         messages.success(request, 'Tipo de entrada editado correctamente.')
+        logger.info(f"Usuario {usuario.nombre} (ID: {usuario.id}) editó entrada {entrada_anterior} en terma {terma.nombre_terma}")
         return redirect('termas:precios_terma')
+    
     context = {
         'title': 'Editar Tipo de Entrada',
         'entrada': entrada,
@@ -632,39 +668,35 @@ def editar_entrada(request, entrada_id):
     }
     return render(request, 'administrador_termas/editar_entrada.html', context)
 
+@admin_terma_required
 def eliminar_entrada(request, entrada_id):
-    """Vista para eliminar un tipo de entrada con confirmación."""
-    if 'usuario_id' not in request.session:
-        messages.error(request, 'Debes iniciar sesión para acceder.')
-        return redirect('core:home')
-    if request.session.get('usuario_rol') != 2:
-        messages.error(request, 'No tienes permisos para acceder a esta sección.')
-        return redirect('usuarios:inicio')
-    entrada = get_object_or_404(EntradaTipo, id=entrada_id)
+    """Vista para eliminar un tipo de entrada con confirmación - Migrada a Django Auth."""
+    # El decorador ya verificó que el usuario está autenticado y es admin_terma
+    usuario = request.user
+    terma = usuario.terma
+    
+    entrada = get_object_or_404(EntradaTipo, id=entrada_id, terma=terma)
+    
     if request.method == 'POST':
+        entrada_nombre = entrada.nombre
         entrada.delete()
         messages.success(request, 'Tipo de entrada eliminado correctamente.')
+        logger.info(f"Usuario {usuario.nombre} (ID: {usuario.id}) eliminó entrada {entrada_nombre} de terma {terma.nombre_terma}")
         return redirect('termas:precios_terma')
+    
     context = {
         'title': 'Eliminar Tipo de Entrada',
         'entrada': entrada
     }
     return render(request, 'administrador_termas/eliminar_entrada.html', context)
 
+@admin_terma_required
 @require_http_methods(["GET", "POST"])
 def crear_entrada(request):
-    """Vista para crear un nuevo tipo de entrada."""
-    if 'usuario_id' not in request.session:
-        messages.error(request, 'Debes iniciar sesión para acceder.')
-        return redirect('core:home')
-    
-    if request.session.get('usuario_rol') != 2:
-        messages.error(request, 'No tienes permisos para acceder a esta sección.')
-        return redirect('usuarios:inicio')
-    
-    # Obtener la terma del usuario logueado
-    usuario = get_object_or_404(Usuario, id=request.session['usuario_id'])
-    terma = get_object_or_404(Terma, usuario=usuario)
+    """Vista para crear un nuevo tipo de entrada - Migrada a Django Auth."""
+    # El decorador ya verificó que el usuario está autenticado y es admin_terma
+    usuario = request.user
+    terma = usuario.terma
     
     from entradas.forms import EntradaTipoForm
     
@@ -676,6 +708,7 @@ def crear_entrada(request):
             entrada.save()
             form.save_m2m()  # Guardar relaciones many-to-many
             messages.success(request, f'Tipo de entrada "{entrada.nombre}" creado correctamente.')
+            logger.info(f"Usuario {usuario.nombre} (ID: {usuario.id}) creó entrada {entrada.nombre} en terma {terma.nombre_terma}")
             return redirect('termas:precios_terma')
     else:
         form = EntradaTipoForm(terma=terma)
@@ -687,20 +720,13 @@ def crear_entrada(request):
     }
     return render(request, 'administrador_termas/crear_entrada.html', context)
 
+@admin_terma_required
 @require_http_methods(["GET", "POST"])
 def gestionar_servicios_entrada(request, entrada_id):
-    """Vista para gestionar servicios de una entrada específica."""
-    if 'usuario_id' not in request.session:
-        messages.error(request, 'Debes iniciar sesión para acceder.')
-        return redirect('core:home')
-    
-    if request.session.get('usuario_rol') != 2:
-        messages.error(request, 'No tienes permisos para acceder a esta sección.')
-        return redirect('usuarios:inicio')
-    
-    # Obtener la terma del usuario logueado
-    usuario = get_object_or_404(Usuario, id=request.session['usuario_id'])
-    terma = get_object_or_404(Terma, usuario=usuario)
+    """Vista para gestionar servicios de una entrada específica - Migrada a Django Auth."""
+    # El decorador ya verificó que el usuario está autenticado y es admin_terma
+    usuario = request.user
+    terma = usuario.terma
     
     # Obtener la entrada específica
     entrada = get_object_or_404(EntradaTipo, id=entrada_id, terma=terma)
@@ -716,6 +742,7 @@ def gestionar_servicios_entrada(request, entrada_id):
             entrada.servicios.set(servicios)
         
         messages.success(request, f'Servicios actualizados para "{entrada.nombre}".')
+        logger.info(f"Usuario {usuario.nombre} (ID: {usuario.id}) actualizó servicios para entrada {entrada.nombre} en terma {terma.nombre_terma}")
         return redirect('termas:precios_terma')
     
     # Obtener todos los servicios de la terma
@@ -731,21 +758,17 @@ def gestionar_servicios_entrada(request, entrada_id):
     }
     return render(request, 'administrador_termas/gestionar_servicios_entrada.html', context)
 
+@admin_terma_required
 def calendario_termas(request):
-    """Vista para mostrar el calendario de la terma."""
-    if 'usuario_id' not in request.session:
-        messages.error(request, 'Debes iniciar sesión para acceder.')
-        return redirect('core:home')
-    if request.session.get('usuario_rol') != 2:
-        messages.error(request, 'No tienes permisos para acceder a esta sección.')
-        return redirect('usuarios:inicio')
+    """Vista para mostrar el calendario de la terma - Migrada a Django Auth."""
     try:
         from datetime import datetime, date
         from django.db.models import Sum
         import json
         from ventas.models import Compra
         
-        usuario = Usuario.objects.get(id=request.session['usuario_id'])
+        # El decorador ya verificó que el usuario está autenticado y es admin_terma
+        usuario = request.user
         terma = usuario.terma
         
         # Obtener mes y año de la URL o usar el actual
@@ -818,7 +841,7 @@ def vista_termas(request):
         return redirect('core:home')
 
 def vista_terma(request, terma_id):
-    """Vista para mostrar los datos de una terma y permitir elegir entrada."""
+    """Vista para mostrar los datos de una terma y permitir elegir entrada - Migrada a Django Auth."""
     terma = get_object_or_404(Terma, id=terma_id)
     entradas = terma.get_tipos_entrada()
     imagenes = ImagenTerma.objects.filter(terma=terma)
@@ -851,67 +874,83 @@ def vista_terma(request, terma_id):
     servicios_incluidos = servicios_por_entrada[entrada_seleccionada.id]['incluidos'] if entrada_seleccionada else []
     servicios_extra = servicios_por_entrada[entrada_seleccionada.id]['extras'] if entrada_seleccionada else []
 
-    # Procesar nuevo comentario
+    # Procesar nuevo comentario - Migrado a Django Auth
     if request.method == 'POST' and 'puntuacion' in request.POST and 'comentario' in request.POST:
         puntuacion = int(request.POST.get('puntuacion'))
         comentario = request.POST.get('comentario')
-        usuario_id = request.session.get('usuario_id')
-        if usuario_id:
-            from usuarios.models import Usuario
-            usuario = Usuario.objects.get(id=usuario_id)
+        
+        if request.user.is_authenticated:
             from termas.models import Calificacion
-            Calificacion.objects.create(
-                usuario=usuario,
-                terma=terma,
-                puntuacion=puntuacion,
-                comentario=comentario
-            )
-            messages.success(request, '¡Tu opinión se ha guardado correctamente!')
-            return redirect(request.path)
+            from django.db import IntegrityError, transaction
+            
+            try:
+                # Verificar si el usuario ya ha calificado esta terma
+                calificacion_existente = Calificacion.objects.filter(
+                    usuario=request.user,
+                    terma=terma
+                ).first()
+                
+                if calificacion_existente:
+                    # Actualizar calificación existente
+                    calificacion_existente.puntuacion = puntuacion
+                    calificacion_existente.comentario = comentario
+                    calificacion_existente.save()
+                    messages.success(request, '¡Tu opinión se ha actualizado correctamente!')
+                    logger.info(f"Usuario {request.user.nombre} (ID: {request.user.id}) actualizó calificación en terma {terma.nombre_terma}")
+                else:
+                    # Crear nueva calificación
+                    with transaction.atomic():
+                        Calificacion.objects.create(
+                            usuario=request.user,
+                            terma=terma,
+                            puntuacion=puntuacion,
+                            comentario=comentario
+                        )
+                    messages.success(request, '¡Tu opinión se ha guardado correctamente!')
+                    logger.info(f"Usuario {request.user.nombre} (ID: {request.user.id}) dejó nueva calificación {puntuacion} en terma {terma.nombre_terma}")
+                
+                return redirect(request.path)
+                
+            except IntegrityError as e:
+                logger.error(f"Error de integridad al guardar calificación: {str(e)}")
+                messages.error(request, 'Hubo un problema al guardar tu opinión. Por favor intenta de nuevo.')
+                return redirect(request.path)
+            except Exception as e:
+                logger.error(f"Error inesperado al guardar calificación: {str(e)}")
+                messages.error(request, 'Hubo un error inesperado. Por favor intenta de nuevo.')
+                return redirect(request.path)
         else:
             messages.error(request, 'Debes iniciar sesión para dejar una opinión.')
+            logger.warning(f"Usuario no autenticado intentó dejar calificación en terma {terma.nombre_terma}")
             return redirect('usuarios:inicio')
 
     opiniones = terma.calificacion_set.select_related('usuario').order_by('-fecha')
-    usuario = None
-    usuario_id = request.session.get('usuario_id')
-    if usuario_id:
-        from usuarios.models import Usuario
-        try:
-            usuario = Usuario.objects.get(id=usuario_id)
-        except Usuario.DoesNotExist:
-            usuario = None
+    cantidad_opiniones = opiniones.count()
+    
     context = {
         'terma': terma,
         'entradas': entradas,
         'entrada_seleccionada': entrada_seleccionada,
         'imagenes': imagenes,
         'calificacion_promedio': calificacion_promedio,
+        'cantidad_opiniones': cantidad_opiniones,
         'servicios': servicios_incluidos,
         'servicios_extra': servicios_extra,
         'servicios_por_entrada_json': json.dumps(servicios_por_entrada),
         'opiniones': opiniones,
-        'usuario': usuario,
+        'usuario': request.user if request.user.is_authenticated else None,
     }
     return render(request, 'administrador_termas/vista_terma.html', context)
 
+@admin_terma_required
 def suscripcion(request):
-    """Vista para gestionar la suscripción de la terma."""
-    # Verificar si el usuario está logueado
-    if 'usuario_id' not in request.session:
-        messages.error(request, 'Debes iniciar sesión para acceder.')
-        return redirect('core:home')
-    
-    # Verificar si el usuario tiene el rol correcto (ID=2)
-    if request.session.get('usuario_rol') != 2:
-        messages.error(request, 'No tienes permisos para acceder a esta sección.')
-        return redirect('usuarios:inicio')
-    
+    """Vista para gestionar la suscripción de la terma - Migrada a Django Auth."""
     try:
         from django.db.models import Sum, Count
         from datetime import datetime, timedelta
         
-        usuario = Usuario.objects.get(id=request.session['usuario_id'])
+        # El decorador ya verificó que el usuario está autenticado y es admin_terma
+        usuario = request.user
         
         # Verificar que el usuario tenga una terma asignada
         if not usuario.terma:

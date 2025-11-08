@@ -4,18 +4,19 @@ from django.contrib import messages
 from ventas.models import Compra, CodigoQR
 from django.db.models import Prefetch
 from ventas.utils import generar_datos_qr, generar_qr
+from .decorators import cliente_required
 import base64
 from io import BytesIO
 from django.views.decorators.http import require_POST
 
+@cliente_required
 def mostrar_entradas(request):
-    """Vista para mostrar las entradas del cliente."""
-    if 'usuario_id' not in request.session:
-        return redirect('usuarios:inicio')
-        
-    usuario_id = request.session['usuario_id']
+    """Vista para mostrar las entradas del cliente - Migrada a Django Auth."""
+    # El decorador ya verificó que el usuario está autenticado y es cliente
+    usuario = request.user
+    
     compras = Compra.objects.filter(
-        usuario_id=usuario_id,
+        usuario_id=usuario.id,
         estado_pago='pagado',
         visible=True
     ).order_by('-fecha_compra').select_related(
@@ -28,16 +29,17 @@ def mostrar_entradas(request):
     }
     return render(request, 'clientes/mis_entradas.html', context)
 
+@cliente_required
 @require_POST
 def ocultar_compra(request, compra_id):
-    """Vista para ocultar una compra del historial."""
-    if 'usuario_id' not in request.session:
-        return JsonResponse({'error': 'No autorizado'}, status=401)
+    """Vista para ocultar una compra del historial - Migrada a Django Auth."""
+    # El decorador ya verificó que el usuario está autenticado y es cliente
+    usuario = request.user
     
     # Verificar que la compra pertenezca al usuario
     compra = get_object_or_404(Compra, 
         id=compra_id, 
-        usuario_id=request.session['usuario_id']
+        usuario_id=usuario.id
     )
     
     try:
@@ -52,15 +54,16 @@ def ocultar_compra(request, compra_id):
             'error': str(e)
         }, status=500)
 
+@cliente_required
 def get_qr_code(request, compra_id):
-    """Vista para obtener el código QR de una compra."""
-    if 'usuario_id' not in request.session:
-        return JsonResponse({'error': 'No autorizado'}, status=401)
+    """Vista para obtener el código QR de una compra - Migrada a Django Auth."""
+    # El decorador ya verificó que el usuario está autenticado y es cliente
+    usuario = request.user
     
     # Verificar que la compra pertenezca al usuario
     compra = get_object_or_404(Compra, 
         id=compra_id, 
-        usuario_id=request.session['usuario_id'],
+        usuario_id=usuario.id,
         estado_pago='pagado'
     )
     
