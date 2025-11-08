@@ -5,9 +5,12 @@ from ventas.models import Compra, CodigoQR
 from django.db.models import Prefetch
 from ventas.utils import generar_datos_qr, generar_qr
 from .decorators import cliente_required
+from .models import Favorito
+from termas.models import Terma
 import base64
 from io import BytesIO
 from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
 
 @cliente_required
 def mostrar_entradas(request):
@@ -85,3 +88,101 @@ def get_qr_code(request, compra_id):
         
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+
+@cliente_required
+def favoritos(request):
+    """Vista para mostrar las termas favoritas del usuario."""
+    usuario = request.user
+    
+    # Obtener termas favoritas del usuario
+    favoritos = Favorito.objects.filter(usuario=usuario).select_related(
+        'terma',
+        'terma__comuna',
+        'terma__comuna__region'
+    ).prefetch_related(
+        'terma__imagenes',
+        'terma__entradatipo_set'
+    ).order_by('-fecha_agregado')
+    
+    context = {
+        'title': 'Mis Favoritos - MiTerma',
+        'favoritos': favoritos,
+    }
+    return render(request, 'clientes/favoritos.html', context)
+
+
+@csrf_exempt
+@require_POST
+def toggle_favorito(request, terma_id):
+    """Vista para agregar o quitar una terma de favoritos."""
+    if not request.user.is_authenticated:
+        return JsonResponse({
+            'success': False,
+            'error': 'Debes iniciar sesión para usar favoritos',
+            'redirect': 'login'
+        }, status=401)
+    
+    # Verificar que sea cliente
+    if not hasattr(request.user, 'rol') or not request.user.rol or request.user.rol.nombre != 'cliente':
+        return JsonResponse({
+            'success': False,
+            'error': 'No tienes permisos para esta acción'
+        }, status=403)
+    
+    usuario = request.user
+    
+    try:
+        terma = get_object_or_404(Terma, id=terma_id, estado_suscripcion='activa')
+        
+        favorito, created = Favorito.objects.get_or_create(
+            usuario=usuario,
+            terma=terma
+        )
+        
+        if created:
+            # Se agregó a favoritos
+            return JsonResponse({
+                'success': True,
+                'action': 'added',
+                'message': f'{terma.nombre_terma} agregado a favoritos'
+            })
+        else:
+            # Ya estaba en favoritos, lo eliminamos
+            favorito.delete()
+            return JsonResponse({
+                'success': True,
+                'action': 'removed',
+                'message': f'{terma.nombre_terma} eliminado de favoritos'
+            })
+            
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+
+def verificar_favorito(request, terma_id):
+    """Vista para verificar si una terma está en favoritos."""
+    if not request.user.is_authenticated:
+        return JsonResponse({
+            'es_favorito': False
+        })
+    
+    # Verificar que sea cliente
+    if not hasattr(request.user, 'rol') or not request.user.rol or request.user.rol.nombre != 'cliente':
+        return JsonResponse({
+            'es_favorito': False
+        })
+    
+    usuario = request.user
+    
+    es_favorito = Favorito.objects.filter(
+        usuario=usuario,
+        terma_id=terma_id
+    ).exists()
+    
+    return JsonResponse({
+        'es_favorito': es_favorito
+    })

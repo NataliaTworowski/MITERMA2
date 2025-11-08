@@ -287,3 +287,21 @@ class TokenRestablecerContrasena(models.Model):
     def __str__(self):
         estado = "Usado" if self.usado else ("Válido" if self.es_valido() else "Expirado")
         return f"Token {self.codigo} para {self.usuario.email} - {estado}"
+
+
+class Favorito(models.Model):
+    """
+    Modelo para gestionar las termas favoritas de los usuarios.
+    """
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='favoritos')
+    terma = models.ForeignKey('termas.Terma', on_delete=models.CASCADE, related_name='favoritos')
+    fecha_agregado = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = "Favorito"
+        verbose_name_plural = "Favoritos"
+        unique_together = ('usuario', 'terma')  # Un usuario no puede tener la misma terma como favorito más de una vez
+        ordering = ['-fecha_agregado']
+    
+    def __str__(self):
+        return f"{self.usuario.get_full_name()} - {self.terma.nombre_terma}"
