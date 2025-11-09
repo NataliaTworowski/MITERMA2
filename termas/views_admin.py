@@ -1,8 +1,9 @@
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_http_methods
 from .models import SolicitudTerma, Terma
 from usuarios.models import Usuario, Rol
+from ventas.models import DistribucionPago
 import json
 from django.utils import timezone
 from django.template.loader import render_to_string
@@ -269,3 +270,228 @@ def detalles_solicitud(request, solicitud_id):
             'success': False,
             'message': f'Error al obtener los detalles: {str(e)}'
         }, status=500)
+
+
+@admin_general_required
+def ver_distribuciones_pago(request):
+    """Vista para que los administradores vean las distribuciones de pago"""
+    from ventas.models import DistribucionPago, ResumenComisionesPlataforma
+    from django.db.models import Sum, Count
+    from django.core.paginator import Paginator
+    import json
+    
+    # Filtros
+    estado_filtro = request.GET.get('estado', '')
+    terma_filtro = request.GET.get('terma', '')
+    mes_filtro = request.GET.get('mes', '')
+    año_filtro = request.GET.get('año', '')
+    
+    # Query base
+    distribuciones = DistribucionPago.objects.select_related(
+        'compra', 'terma', 'plan_utilizado'
+    ).order_by('-fecha_calculo')
+    
+    # Aplicar filtros
+    if estado_filtro:
+        distribuciones = distribuciones.filter(estado=estado_filtro)
+    
+    if terma_filtro:
+        distribuciones = distribuciones.filter(terma__nombre_terma__icontains=terma_filtro)
+    
+    if mes_filtro and año_filtro:
+        distribuciones = distribuciones.filter(
+            fecha_calculo__month=mes_filtro,
+            fecha_calculo__year=año_filtro
+        )
+    
+    # Paginación
+    paginator = Paginator(distribuciones, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Estadísticas generales
+    stats = DistribucionPago.objects.aggregate(
+        total_ventas=Sum('monto_total'),
+        total_comisiones=Sum('monto_comision_plataforma'),
+        total_pagado_termas=Sum('monto_para_terma'),
+        total_transacciones=Count('id')
+    )
+    
+    # Resúmenes mensuales recientes
+    resumenes = ResumenComisionesPlataforma.objects.order_by('-año', '-mes')[:12]
+    
+    # Obtener lista de termas para el filtro
+    termas = Terma.objects.filter(estado_suscripcion='activa').order_by('nombre_terma')
+    
+    context = {
+        'page_obj': page_obj,
+        'distribuciones': page_obj,
+        'stats': stats,
+        'resumenes': resumenes,
+        'termas': termas,
+        'filtros': {
+            'estado': estado_filtro,
+            'terma': terma_filtro,
+            'mes': mes_filtro,
+            'año': año_filtro,
+        },
+        'estados_choices': DistribucionPago.ESTADO_DISTRIBUCION,
+        'current_year': timezone.now().year,
+    }
+    
+    return render(request, 'termas/admin/distribuciones_pago.html', context)
+
+
+def dashboard_comisiones_terma(request, terma_id):
+    """Vista para que una terma vea sus propias comisiones y pagos"""
+    from ventas.models import DistribucionPago, HistorialPagoTerma
+    from ventas.utils import obtener_resumen_comisiones_terma
+    from django.db.models import Sum, Count
+    from usuarios.decorators import admin_terma_required
+    
+    # Verificar que el usuario es admin de esta terma
+    terma = get_object_or_404(Terma, id=terma_id)
+    
+    # Obtener mes y año de los parámetros o usar el actual
+    mes = request.GET.get('mes', timezone.now().month)
+    año = request.GET.get('año', timezone.now().year)
+    
+    try:
+        mes = int(mes)
+        año = int(año)
+    except (ValueError, TypeError):
+        mes = timezone.now().month
+        año = timezone.now().year
+    
+    # Obtener resumen del mes actual
+    resumen_actual = obtener_resumen_comisiones_terma(terma, mes, año)
+    
+    # Distribuciones del mes
+    distribuciones_mes = DistribucionPago.objects.filter(
+        terma=terma,
+        fecha_calculo__month=mes,
+        fecha_calculo__year=año
+    ).select_related('compra', 'plan_utilizado').order_by('-fecha_calculo')
+    
+    # Historial de pagos del mes
+    pagos_mes = HistorialPagoTerma.objects.filter(
+        terma=terma,
+        fecha_pago__month=mes,
+        fecha_pago__year=año
+    ).order_by('-fecha_pago')
+    
+    # Resumen histórico (últimos 12 meses)
+    resumen_historico = []
+    from datetime import datetime, timedelta
+    
+    for i in range(12):
+        fecha = datetime.now() - timedelta(days=30*i)
+        resumen = obtener_resumen_comisiones_terma(terma, fecha.month, fecha.year)
+        if resumen['cantidad_transacciones'] > 0:
+            resumen_historico.append(resumen)
+    
+    context = {
+        'terma': terma,
+        'resumen_actual': resumen_actual,
+        'distribuciones_mes': distribuciones_mes,
+        'pagos_mes': pagos_mes,
+        'resumen_historico': resumen_historico[:6],  # Solo 6 meses más recientes
+        'mes_actual': mes,
+        'año_actual': año,
+        'plan_actual': terma.plan_actual,
+    }
+    
+    return render(request, 'termas/dashboard_comisiones.html', context)
+
+
+@admin_general_required
+def reporte_comisiones_diarias(request):
+    """Vista para mostrar reportes detallados de comisiones diarias"""
+    from ventas.utils import (
+        obtener_reporte_comisiones_diarias, 
+        obtener_acumulado_comisiones_plataforma,
+        obtener_top_termas_comisiones
+    )
+    from datetime import datetime, timedelta
+    from django.utils import timezone
+    
+    # Obtener parámetros de filtro
+    fecha_inicio_str = request.GET.get('fecha_inicio')
+    fecha_fin_str = request.GET.get('fecha_fin')
+    terma_id = request.GET.get('terma_id')
+    
+    # Procesar fechas
+    try:
+        if fecha_inicio_str:
+            fecha_inicio = datetime.strptime(fecha_inicio_str, '%Y-%m-%d').date()
+        else:
+            fecha_inicio = (timezone.now() - timedelta(days=30)).date()
+            
+        if fecha_fin_str:
+            fecha_fin = datetime.strptime(fecha_fin_str, '%Y-%m-%d').date()
+        else:
+            fecha_fin = timezone.now().date()
+    except ValueError:
+        # Si hay error en las fechas, usar valores por defecto
+        fecha_inicio = (timezone.now() - timedelta(days=30)).date()
+        fecha_fin = timezone.now().date()
+    
+    # Obtener reporte
+    reporte = obtener_reporte_comisiones_diarias(fecha_inicio, fecha_fin, terma_id)
+    
+    # Obtener acumulado histórico
+    acumulado_total = obtener_acumulado_comisiones_plataforma()
+    
+    # Obtener top termas del período
+    mes_actual = timezone.now().month
+    año_actual = timezone.now().year
+    top_termas_mes = obtener_top_termas_comisiones(10, mes_actual, año_actual)
+    top_termas_historico = obtener_top_termas_comisiones(10)
+    
+    # Obtener lista de termas para el filtro
+    termas = Terma.objects.filter(estado_suscripcion='activa').order_by('nombre_terma')
+    
+    # Calcular estadísticas adicionales
+    if reporte['reporte_diario']:
+        promedio_diario = {
+            'comisiones': reporte['totales_periodo']['total_comisiones'] / len(reporte['reporte_diario']) if len(reporte['reporte_diario']) > 0 else 0,
+            'ventas': reporte['totales_periodo']['total_ventas'] / len(reporte['reporte_diario']) if len(reporte['reporte_diario']) > 0 else 0,
+            'transacciones': reporte['totales_periodo']['total_transacciones'] / len(reporte['reporte_diario']) if len(reporte['reporte_diario']) > 0 else 0
+        }
+    else:
+        promedio_diario = {'comisiones': 0, 'ventas': 0, 'transacciones': 0}
+    
+    context = {
+        'reporte': reporte,
+        'acumulado_total': acumulado_total,
+        'top_termas_mes': top_termas_mes,
+        'top_termas_historico': top_termas_historico,
+        'promedio_diario': promedio_diario,
+        'termas': termas,
+        'filtros': {
+            'fecha_inicio': fecha_inicio.strftime('%Y-%m-%d'),
+            'fecha_fin': fecha_fin.strftime('%Y-%m-%d'),
+            'terma_id': terma_id
+        },
+        'mes_actual': mes_actual,
+        'año_actual': año_actual,
+    }
+    
+    return render(request, 'termas/admin/reporte_comisiones_diarias.html', context)
+
+
+@admin_general_required
+def ver_detalle_distribucion(request, distribucion_id):
+    """
+    Vista para mostrar los detalles completos de una distribución de pago
+    """
+    distribucion = get_object_or_404(DistribucionPago, id=distribucion_id)
+    
+    context = {
+        'distribucion': distribucion,
+        'compra': distribucion.compra,
+        'terma': distribucion.terma,
+        'plan': distribucion.plan_utilizado,
+    }
+    
+    return render(request, 'termas/admin/detalle_distribucion.html', context)

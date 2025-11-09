@@ -1,0 +1,241 @@
+{% load static %}
+{% load precio_filters %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>Detalle de Distribución #{{ distribucion.id }}</title>
+    {% include 'partials/head.html' %}
+</head>
+<body class="flex min-h-screen bg-gray-50">
+    <!-- navbar / sidebar -->
+    {% include 'partials/navbar_admin_general.html' %}
+    
+    <main class="flex-1 p-6 md:ml-50">
+        <div class="max-w-4xl mx-auto">
+            <!-- Header -->
+            <div class="mb-8">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900 mb-2">
+                            <i class="fas fa-receipt text-blue-600 mr-2"></i>
+                            Distribución #{{ distribucion.id }}
+                        </h1>
+                        <p class="text-gray-600">Detalles completos de la distribución de pago</p>
+                    </div>
+                    <div>
+                        <a href="{% url 'termas:ver_distribuciones_pago' %}" 
+                           class="bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200">
+                            <i class="fas fa-arrow-left mr-2"></i>Volver
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Estado de la Distribución -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
+                <div class="p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-lg font-semibold text-gray-900 mb-2">Estado de la Distribución</h2>
+                            <div class="flex items-center space-x-4">
+                                {% if distribucion.estado == 'pendiente' %}
+                                    <span class="inline-flex px-3 py-1 text-sm font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                        <i class="fas fa-clock mr-1"></i>Pendiente
+                                    </span>
+                                {% elif distribucion.estado == 'procesado' %}
+                                    <span class="inline-flex px-3 py-1 text-sm font-semibold rounded-full bg-blue-100 text-blue-800">
+                                        <i class="fas fa-cog mr-1"></i>Procesado
+                                    </span>
+                                {% elif distribucion.estado == 'pagado_terma' %}
+                                    <span class="inline-flex px-3 py-1 text-sm font-semibold rounded-full bg-indigo-100 text-indigo-800">
+                                        <i class="fas fa-check mr-1"></i>Pagado a Terma
+                                    </span>
+                                {% elif distribucion.estado == 'completado' %}
+                                    <span class="inline-flex px-3 py-1 text-sm font-semibold rounded-full bg-green-100 text-green-800">
+                                        <i class="fas fa-check-circle mr-1"></i>Completado
+                                    </span>
+                                {% elif distribucion.estado == 'error' %}
+                                    <span class="inline-flex px-3 py-1 text-sm font-semibold rounded-full bg-red-100 text-red-800">
+                                        <i class="fas fa-exclamation-triangle mr-1"></i>Error
+                                    </span>
+                                {% endif %}
+                                <span class="text-sm text-gray-500">
+                                    Creado: {{ distribucion.fecha_calculo|date:"d/m/Y H:i" }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información de la Compra -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                    <div class="border-b border-gray-200 px-6 py-4">
+                        <h2 class="text-lg font-semibold text-gray-900">
+                            <i class="fas fa-shopping-cart text-blue-600 mr-2"></i>
+                            Información de la Compra
+                        </h2>
+                    </div>
+                    <div class="p-6">
+                        <dl class="space-y-4">
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">ID de Compra</dt>
+                                <dd class="text-lg font-semibold text-gray-900">#{{ compra.id }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Cliente</dt>
+                                <dd class="text-sm text-gray-900">
+                                    {{ compra.usuario.get_full_name|default:compra.usuario.email }}
+                                    <div class="text-xs text-gray-500">{{ compra.usuario.email }}</div>
+                                </dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Fecha de Compra</dt>
+                                <dd class="text-sm text-gray-900">{{ compra.fecha_compra|date:"d/m/Y H:i" }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Estado de Compra</dt>
+                                <dd class="text-sm">
+                                    {% if compra.estado_pago == 'pagado' %}
+                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                            Pagado
+                                        </span>
+                                    {% else %}
+                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                                            {{ compra.estado_pago|title }}
+                                        </span>
+                                    {% endif %}
+                                </dd>
+                            </div>
+                        </dl>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                    <div class="border-b border-gray-200 px-6 py-4">
+                        <h2 class="text-lg font-semibold text-gray-900">
+                            <i class="fas fa-hot-tub text-blue-600 mr-2"></i>
+                            Información de la Terma
+                        </h2>
+                    </div>
+                    <div class="p-6">
+                        <dl class="space-y-4">
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Nombre</dt>
+                                <dd class="text-lg font-semibold text-gray-900">{{ terma.nombre_terma }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Ubicación</dt>
+                                <dd class="text-sm text-gray-900">
+                                    {{ terma.direccion_terma }}
+                                    <div class="text-xs text-gray-500">{{ terma.comuna.nombre }}, {{ terma.comuna.region.nombre }}</div>
+                                </dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Contacto</dt>
+                                <dd class="text-sm text-gray-900">
+                                    {{ terma.email_terma }}
+                                    {% if terma.telefono_terma %}
+                                        <div class="text-xs text-gray-500">{{ terma.telefono_terma }}</div>
+                                    {% endif %}
+                                </dd>
+                            </div>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Distribución de Montos -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
+                <div class="border-b border-gray-200 px-6 py-4">
+                    <h2 class="text-lg font-semibold text-gray-900">
+                        <i class="fas fa-chart-pie text-green-600 mr-2"></i>
+                        Distribución de Montos
+                    </h2>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Monto Total -->
+                        <div class="text-center p-6 bg-blue-50 rounded-lg">
+                            <div class="text-3xl font-bold text-blue-600 mb-2">
+                                ${{ distribucion.monto_total|formato_precio }}
+                            </div>
+                            <div class="text-sm font-medium text-gray-700">Monto Total</div>
+                            <div class="text-xs text-gray-500 mt-1">100% de la venta</div>
+                        </div>
+
+                        <!-- Comisión Plataforma -->
+                        <div class="text-center p-6 bg-green-50 rounded-lg">
+                            <div class="text-3xl font-bold text-green-600 mb-2">
+                                ${{ distribucion.monto_comision_plataforma|formato_precio }}
+                            </div>
+                            <div class="text-sm font-medium text-gray-700">Comisión Plataforma</div>
+                            <div class="text-xs text-gray-500 mt-1">{{ distribucion.porcentaje_comision }}% del total</div>
+                        </div>
+
+                        <!-- Monto para Terma -->
+                        <div class="text-center p-6 bg-indigo-50 rounded-lg">
+                            <div class="text-3xl font-bold text-indigo-600 mb-2">
+                                ${{ distribucion.monto_para_terma|formato_precio }}
+                            </div>
+                            <div class="text-sm font-medium text-gray-700">Para la Terma</div>
+                            <div class="text-xs text-gray-500 mt-1">{{ distribucion.porcentaje_comision|floatformat:0|add:"-100"|slice:"1:" }}% del total</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Plan Utilizado -->
+            {% if plan %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
+                <div class="border-b border-gray-200 px-6 py-4">
+                    <h2 class="text-lg font-semibold text-gray-900">
+                        <i class="fas fa-crown text-yellow-500 mr-2"></i>
+                        Plan de Suscripción Utilizado
+                    </h2>
+                </div>
+                <div class="p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900 mb-2">
+                                {{ plan.get_nombre_display }}
+                                <span class="inline-flex px-3 py-1 text-sm font-semibold rounded-full bg-blue-100 text-blue-800 ml-2">
+                                    {{ plan.porcentaje_comision }}% comisión
+                                </span>
+                            </h3>
+                            <p class="text-gray-600">{{ plan.descripcion }}</p>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm text-gray-500">Límite de fotos</div>
+                            <div class="text-lg font-semibold text-gray-900">
+                                {% if plan.limite_fotos == -1 %}
+                                    Ilimitado
+                                {% else %}
+                                    {{ plan.limite_fotos }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Notas Adicionales -->
+            {% if distribucion.notas %}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                <div class="border-b border-gray-200 px-6 py-4">
+                    <h2 class="text-lg font-semibold text-gray-900">
+                        <i class="fas fa-sticky-note text-yellow-500 mr-2"></i>
+                        Notas Adicionales
+                    </h2>
+                </div>
+                <div class="p-6">
+                    <p class="text-gray-700">{{ distribucion.notas }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </main>
+</body>
+</html>

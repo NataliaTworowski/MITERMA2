@@ -77,12 +77,32 @@
 
             <!-- Reportes -->
             <li>
-                <a href="#" class="flex items-center space-x-3 px-4 py-3 rounded-lg hover:bg-slate-800 transition-colors duration-200">
-                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"></path>
+                <button type="button" class="flex items-center justify-between w-full px-4 py-3 rounded-lg hover:bg-slate-800 transition-colors duration-200" onclick="toggleSubmenu('reportes')">
+                    <div class="flex items-center space-x-3">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z"></path>
+                        </svg>
+                        <span>Reportes</span>
+                    </div>
+                    <svg class="w-4 h-4 transition-transform" id="reportes-arrow" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"></path>
                     </svg>
-                    <span>Reportes</span>
-                </a>
+                </button>
+                <div id="reportes-submenu" class="hidden mt-1 ml-8 space-y-1">
+                    <a href="{% url 'termas:admin_reporte_comisiones' %}" class="flex items-center space-x-2 px-4 py-2 text-sm rounded-lg {% if request.resolver_match.url_name == 'admin_reporte_comisiones' %}bg-blue-600 text-white{% else %}text-slate-300 hover:text-white hover:bg-slate-700{% endif %} transition-colors duration-200">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"></path>
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd"></path>
+                        </svg>
+                        <span>Comisiones Diarias</span>
+                    </a>
+                    <a href="{% url 'termas:admin_distribuciones_pago' %}" class="flex items-center space-x-2 px-4 py-2 text-sm rounded-lg {% if request.resolver_match.url_name == 'admin_distribuciones_pago' %}bg-blue-600 text-white{% else %}text-slate-300 hover:text-white hover:bg-slate-700{% endif %} transition-colors duration-200">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
+                        </svg>
+                        <span>Distribuciones</span>
+                    </a>
+                </div>
             </li>
 
             <!-- Configuración -->
@@ -145,6 +165,23 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.key === 'Escape') {
             closeSidebar();
         }
+    });
+});
+
+// Función para manejar submenus
+function toggleSubmenu(menuId) {
+    const submenu = document.getElementById(menuId + '-submenu');
+    const arrow = document.getElementById(menuId + '-arrow');
+    
+    if (submenu.classList.contains('hidden')) {
+        submenu.classList.remove('hidden');
+        arrow.style.transform = 'rotate(180deg)';
+    } else {
+        submenu.classList.add('hidden');
+        arrow.style.transform = 'rotate(0deg)';
+    }
+}
+</script>
     });
 });
 </script>

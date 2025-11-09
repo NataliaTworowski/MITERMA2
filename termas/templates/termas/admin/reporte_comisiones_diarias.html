@@ -1,0 +1,337 @@
+{% load static %}
+{% load precio_filters %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>Reportes de Comisiones Diarias - Administración</title>
+    {% include 'partials/head.html' %}
+</head>
+<body class="flex min-h-screen bg-gray-50">
+    <!-- navbar / sidebar -->
+    {% include 'partials/navbar_admin_general.html' %}
+    
+    <main class="flex-1 p-6 md:ml-50">
+        <div class="max-w-7xl mx-auto">
+            <!-- Header -->
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">
+                    <i class="fas fa-chart-line text-blue-600 mr-2"></i>
+                    Reporte de Comisiones Diarias
+                </h1>
+                <p class="text-gray-600">Análisis detallado de comisiones generadas por la plataforma</p>
+            </div>
+
+            <!-- Estadísticas Principales -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg text-white p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-semibold mb-1">Acumulado Total</h3>
+                            <p class="text-2xl font-bold">${{ acumulado_total|formato_precio }}</p>
+                            <p class="text-blue-100 text-sm">Histórico de comisiones</p>
+                        </div>
+                        <div class="text-blue-200">
+                            <i class="fas fa-coins text-3xl"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-xl shadow-lg text-white p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-semibold mb-1">Período Actual</h3>
+                            <p class="text-2xl font-bold">${{ reporte.totales_periodo.total_comisiones|default:0|formato_precio }}</p>
+                            <p class="text-green-100 text-sm">{{ reporte.fecha_inicio|date:"d/m/Y" }} - {{ reporte.fecha_fin|date:"d/m/Y" }}</p>
+                        </div>
+                        <div class="text-green-200">
+                            <i class="fas fa-calendar-check text-3xl"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-xl shadow-lg text-white p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-semibold mb-1">Promedio Diario</h3>
+                            <p class="text-2xl font-bold">${{ promedio_diario.comisiones|formato_precio }}</p>
+                            <p class="text-indigo-100 text-sm">{{ promedio_diario.transacciones|floatformat:1 }} transacciones/día</p>
+                        </div>
+                        <div class="text-indigo-200">
+                            <i class="fas fa-chart-bar text-3xl"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl shadow-lg text-white p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-semibold mb-1">Días Activos</h3>
+                            <p class="text-2xl font-bold">{{ reporte.dias_con_actividad }}</p>
+                            <p class="text-yellow-100 text-sm">Con transacciones</p>
+                        </div>
+                        <div class="text-yellow-200">
+                            <i class="fas fa-calendar-alt text-3xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtros -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
+                <div class="border-b border-gray-200 px-6 py-4">
+                    <h2 class="text-lg font-semibold text-gray-900">
+                        <i class="fas fa-filter text-gray-600 mr-2"></i>
+                        Filtros de Búsqueda
+                    </h2>
+                </div>
+                <div class="p-6">
+                    <form method="GET" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                        <div>
+                            <label for="fecha_inicio" class="block text-sm font-medium text-gray-700 mb-2">Fecha Inicio</label>
+                            <input type="date" name="fecha_inicio" id="fecha_inicio" 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   value="{{ filtros.fecha_inicio }}">
+                        </div>
+                        <div>
+                            <label for="fecha_fin" class="block text-sm font-medium text-gray-700 mb-2">Fecha Fin</label>
+                            <input type="date" name="fecha_fin" id="fecha_fin" 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                   value="{{ filtros.fecha_fin }}">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label for="terma_id" class="block text-sm font-medium text-gray-700 mb-2">Terma Específica</label>
+                            <select name="terma_id" id="terma_id" 
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="">Todas las termas</option>
+                                {% for terma in termas %}
+                                    <option value="{{ terma.id }}" {% if filtros.terma_id == terma.id|stringformat:"s" %}selected{% endif %}>
+                                        {{ terma.nombre_terma }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="flex items-end">
+                            <button type="submit" 
+                                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200">
+                                <i class="fas fa-search mr-2"></i>Filtrar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Reporte Diario -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
+                <div class="border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+                    <h2 class="text-lg font-semibold text-gray-900">
+                        <i class="fas fa-table text-gray-600 mr-2"></i>
+                        Reporte Diario Detallado
+                    </h2>
+                    <button onclick="exportarCSV()" 
+                            class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200">
+                        <i class="fas fa-download mr-2"></i>Exportar CSV
+                    </button>
+                </div>
+                <div class="p-6">
+                    {% if reporte.reporte_diario %}
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200" id="tablaReporte">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Terma</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">% Comisión</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ventas Totales</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Comisión Ganada</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pagado a Terma</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transacciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    {% for dia in reporte.reporte_diario %}
+                                        {% for terma_nombre, datos in dia.termas.items %}
+                                            <tr class="hover:bg-gray-50">
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <div class="text-sm font-medium text-gray-900">{{ dia.fecha|date:"d/m/Y" }}</div>
+                                                    <div class="text-sm text-gray-500">{{ dia.fecha|date:"l" }}</div>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <div class="text-sm font-medium text-blue-600">{{ terma_nombre }}</div>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                                                        {{ datos.plan }}
+                                                    </span>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <div class="text-sm font-medium text-gray-900">{{ datos.porcentaje_comision }}%</div>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <div class="text-sm font-medium text-gray-900">${{ datos.ventas|formato_precio }}</div>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <div class="text-sm font-medium text-green-600">${{ datos.comisiones|formato_precio }}</div>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <div class="text-sm font-medium text-blue-600">${{ datos.pagado_terma|formato_precio }}</div>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                                                        {{ datos.transacciones }}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                        <!-- Fila de totales del día -->
+                                        <tr class="bg-gray-50 font-medium">
+                                            <td colspan="4" class="px-6 py-4 text-right text-sm font-medium text-gray-900">
+                                                Total {{ dia.fecha|date:"d/m/Y" }}:
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">${{ dia.totales.total_ventas|formato_precio }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-600">${{ dia.totales.total_comisiones|formato_precio }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-600">${{ dia.totales.total_pagado_termas|formato_precio }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{{ dia.totales.total_transacciones }}</td>
+                                        </tr>
+                                        {% if not forloop.last %}
+                                            <tr><td colspan="8" class="py-2"></td></tr>
+                                        {% endif %}
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot class="bg-gray-800 text-white">
+                                    <tr>
+                                        <th colspan="4" class="px-6 py-4 text-right text-sm font-medium">TOTALES DEL PERÍODO:</th>
+                                        <th class="px-6 py-4 whitespace-nowrap text-sm font-bold">${{ reporte.totales_periodo.total_ventas|default:0|formato_precio }}</th>
+                                        <th class="px-6 py-4 whitespace-nowrap text-sm font-bold text-yellow-300">${{ reporte.totales_periodo.total_comisiones|default:0|formato_precio }}</th>
+                                        <th class="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-300">${{ reporte.totales_periodo.total_pagado_termas|default:0|formato_precio }}</th>
+                                        <th class="px-6 py-4 whitespace-nowrap text-sm font-bold">{{ reporte.totales_periodo.total_transacciones|default:0 }}</th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-12">
+                            <i class="fas fa-chart-line text-6xl text-gray-300 mb-4"></i>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">No hay datos para el período seleccionado</h3>
+                            <p class="text-gray-500">Prueba ajustando los filtros de fecha o seleccionando una terma específica.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Top Termas -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                    <div class="border-b border-gray-200 px-6 py-4">
+                        <h2 class="text-lg font-semibold text-gray-900">
+                            <i class="fas fa-trophy text-yellow-500 mr-2"></i>
+                            Top Termas del Mes ({{ mes_actual }}/{{ año_actual }})
+                        </h2>
+                    </div>
+                    <div class="p-6">
+                        {% if top_termas_mes %}
+                            <div class="space-y-4">
+                                {% for terma in top_termas_mes %}
+                                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                                        <div>
+                                            <h3 class="font-semibold text-gray-900">{{ terma.terma__nombre_terma }}</h3>
+                                            <p class="text-sm text-gray-500">{{ terma.transacciones }} transacciones</p>
+                                        </div>
+                                        <div class="text-right">
+                                            <p class="font-bold text-green-600">${{ terma.total_comisiones|formato_precio }}</p>
+                                            <p class="text-sm text-gray-500">de ${{ terma.total_ventas|formato_precio }}</p>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-8">
+                                <i class="fas fa-calendar-times text-gray-300 text-4xl mb-3"></i>
+                                <p class="text-gray-500">No hay datos para este mes</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+                    <div class="border-b border-gray-200 px-6 py-4">
+                        <h2 class="text-lg font-semibold text-gray-900">
+                            <i class="fas fa-star text-yellow-500 mr-2"></i>
+                            Top Termas Histórico
+                        </h2>
+                    </div>
+                    <div class="p-6">
+                        {% if top_termas_historico %}
+                            <div class="space-y-4">
+                                {% for terma in top_termas_historico %}
+                                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                                        <div>
+                                            <h3 class="font-semibold text-gray-900">{{ terma.terma__nombre_terma }}</h3>
+                                            <p class="text-sm text-gray-500">{{ terma.transacciones }} transacciones totales</p>
+                                        </div>
+                                        <div class="text-right">
+                                            <p class="font-bold text-green-600">${{ terma.total_comisiones|formato_precio }}</p>
+                                            <p class="text-sm text-gray-500">de ${{ terma.total_ventas|formato_precio }}</p>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-8">
+                                <i class="fas fa-history text-gray-300 text-4xl mb-3"></i>
+                                <p class="text-gray-500">No hay datos históricos</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            function exportarCSV() {
+                const tabla = document.getElementById('tablaReporte');
+                let csv = 'Fecha,Terma,Plan,% Comisión,Ventas Totales,Comisión Ganada,Pagado a Terma,Transacciones\n';
+                
+                const filas = tabla.querySelectorAll('tbody tr:not(.bg-gray-50)');
+                filas.forEach(fila => {
+                    const celdas = fila.querySelectorAll('td');
+                    if (celdas.length > 0) {
+                        const fecha = celdas[0].textContent.trim().split('\n')[0];
+                        const terma = celdas[1].textContent.trim();
+                        const plan = celdas[2].textContent.trim();
+                        const porcentaje = celdas[3].textContent.trim();
+                        const ventas = celdas[4].textContent.trim();
+                        const comision = celdas[5].textContent.trim();
+                        const pagado = celdas[6].textContent.trim();
+                        const transacciones = celdas[7].textContent.trim();
+                        
+                        csv += `"${fecha}","${terma}","${plan}","${porcentaje}","${ventas}","${comision}","${pagado}","${transacciones}"\n`;
+                    }
+                });
+                
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', `reporte_comisiones_${new Date().getTime()}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }
+
+            // Auto-actualizar fecha fin al cambiar fecha inicio
+            document.getElementById('fecha_inicio').addEventListener('change', function() {
+                const fechaInicio = new Date(this.value);
+                const fechaFin = document.getElementById('fecha_fin');
+                
+                if (fechaInicio && !fechaFin.value) {
+                    const fechaFinSugerida = new Date(fechaInicio);
+                    fechaFinSugerida.setDate(fechaFinSugerida.getDate() + 30);
+                    fechaFin.value = fechaFinSugerida.toISOString().split('T')[0];
+                }
+            });
+        </script>
+    </main>
+</body>
+</html>

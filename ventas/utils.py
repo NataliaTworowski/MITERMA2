@@ -303,3 +303,370 @@ Por favor, presenta este código QR al llegar a la terma.
         print(f"[EMAIL] Error al enviar correo: {str(e)}")
         logger.error(f"Error al enviar correo: {str(e)}", exc_info=True)
         raise  # Re-lanzar la excepción para que se maneje en la vista
+
+
+# =================== SISTEMA DE DISTRIBUCIÓN DE PAGOS ===================
+
+def crear_distribucion_pago(compra):
+    """
+    Crea y calcula la distribución de pago para una compra
+    """
+    from .models import DistribucionPago
+    from django.utils import timezone
+    from decimal import Decimal
+    
+    try:
+        # Verificar si ya existe una distribución para esta compra
+        distribucion_existente = DistribucionPago.objects.filter(compra=compra).first()
+        if distribucion_existente:
+            logging.info(f"Distribución ya existe para compra {compra.id}")
+            return distribucion_existente
+        
+        # Obtener el porcentaje de comisión del plan actual de la terma
+        if compra.terma.plan_actual:
+            porcentaje_comision = compra.terma.plan_actual.porcentaje_comision
+            plan_utilizado = compra.terma.plan_actual
+        else:
+            # Si no tiene plan, usar comisión por defecto
+            porcentaje_comision = compra.terma.porcentaje_comision_actual
+            plan_utilizado = None
+        
+        # Calcular montos
+        monto_total = compra.total
+        monto_comision_plataforma = (monto_total * porcentaje_comision) / Decimal('100')
+        monto_para_terma = monto_total - monto_comision_plataforma
+        
+        # Crear nueva distribución con todos los campos calculados
+        distribucion = DistribucionPago.objects.create(
+            compra=compra,
+            terma=compra.terma,
+            plan_utilizado=plan_utilizado,
+            monto_total=monto_total,
+            porcentaje_comision=porcentaje_comision,
+            monto_comision_plataforma=monto_comision_plataforma,
+            monto_para_terma=monto_para_terma
+        )
+        
+        logging.info(f"Distribución creada para compra {compra.id}: "
+                    f"Total: ${distribucion.monto_total}, "
+                    f"Comisión: ${distribucion.monto_comision_plataforma}, "
+                    f"Para terma: ${distribucion.monto_para_terma}")
+        
+        return distribucion
+        
+    except Exception as e:
+        logging.error(f"Error al crear distribución de pago para compra {compra.id}: {str(e)}")
+        raise
+
+
+def procesar_distribucion_pago(distribucion):
+    """
+    Procesa la distribución de pago (marca como procesado y actualiza resúmenes)
+    """
+    from .models import ResumenComisionesPlataforma
+    from django.utils import timezone
+    from datetime import datetime
+    
+    try:
+        # Marcar como procesado
+        distribucion.marcar_como_procesado()
+        
+        # Actualizar resumen mensual de comisiones
+        fecha = distribucion.fecha_calculo
+        mes = fecha.month
+        año = fecha.year
+        
+        resumen, created = ResumenComisionesPlataforma.objects.get_or_create(
+            mes=mes,
+            año=año,
+            defaults={
+                'total_ventas': 0,
+                'total_comisiones': 0,
+                'total_pagado_termas': 0,
+                'cantidad_transacciones': 0
+            }
+        )
+        
+        # Actualizar totales
+        resumen.total_ventas += distribucion.monto_total
+        resumen.total_comisiones += distribucion.monto_comision_plataforma
+        resumen.total_pagado_termas += distribucion.monto_para_terma
+        resumen.cantidad_transacciones += 1
+        resumen.save()
+        
+        logging.info(f"Distribución {distribucion.id} procesada y resumen mensual actualizado")
+        
+        return True
+        
+    except Exception as e:
+        logging.error(f"Error al procesar distribución {distribucion.id}: {str(e)}")
+        return False
+
+
+def simular_pago_terma(distribucion, metodo_pago="Transferencia Bancaria", referencia=None):
+    """
+    Simula el envío de pago a la terma (para ambiente de testing)
+    En producción, aquí se integraría con el sistema de pagos real
+    """
+    from .models import HistorialPagoTerma
+    from django.utils import timezone
+    import uuid
+    
+    try:
+        # Generar referencia si no se proporciona
+        if not referencia:
+            referencia = f"SIM-{uuid.uuid4().hex[:8].upper()}"
+        
+        # Crear registro de pago
+        pago = HistorialPagoTerma.objects.create(
+            distribucion=distribucion,
+            terma=distribucion.terma,
+            monto_pagado=distribucion.monto_para_terma,
+            metodo_pago_usado=metodo_pago,
+            referencia_externa=referencia,
+            info_pago_terma={
+                'email_terma': distribucion.terma.email_terma,
+                'rut_empresa': distribucion.terma.rut_empresa,
+                'nombre_terma': distribucion.terma.nombre_terma,
+                'plan_utilizado': distribucion.plan_utilizado.nombre if distribucion.plan_utilizado else 'Sin plan'
+            },
+            observaciones=f"Pago simulado para testing - Plan: {distribucion.plan_utilizado.nombre if distribucion.plan_utilizado else 'Sin plan'}",
+            exitoso=True
+        )
+        
+        # Marcar distribución como pagada
+        distribucion.marcar_pago_terma_enviado(referencia)
+        
+        logging.info(f"Pago simulado enviado a {distribucion.terma.nombre_terma}: "
+                    f"${distribucion.monto_para_terma} - Ref: {referencia}")
+        
+        return pago
+        
+    except Exception as e:
+        logging.error(f"Error al simular pago para distribución {distribucion.id}: {str(e)}")
+        return None
+
+
+def completar_distribucion_pago(distribucion):
+    """
+    Completa todo el proceso de distribución de pago
+    """
+    try:
+        # Marcar como completado
+        distribucion.marcar_completado()
+        
+        logging.info(f"Distribución {distribucion.id} completada exitosamente")
+        return True
+        
+    except Exception as e:
+        logging.error(f"Error al completar distribución {distribucion.id}: {str(e)}")
+        return False
+
+
+def procesar_pago_completo(compra):
+    """
+    Función principal que maneja todo el flujo de distribución de pago
+    Esta función debe ser llamada cuando una compra cambia a estado 'pagado'
+    """
+    try:
+        logging.info(f"Iniciando procesamiento completo de pago para compra {compra.id}")
+        
+        # 1. Crear distribución de pago
+        distribucion = crear_distribucion_pago(compra)
+        
+        # 2. Procesar la distribución (actualizar resúmenes)
+        if not procesar_distribucion_pago(distribucion):
+            raise Exception("Error al procesar distribución")
+        
+        # 3. Simular envío de pago a la terma (en testing)
+        pago = simular_pago_terma(distribucion)
+        if not pago:
+            raise Exception("Error al simular pago a terma")
+        
+        # 4. Completar el proceso
+        if not completar_distribucion_pago(distribucion):
+            raise Exception("Error al completar distribución")
+        
+        logging.info(f"Pago procesado completamente para compra {compra.id}")
+        return distribucion
+        
+    except Exception as e:
+        logging.error(f"Error en procesamiento completo de pago para compra {compra.id}: {str(e)}")
+        # Marcar distribución con error si existe
+        if 'distribucion' in locals():
+            distribucion.estado = 'error'
+            distribucion.observaciones = f"Error en procesamiento: {str(e)}"
+            distribucion.save()
+        raise
+
+
+def obtener_resumen_comisiones_terma(terma, mes=None, año=None):
+    """
+    Obtiene un resumen de las comisiones y pagos para una terma específica
+    """
+    from .models import DistribucionPago, HistorialPagoTerma
+    from django.db.models import Sum, Count
+    from django.utils import timezone
+    
+    # Si no se especifica mes/año, usar el mes actual
+    if not mes or not año:
+        hoy = timezone.now()
+        mes = hoy.month
+        año = hoy.year
+    
+    # Filtrar distribuciones de la terma para el período
+    distribuciones = DistribucionPago.objects.filter(
+        terma=terma,
+        fecha_calculo__month=mes,
+        fecha_calculo__year=año
+    )
+    
+    # Calcular totales
+    resumen = distribuciones.aggregate(
+        total_ventas=Sum('monto_total'),
+        total_comisiones_pagadas=Sum('monto_comision_plataforma'),
+        total_recibido=Sum('monto_para_terma'),
+        cantidad_transacciones=Count('id')
+    )
+    
+    # Obtener historial de pagos
+    pagos = HistorialPagoTerma.objects.filter(
+        terma=terma,
+        fecha_pago__month=mes,
+        fecha_pago__year=año,
+        exitoso=True
+    )
+    
+    resumen.update({
+        'mes': mes,
+        'año': año,
+        'terma': terma.nombre_terma,
+        'plan_actual': terma.plan_actual.nombre if terma.plan_actual else 'Sin plan',
+        'porcentaje_comision_actual': terma.porcentaje_comision_actual,
+        'pagos_realizados': pagos.count(),
+        'ultimo_pago': pagos.first().fecha_pago if pagos.exists() else None
+    })
+    
+    return resumen
+
+
+def obtener_reporte_comisiones_diarias(fecha_inicio=None, fecha_fin=None, terma_id=None):
+    """
+    Obtiene reporte detallado de comisiones diarias por terma
+    """
+    from .models import DistribucionPago
+    from django.db.models import Sum, Count, Q
+    from django.utils import timezone
+    from datetime import datetime, timedelta
+    from collections import defaultdict
+    
+    # Fechas por defecto (último mes)
+    if not fecha_fin:
+        fecha_fin = timezone.now().date()
+    if not fecha_inicio:
+        fecha_inicio = fecha_fin - timedelta(days=30)
+    
+    # Query base
+    query = Q(fecha_calculo__date__gte=fecha_inicio, fecha_calculo__date__lte=fecha_fin)
+    if terma_id:
+        query &= Q(terma_id=terma_id)
+    
+    distribuciones = DistribucionPago.objects.filter(query).select_related('terma', 'plan_utilizado')
+    
+    # Agrupar por fecha y terma
+    reporte_diario = defaultdict(lambda: defaultdict(lambda: {
+        'ventas': 0,
+        'comisiones': 0,
+        'pagado_terma': 0,
+        'transacciones': 0,
+        'plan': 'Sin plan',
+        'porcentaje_comision': 0
+    }))
+    
+    totales_dia = defaultdict(lambda: {
+        'total_ventas': 0,
+        'total_comisiones': 0,
+        'total_pagado_termas': 0,
+        'total_transacciones': 0
+    })
+    
+    for dist in distribuciones:
+        fecha = dist.fecha_calculo.date()
+        terma_nombre = dist.terma.nombre_terma
+        
+        reporte_diario[fecha][terma_nombre]['ventas'] += float(dist.monto_total)
+        reporte_diario[fecha][terma_nombre]['comisiones'] += float(dist.monto_comision_plataforma)
+        reporte_diario[fecha][terma_nombre]['pagado_terma'] += float(dist.monto_para_terma)
+        reporte_diario[fecha][terma_nombre]['transacciones'] += 1
+        reporte_diario[fecha][terma_nombre]['plan'] = dist.plan_utilizado.get_nombre_display() if dist.plan_utilizado else 'Sin plan'
+        reporte_diario[fecha][terma_nombre]['porcentaje_comision'] = float(dist.porcentaje_comision)
+        
+        # Totales del día
+        totales_dia[fecha]['total_ventas'] += float(dist.monto_total)
+        totales_dia[fecha]['total_comisiones'] += float(dist.monto_comision_plataforma)
+        totales_dia[fecha]['total_pagado_termas'] += float(dist.monto_para_terma)
+        totales_dia[fecha]['total_transacciones'] += 1
+    
+    # Convertir a formato de lista ordenada
+    reporte_final = []
+    for fecha in sorted(reporte_diario.keys(), reverse=True):
+        dia_data = {
+            'fecha': fecha,
+            'termas': dict(reporte_diario[fecha]),
+            'totales': totales_dia[fecha]
+        }
+        reporte_final.append(dia_data)
+    
+    # Calcular totales generales del período
+    totales_periodo = distribuciones.aggregate(
+        total_ventas=Sum('monto_total'),
+        total_comisiones=Sum('monto_comision_plataforma'),
+        total_pagado_termas=Sum('monto_para_terma'),
+        total_transacciones=Count('id')
+    )
+    
+    return {
+        'fecha_inicio': fecha_inicio,
+        'fecha_fin': fecha_fin,
+        'reporte_diario': reporte_final,
+        'totales_periodo': totales_periodo,
+        'dias_con_actividad': len(reporte_final)
+    }
+
+
+def obtener_acumulado_comisiones_plataforma():
+    """
+    Obtiene el monto total acumulado histórico de comisiones de la plataforma
+    """
+    from .models import DistribucionPago
+    from django.db.models import Sum
+    
+    total_historico = DistribucionPago.objects.filter(
+        estado__in=['procesado', 'pagado_terma', 'completado']
+    ).aggregate(
+        total_comisiones=Sum('monto_comision_plataforma')
+    )
+    
+    return total_historico['total_comisiones'] or 0
+
+
+def obtener_top_termas_comisiones(limite=10, mes=None, año=None):
+    """
+    Obtiene las termas que más comisiones han generado
+    """
+    from .models import DistribucionPago
+    from django.db.models import Sum, Count
+    from django.utils import timezone
+    
+    query = DistribucionPago.objects.all()
+    
+    if mes and año:
+        query = query.filter(fecha_calculo__month=mes, fecha_calculo__year=año)
+    
+    top_termas = query.values('terma__nombre_terma', 'terma__id').annotate(
+        total_comisiones=Sum('monto_comision_plataforma'),
+        total_ventas=Sum('monto_total'),
+        transacciones=Count('id')
+    ).order_by('-total_comisiones')[:limite]
+    
+    return list(top_termas)

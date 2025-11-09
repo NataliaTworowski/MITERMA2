@@ -37,6 +37,20 @@ def precio_sin_simbolo(value):
         return str(value)
 
 @register.filter
+def formato_precio(value):
+    """
+    Formatea un precio con separadores de miles.
+    """
+    if value is None or value == '':
+        return '0'
+    
+    try:
+        numero = int(float(value))
+        return f"{numero:,}".replace(',', '.')
+    except (ValueError, TypeError):
+        return str(value)
+
+@register.filter
 def duracion_formato(value):
     """
     Formatea duración en horas.

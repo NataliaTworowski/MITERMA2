@@ -524,6 +524,17 @@ def mercadopago_webhook(request):
                                     compra.save()
                                     print(f"[WEBHOOK] Compra {compra.id} actualizada")
                                     
+                                    # NUEVO: Procesar distribución de pago
+                                    try:
+                                        from ventas.utils import procesar_pago_completo
+                                        print(f"[WEBHOOK] Iniciando distribución de pago para compra {compra.id}")
+                                        distribucion = procesar_pago_completo(compra)
+                                        print(f"[WEBHOOK] Distribución de pago completada: ID {distribucion.id}")
+                                    except Exception as e:
+                                        import traceback
+                                        print(f"[WEBHOOK] Error en distribución de pago: {str(e)}")
+                                        print(traceback.format_exc())
+                                    
                                     # Enviar correo con la entrada
                                     try:
                                         from ventas.utils import enviar_entrada_por_correo
@@ -635,6 +646,17 @@ def pago_exitoso(request):
                             compra.fecha_confirmacion_pago = timezone.now()
                             compra.save()
                             print(f"[PAGO_EXITOSO] Compra {compra.id} actualizada a aprobado")
+                            
+                            # NUEVO: Procesar distribución de pago
+                            try:
+                                from ventas.utils import procesar_pago_completo
+                                print(f"[PAGO_EXITOSO] Iniciando distribución de pago para compra {compra.id}")
+                                distribucion = procesar_pago_completo(compra)
+                                print(f"[PAGO_EXITOSO] Distribución de pago completada: ID {distribucion.id}")
+                            except Exception as e:
+                                import traceback
+                                print(f"[PAGO_EXITOSO] Error en distribución de pago: {str(e)}")
+                                print(traceback.format_exc())
                             
                             # Enviar correo con la entrada
                             try:

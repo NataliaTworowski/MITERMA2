@@ -1,0 +1,374 @@
+{% load static %}
+{% load precio_filters %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>Dashboard de Comisiones - {{ terma.nombre_terma }}</title>
+    {% include 'partials/head.html' %}
+</head>
+<body class="flex min-h-screen bg-gray-50">
+    <!-- navbar / sidebar -->
+    {% include 'partials/navbar_adm_termas.html' %}
+    
+    <main class="flex-1 p-6 md:ml-50">
+        <div class="max-w-7xl mx-auto">
+            <!-- Header -->
+            <div class="mb-8">
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">
+                    <i class="fas fa-chart-line text-blue-600 mr-2"></i>
+                    Dashboard de Comisiones
+                </h1>
+                <p class="text-gray-600">{{ terma.nombre_terma }} - {{ mes_actual }}/{{ año_actual }}</p>
+            </div>
+
+            <!-- Información del Plan Actual -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
+                <div class="p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-lg font-semibold text-gray-900 mb-2">
+                                <i class="fas fa-crown text-yellow-500 mr-2"></i>
+                                Plan Actual: 
+                                {% if plan_actual %}
+                                    <span class="inline-flex px-3 py-1 text-sm font-semibold rounded-full bg-blue-100 text-blue-800 ml-2">
+                                        {{ plan_actual.get_nombre_display }}
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex px-3 py-1 text-sm font-semibold rounded-full bg-gray-100 text-gray-800 ml-2">
+                                        Sin Plan
+                                    </span>
+                                {% endif %}
+                            </h2>
+                            <p class="text-gray-600">
+                                Comisión actual: <strong class="text-gray-900">{{ terma.porcentaje_comision_actual }}%</strong>
+                                {% if plan_actual %}
+                                    | Límite fotos: 
+                                    {% if plan_actual.limite_fotos == -1 %}
+                                        <strong class="text-green-600">Ilimitado</strong>
+                                    {% else %}
+                                        <strong class="text-gray-900">{{ plan_actual.limite_fotos }}</strong>
+                                    {% endif %}
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div>
+                            {% if plan_actual %}
+                                <span class="inline-flex items-center px-3 py-1 text-sm font-medium rounded-full bg-green-100 text-green-800">
+                                    <i class="fas fa-check-circle mr-1"></i>
+                                    Plan activo
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-3 py-1 text-sm font-medium rounded-full bg-yellow-100 text-yellow-800">
+                                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                                    Sin plan asignado
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resumen del Mes Actual -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg text-white p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-semibold mb-1">Ventas Totales</h3>
+                            <p class="text-2xl font-bold">${{ resumen_actual.total_ventas|default:0|formato_precio }}</p>
+                            <p class="text-blue-100 text-sm">{{ resumen_actual.cantidad_transacciones|default:0 }} transacciones</p>
+                        </div>
+                        <div class="text-blue-200">
+                            <i class="fas fa-shopping-cart text-3xl"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl shadow-lg text-white p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-semibold mb-1">Comisión Plataforma</h3>
+                            <p class="text-2xl font-bold">${{ resumen_actual.total_comisiones_pagadas|default:0|formato_precio }}</p>
+                            <p class="text-yellow-100 text-sm">{{ resumen_actual.porcentaje_comision_actual|default:0 }}% del total</p>
+                        </div>
+                        <div class="text-yellow-200">
+                            <i class="fas fa-percentage text-3xl"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gradient-to-r from-green-500 to-green-600 rounded-xl shadow-lg text-white p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-semibold mb-1">Recibido por Terma</h3>
+                            <p class="text-2xl font-bold">${{ resumen_actual.total_recibido|default:0|formato_precio }}</p>
+                            <p class="text-green-100 text-sm">Monto neto recibido</p>
+                        </div>
+                        <div class="text-green-200">
+                            <i class="fas fa-wallet text-3xl"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-xl shadow-lg text-white p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-lg font-semibold mb-1">Pagos Realizados</h3>
+                            <p class="text-2xl font-bold">{{ resumen_actual.pagos_realizados|default:0 }}</p>
+                            <p class="text-indigo-100 text-sm">
+                                {% if resumen_actual.ultimo_pago %}
+                                    Último: {{ resumen_actual.ultimo_pago|date:"d/m/Y" }}
+                                {% else %}
+                                    Sin pagos aún
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="text-indigo-200">
+                            <i class="fas fa-credit-card text-3xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Distribuciones del Mes -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
+                <div class="border-b border-gray-200 px-6 py-4">
+                    <h2 class="text-lg font-semibold text-gray-900">
+                        <i class="fas fa-list text-gray-600 mr-2"></i>
+                        Distribuciones del Mes
+                    </h2>
+                </div>
+                <div class="p-6">
+                    {% if distribuciones_mes %}
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Compra</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Venta</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Comisión</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Recibido</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    {% for dist in distribuciones_mes %}
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ dist.fecha_calculo|date:"d/m/Y" }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="text-sm font-medium text-gray-900">#{{ dist.compra.id }}</div>
+                                                <div class="text-sm text-gray-500">{{ dist.compra.usuario.get_full_name|default:dist.compra.usuario.email }}</div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="text-sm font-medium text-gray-900">${{ dist.monto_total|formato_precio }}</div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="text-sm font-medium text-yellow-600">${{ dist.monto_comision_plataforma|formato_precio }}</div>
+                                                <div class="text-sm text-gray-500">({{ dist.porcentaje_comision }}%)</div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="text-sm font-medium text-green-600">${{ dist.monto_para_terma|formato_precio }}</div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                {% if dist.estado == 'completado' %}
+                                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                                        Completado
+                                                    </span>
+                                                {% elif dist.estado == 'pagado_terma' %}
+                                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                                                        Pagado
+                                                    </span>
+                                                {% elif dist.estado == 'procesado' %}
+                                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800">
+                                                        Procesado
+                                                    </span>
+                                                {% elif dist.estado == 'pendiente' %}
+                                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                                        Pendiente
+                                                    </span>
+                                                {% else %}
+                                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
+                                                        {{ dist.estado }}
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-12">
+                            <i class="fas fa-chart-line text-6xl text-gray-300 mb-4"></i>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">No hay distribuciones este mes</h3>
+                            <p class="text-gray-500">Cuando tengas ventas, aparecerán aquí las distribuciones correspondientes.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Historial de Pagos -->
+            {% if pagos_mes %}
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
+                    <div class="border-b border-gray-200 px-6 py-4">
+                        <h2 class="text-lg font-semibold text-gray-900">
+                            <i class="fas fa-history text-gray-600 mr-2"></i>
+                            Historial de Pagos del Mes
+                        </h2>
+                    </div>
+                    <div class="p-6">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monto</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Método</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Referencia</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    {% for pago in pagos_mes %}
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ pago.fecha_pago|date:"d/m/Y H:i" }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="text-sm font-medium text-gray-900">${{ pago.monto_pagado|formato_precio }}</div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ pago.metodo_pago_usado }}</td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                {% if pago.referencia_externa %}
+                                                    <code class="text-sm bg-gray-100 px-2 py-1 rounded">{{ pago.referencia_externa }}</code>
+                                                {% else %}
+                                                    <span class="text-sm text-gray-500">-</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                {% if pago.exitoso %}
+                                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                                        Exitoso
+                                                    </span>
+                                                {% else %}
+                                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                                        Fallido
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Resumen Histórico -->
+            {% if resumen_historico %}
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-8">
+                    <div class="border-b border-gray-200 px-6 py-4">
+                        <h2 class="text-lg font-semibold text-gray-900">
+                            <i class="fas fa-chart-bar text-gray-600 mr-2"></i>
+                            Resumen Histórico (Últimos 6 Meses)
+                        </h2>
+                    </div>
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+                            {% for resumen in resumen_historico %}
+                                <div class="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500 text-center">
+                                    <h3 class="text-lg font-semibold text-gray-900 mb-3">{{ resumen.mes }}/{{ resumen.año }}</h3>
+                                    <div class="space-y-2">
+                                        <div>
+                                            <p class="text-xs text-gray-500">Ventas</p>
+                                            <p class="text-sm font-bold text-blue-600">${{ resumen.total_ventas|formato_precio }}</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-gray-500">Recibido</p>
+                                            <p class="text-sm font-bold text-green-600">${{ resumen.total_recibido|formato_precio }}</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs text-gray-500">{{ resumen.cantidad_transacciones }} ventas</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Botón flotante para cambiar período -->
+        <div class="fixed bottom-6 right-6">
+            <button type="button" 
+                    onclick="toggleModal()" 
+                    class="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-colors duration-200">
+                <i class="fas fa-calendar"></i>
+            </button>
+        </div>
+
+        <!-- Modal para selector de fecha -->
+        <div id="selectorFechaModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+            <div class="flex items-center justify-center min-h-screen p-4">
+                <div class="bg-white rounded-xl shadow-xl max-w-md w-full">
+                    <div class="border-b border-gray-200 px-6 py-4">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-semibold text-gray-900">Cambiar Período</h3>
+                            <button type="button" onclick="toggleModal()" class="text-gray-400 hover:text-gray-600">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <form method="GET" class="space-y-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="mes" class="block text-sm font-medium text-gray-700 mb-2">Mes</label>
+                                    <select name="mes" id="mes" 
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                        {% for i in "123456789012"|make_list %}
+                                            {% with month_num=forloop.counter %}
+                                                <option value="{{ month_num }}" {% if mes_actual == month_num %}selected{% endif %}>
+                                                    {{ month_num|date:"F" }}
+                                                </option>
+                                            {% endwith %}
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="año" class="block text-sm font-medium text-gray-700 mb-2">Año</label>
+                                    <select name="año" id="año" 
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                        {% for year in "2024 2025 2026"|make_list %}
+                                            <option value="{{ year }}" {% if año_actual == year|add:0 %}selected{% endif %}>
+                                                {{ year }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="flex justify-end space-x-3 mt-6">
+                                <button type="button" onclick="toggleModal()" 
+                                        class="px-4 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg transition-colors duration-200">
+                                    Cancelar
+                                </button>
+                                <button type="submit" 
+                                        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors duration-200">
+                                    Ver Período
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            function toggleModal() {
+                const modal = document.getElementById('selectorFechaModal');
+                modal.classList.toggle('hidden');
+            }
+        </script>
+    </main>
+</body>
+</html>

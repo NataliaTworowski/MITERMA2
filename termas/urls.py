@@ -16,6 +16,11 @@ urlpatterns = [
     path('rechazar_solicitud/<int:solicitud_id>/', views_admin.rechazar_solicitud, name='rechazar_solicitud'),
     path('detalles_solicitud/<int:solicitud_id>/', views_admin.detalles_solicitud, name='detalles_solicitud'),
     
+    # URLs de administración de pagos
+    path('admin/distribuciones-pago/', views_admin.ver_distribuciones_pago, name='ver_distribuciones_pago'),
+    path('admin/reporte-comisiones-diarias/', views_admin.reporte_comisiones_diarias, name='reporte_comisiones_diarias'),
+    path('admin/detalle-distribucion/<int:distribucion_id>/', views_admin.ver_detalle_distribucion, name='ver_detalle_distribucion'),
+    
     # URL para filtrar comentarios AJAX
     path('comentarios-filtrados/<int:terma_id>/', cargar_comentarios_filtrados, name='comentarios_filtrados'),
     
@@ -35,4 +40,9 @@ urlpatterns = [
     path('comprar/<int:terma_id>/', views.vista_terma, name='vista_terma'),
     path('suscripcion/', views.suscripcion, name='suscripcion'),
     path('cambiar_suscripcion/', views.cambiar_suscripcion, name='cambiar_suscripcion'),
+    
+    # URLs para distribuciones de pago
+    path('admin/distribuciones-pago/', views_admin.ver_distribuciones_pago, name='admin_distribuciones_pago'),
+    path('admin/reporte-comisiones-diarias/', views_admin.reporte_comisiones_diarias, name='admin_reporte_comisiones'),
+    path('dashboard-comisiones/<int:terma_id>/', views_admin.dashboard_comisiones_terma, name='dashboard_comisiones'),
 ]
