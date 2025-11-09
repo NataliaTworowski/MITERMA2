@@ -1,11 +1,9 @@
-// Variable global para almacenar el ID de la solicitud que se va a rechazar
+// Admin General JavaScript - Clean Version
 let solicitudParaRechazar = null;
 
 function mostrarDetalles(solicitudId) {
-    // Usar la URL directamente
     const url = `/termas/detalles_solicitud/${solicitudId}/`;
     
-    // Obtener detalles de la solicitud
     fetch(url)
         .then(response => response.json())
         .then(data => {
@@ -52,7 +50,6 @@ function mostrarDetalles(solicitudId) {
                     </div>
                 `;
                 
-                // Mostrar el modal
                 const modal = document.getElementById('modal-detalles');
                 modal.classList.remove('hidden');
             } else {
@@ -66,20 +63,15 @@ function mostrarDetalles(solicitudId) {
 }
 
 function cerrarModal() {
-    // Ocultar modal
     const modal = document.getElementById('modal-detalles');
     modal.classList.add('hidden');
 }
 
 function aprobarSolicitud(solicitudId) {
     if (confirm('¿Estás seguro de que deseas aprobar esta solicitud?')) {
-        // Obtener el token CSRF
         const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-        
-        // Usar la URL directamente
         const url = `/termas/aprobar_solicitud/${solicitudId}/`;
         
-        // Aquí se enviará la petición al backend
         fetch(url, {
             method: 'POST',
             headers: {
@@ -111,15 +103,9 @@ function aprobarSolicitud(solicitudId) {
 }
 
 function rechazarSolicitud(solicitudId) {
-    console.log('[DEBUG] rechazarSolicitud llamada con ID:', solicitudId);
-    
-    // Verificar si existe el modal
     const modal = document.getElementById('modal-rechazo');
-    console.log('[DEBUG] Modal encontrado:', modal);
     
     if (!modal) {
-        console.error('[ERROR] Modal de rechazo no encontrado en el DOM');
-        alert('Error: Modal no encontrado. Usando método alternativo.');
         const motivo = prompt('Por favor, ingrese el motivo del rechazo:');
         if (motivo !== null && motivo.trim()) {
             enviarRechazo(solicitudId, motivo.trim());
@@ -127,16 +113,10 @@ function rechazarSolicitud(solicitudId) {
         return;
     }
     
-    // Guardar el ID de la solicitud y mostrar el modal
     solicitudParaRechazar = solicitudId;
-    console.log('[DEBUG] solicitudParaRechazar establecida:', solicitudParaRechazar);
     
-    // Verificar y limpiar elementos
     const textarea = document.getElementById('motivo-rechazo-textarea');
     const errorDiv = document.getElementById('error-motivo');
-    
-    console.log('[DEBUG] Textarea encontrado:', textarea);
-    console.log('[DEBUG] Error div encontrado:', errorDiv);
     
     if (textarea) {
         textarea.value = '';
@@ -145,41 +125,16 @@ function rechazarSolicitud(solicitudId) {
         errorDiv.classList.add('hidden');
     }
     
-    // Mostrar el modal
-    console.log('[DEBUG] Mostrando modal...');
     modal.classList.remove('hidden');
-    modal.style.display = 'block';
-    modal.style.zIndex = '9999';
-    console.log('[DEBUG] Modal classes after show:', modal.className);
-    console.log('[DEBUG] Modal style display:', modal.style.display);
     
-    // Verificar si el modal es visible
-    const isVisible = modal.offsetWidth > 0 && modal.offsetHeight > 0;
-    console.log('[DEBUG] Modal visible?', isVisible);
-    
-    if (!isVisible) {
-        console.warn('[WARNING] Modal no parece estar visible, usando fallback');
-        modal.style.display = 'block';
-        modal.style.position = 'fixed';
-        modal.style.top = '0';
-        modal.style.left = '0';
-        modal.style.width = '100%';
-        modal.style.height = '100%';
-        modal.style.backgroundColor = 'rgba(0,0,0,0.5)';
-    }
-    
-    // Enfocar el textarea
     setTimeout(() => {
         if (textarea) {
             textarea.focus();
-            console.log('[DEBUG] Textarea enfocado');
         }
     }, 100);
 }
 
 function enviarRechazo(solicitudId, motivo) {
-    console.log('[DEBUG] enviarRechazo llamada:', solicitudId, motivo);
-    
     const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
     const url = `/termas/rechazar_solicitud/${solicitudId}/`;
     
@@ -210,17 +165,12 @@ function enviarRechazo(solicitudId, motivo) {
 }
 
 function cerrarModalRechazo() {
-    console.log('[DEBUG] cerrarModalRechazo llamada');
-    
     const modal = document.getElementById('modal-rechazo');
     if (modal) {
         modal.classList.add('hidden');
-        modal.style.display = 'none';
-        console.log('[DEBUG] Modal oculto');
     }
     
     solicitudParaRechazar = null;
-    console.log('[DEBUG] solicitudParaRechazar limpiada');
     
     const textarea = document.getElementById('motivo-rechazo-textarea');
     const errorDiv = document.getElementById('error-motivo');
@@ -250,57 +200,45 @@ function confirmarRechazo() {
         const url = `/termas/rechazar_solicitud/${solicitudParaRechazar}/`;
         
         const botonConfirmar = document.querySelector('#modal-rechazo button[onclick="confirmarRechazo()"]');
-        const textoOriginal = botonConfirmar.innerHTML;
-        botonConfirmar.disabled = true;
-        botonConfirmar.innerHTML = '<svg class="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Procesando...';
-        
-        fetch(url, {
-            method: 'POST',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrftoken
-            },
-            credentials: 'same-origin',
-            body: JSON.stringify({
-                motivo_rechazo: motivo
+        if (botonConfirmar) {
+            const textoOriginal = botonConfirmar.innerHTML;
+            botonConfirmar.disabled = true;
+            botonConfirmar.innerHTML = 'Procesando...';
+            
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrftoken
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify({
+                    motivo_rechazo: motivo
+                })
             })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                cerrarModalRechazo();
-                window.location.reload();
-            } else {
-                alert('Error al rechazar la solicitud: ' + data.message);
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    cerrarModalRechazo();
+                    window.location.reload();
+                } else {
+                    alert('Error al rechazar la solicitud: ' + data.message);
+                    botonConfirmar.disabled = false;
+                    botonConfirmar.innerHTML = textoOriginal;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al procesar la solicitud: ' + error.message);
                 botonConfirmar.disabled = false;
                 botonConfirmar.innerHTML = textoOriginal;
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error al procesar la solicitud: ' + error.message);
-            botonConfirmar.disabled = false;
-            botonConfirmar.innerHTML = textoOriginal;
-        });
-    }
-}
-
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
+            });
         }
     }
-    return cookieValue;
 }
 
+// Hacer funciones disponibles globalmente
 window.mostrarDetalles = mostrarDetalles;
 window.cerrarModal = cerrarModal;
 window.aprobarSolicitud = aprobarSolicitud;
@@ -308,35 +246,28 @@ window.rechazarSolicitud = rechazarSolicitud;
 window.cerrarModalRechazo = cerrarModalRechazo;
 window.confirmarRechazo = confirmarRechazo;
 
+// Eventos cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('[DEBUG] DOMContentLoaded ejecutado');
-    
     const modalRechazo = document.getElementById('modal-rechazo');
     const modalDetalles = document.getElementById('modal-detalles');
     const textarea = document.getElementById('motivo-rechazo-textarea');
     
-    console.log('[DEBUG] Elementos encontrados:');
-    console.log('- modal-rechazo:', modalRechazo);
-    console.log('- modal-detalles:', modalDetalles);
-    console.log('- motivo-rechazo-textarea:', textarea);
-    
+    // Cerrar modales con Escape
     document.addEventListener('keydown', function(event) {
         if (event.key === 'Escape') {
             if (modalRechazo && !modalRechazo.classList.contains('hidden')) {
-                console.log('[DEBUG] Cerrando modal rechazo con Escape');
                 cerrarModalRechazo();
             } else if (modalDetalles && !modalDetalles.classList.contains('hidden')) {
-                console.log('[DEBUG] Cerrando modal detalles con Escape');
                 cerrarModal();
             }
         }
     });
     
+    // Ctrl+Enter en textarea para enviar
     if (textarea) {
         textarea.addEventListener('keydown', function(event) {
             if (event.key === 'Enter' && event.ctrlKey) {
                 event.preventDefault();
-                console.log('[DEBUG] Ctrl+Enter detectado en textarea');
                 confirmarRechazo();
             }
         });

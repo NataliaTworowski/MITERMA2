@@ -339,7 +339,7 @@ def ver_distribuciones_pago(request):
         'current_year': timezone.now().year,
     }
     
-    return render(request, 'termas/admin/distribuciones_pago.html', context)
+    return render(request, 'administrador_general/distribuciones_pago.html', context)
 
 
 def dashboard_comisiones_terma(request, terma_id):
@@ -401,7 +401,7 @@ def dashboard_comisiones_terma(request, terma_id):
         'plan_actual': terma.plan_actual,
     }
     
-    return render(request, 'termas/dashboard_comisiones.html', context)
+    return render(request, 'administrador_termas/dashboard_comisiones.html', context)
 
 
 @admin_general_required
@@ -477,7 +477,7 @@ def reporte_comisiones_diarias(request):
         'año_actual': año_actual,
     }
     
-    return render(request, 'termas/admin/reporte_comisiones_diarias.html', context)
+    return render(request, 'administrador_general/reporte_comisiones_diarias.html', context)
 
 
 @admin_general_required
@@ -494,4 +494,4 @@ def ver_detalle_distribucion(request, distribucion_id):
         'plan': distribucion.plan_utilizado,
     }
     
-    return render(request, 'termas/admin/detalle_distribucion.html', context)
+    return render(request, 'administrador_general/detalle_distribucion.html', context)
