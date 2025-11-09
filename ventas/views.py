@@ -36,31 +36,71 @@ def pago(request, terma_id=None):
         from termas.models import ServicioTerma
         if datos.get('extras') and datos['extras'].strip():
             try:
-                print(f"\n[DEBUG] Procesando servicio extra: {datos['extras']}")
-                # Obtener el servicio por nombre
-                nombre_servicio = datos['extras'].split('x1')[0].strip()  # "Gimnasio x1 ($17.000 CLP)" -> "Gimnasio"
-                print(f"[DEBUG] Buscando servicio con nombre: {nombre_servicio}")
+                print(f"\n[DEBUG] Procesando servicios extra: {datos['extras']}")
                 
-                servicio = ServicioTerma.objects.filter(servicio__icontains=nombre_servicio).first()
-                if servicio:
-                    print(f"[DEBUG] Servicio encontrado - ID: {servicio.id}, Nombre: {servicio.servicio}")
-                    datos['extras_descripcion'] = f"{servicio.servicio} (${servicio.precio} CLP)"
-                    datos['servicio_extra_id'] = servicio.id
-                    # Save the service ID in session for later use
-                    request.session['servicio_extra_id'] = servicio.id
-                else:
-                    print(f"[DEBUG] No se encontró el servicio: {nombre_servicio}")
+                # Procesar múltiples servicios separados por coma
+                servicios_texto = datos['extras'].strip()
+                if servicios_texto == '-':
                     datos['extras_descripcion'] = '-'
-                    datos['servicio_extra_id'] = None
+                    datos['servicios_extra_ids'] = []
+                else:
+                    # Dividir por comas para obtener cada servicio
+                    servicios_individuales = [s.strip() for s in servicios_texto.split(',') if s.strip()]
+                    servicios_encontrados = []
+                    servicios_ids = []
+                    
+                    for servicio_texto in servicios_individuales:
+                        print(f"[DEBUG] Procesando servicio individual: {servicio_texto}")
+                        
+                        # Extraer nombre del servicio (antes de 'x' y los paréntesis)
+                        # Ejemplo: "Gimnasio x1 ($17.000)" -> "Gimnasio"
+                        # Ejemplo: "Masajes relajantes x2 ($28.000)" -> "Masajes relajantes"
+                        if ' x' in servicio_texto:
+                            nombre_servicio = servicio_texto.split(' x')[0].strip()
+                        else:
+                            nombre_servicio = servicio_texto.split('(')[0].strip()
+                        
+                        print(f"[DEBUG] Buscando servicio con nombre: {nombre_servicio}")
+                        
+                        # Extraer cantidad
+                        cantidad = 1
+                        if ' x' in servicio_texto:
+                            try:
+                                cantidad_texto = servicio_texto.split(' x')[1].split(' ')[0]
+                                cantidad = int(cantidad_texto)
+                            except:
+                                cantidad = 1
+                        
+                        # Buscar el servicio en la base de datos
+                        servicio = ServicioTerma.objects.filter(servicio__icontains=nombre_servicio).first()
+                        if servicio:
+                            print(f"[DEBUG] Servicio encontrado - ID: {servicio.id}, Nombre: {servicio.servicio}, Cantidad: {cantidad}")
+                            # Agregar el servicio tantas veces como la cantidad especificada
+                            for _ in range(cantidad):
+                                servicios_ids.append(servicio.id)
+                            servicios_encontrados.append(f"{servicio.servicio} x{cantidad} (${servicio.precio} CLP)")
+                        else:
+                            print(f"[DEBUG] No se encontró el servicio: {nombre_servicio}")
+                    
+                    if servicios_encontrados:
+                        datos['extras_descripcion'] = ', '.join(servicios_encontrados)
+                        datos['servicios_extra_ids'] = servicios_ids
+                        # Guardar los IDs en la sesión
+                        request.session['servicios_extra_ids'] = servicios_ids
+                        print(f"[DEBUG] Servicios guardados en sesión: {servicios_ids}")
+                    else:
+                        datos['extras_descripcion'] = '-'
+                        datos['servicios_extra_ids'] = []
+                        
             except Exception as e:
-                print(f"[DEBUG] Error al procesar servicio extra: {str(e)}")
+                print(f"[DEBUG] Error al procesar servicios extra: {str(e)}")
                 import traceback
                 print(traceback.format_exc())
                 datos['extras_descripcion'] = '-'
-                datos['servicio_extra_id'] = None
+                datos['servicios_extra_ids'] = []
         else:
             datos['extras_descripcion'] = '-'
-            datos['servicio_extra_id'] = None        # Obtener usuario
+            datos['servicios_extra_ids'] = []        # Obtener usuario
         usuario = None
         if request.user.is_authenticated:
             # Usuario autenticado con Django Auth
@@ -207,10 +247,62 @@ def pago(request, terma_id=None):
             print(f"[DEBUG] Tipo de datos extras: {type(datos.get('extras', ''))}")
             
             # Agregar servicios extra
-            if 'servicio_extra_id' in request.session:
+            if 'servicios_extra_ids' in request.session and request.session['servicios_extra_ids']:
+                try:
+                    from .models import ServicioExtraDetalle
+                    servicios_ids = request.session['servicios_extra_ids']
+                    print(f"\n[DEBUG] Recuperando servicios_extra_ids de sesión: {servicios_ids}")
+                    
+                    # Crear diccionario para contar servicios
+                    servicios_conteo = {}
+                    for servicio_id in servicios_ids:
+                        servicios_conteo[servicio_id] = servicios_conteo.get(servicio_id, 0) + 1
+                    
+                    print(f"[DEBUG] Conteo de servicios: {servicios_conteo}")
+                    
+                    # Limpiar servicios existentes del método anterior
+                    detalle.servicios.clear()
+                    
+                    # Crear registros en ServicioExtraDetalle
+                    for servicio_id, cantidad in servicios_conteo.items():
+                        try:
+                            servicio = ServicioTerma.objects.get(id=servicio_id)
+                            ServicioExtraDetalle.objects.create(
+                                detalle_compra=detalle,
+                                servicio=servicio,
+                                cantidad=cantidad,
+                                precio_unitario=servicio.precio
+                            )
+                            print(f"[DEBUG] ServicioExtraDetalle creado: {servicio.servicio} x{cantidad}")
+                        except ServicioTerma.DoesNotExist:
+                            print(f"[DEBUG] Servicio no encontrado con ID: {servicio_id}")
+                    
+                    # Guardar explícitamente
+                    detalle.save()
+                    
+                    # Verificar que se guardaron
+                    servicios_extra_guardados = detalle.servicios_extra.all()
+                    print(f"[DEBUG] Total servicios extra guardados: {len(servicios_extra_guardados)}")
+                    for extra in servicios_extra_guardados:
+                        print(f"[DEBUG] - {extra.servicio.servicio} x{extra.cantidad}")
+                    
+                    # Limpiar la sesión
+                    del request.session['servicios_extra_ids']
+                except Exception as e:
+                    print(f"[DEBUG] Error al agregar servicios extra: {str(e)}")
+                    import traceback
+                    print(traceback.format_exc())
+                    try:
+                        # Asegurarnos de limpiar la sesión en caso de error
+                        if 'servicios_extra_ids' in request.session:
+                            del request.session['servicios_extra_ids']
+                    except:
+                        pass
+            # Mantener compatibilidad con el código anterior (servicios individuales)
+            elif 'servicio_extra_id' in request.session:
                 try:
                     servicio_id = request.session['servicio_extra_id']
-                    print(f"\n[DEBUG] Recuperando servicio_extra_id de sesión: {servicio_id}")
+                    print(f"\n[DEBUG] Recuperando servicio_extra_id individual de sesión: {servicio_id}")
                     
                     servicio = ServicioTerma.objects.get(id=servicio_id)
                     print(f"[DEBUG] Servicio encontrado para agregar: {servicio.servicio}")
@@ -303,6 +395,27 @@ def pago(request, terma_id=None):
             datos['terma_id'] = entrada_tipo.terma_id
         else:
             datos['terma_id'] = datos['entrada_id']
+    
+    # Agregar información de duración si tenemos la entrada
+    if datos.get('entrada_id'):
+        from entradas.models import EntradaTipo
+        entrada_tipo = EntradaTipo.objects.filter(id=datos['entrada_id']).first()
+        if entrada_tipo:
+            datos['duracion_horas'] = entrada_tipo.duracion_horas
+            datos['duracion_tipo'] = entrada_tipo.get_duracion_tipo_display()
+            
+            # Crear texto descriptivo de duración más claro
+            if entrada_tipo.duracion_horas:
+                if entrada_tipo.duracion_horas == 24:
+                    datos['duracion_texto'] = "Día completo (24 horas)"
+                elif entrada_tipo.duracion_horas >= 12:
+                    datos['duracion_texto'] = f"{entrada_tipo.duracion_horas} horas"
+                elif entrada_tipo.duracion_horas == 1:
+                    datos['duracion_texto'] = "1 hora"
+                else:
+                    datos['duracion_texto'] = f"{entrada_tipo.duracion_horas} horas"
+            else:
+                datos['duracion_texto'] = entrada_tipo.get_duracion_tipo_display()
     
     datos['usuario'] = usuario
     return render(request, 'ventas/pago.html', datos)

@@ -79,6 +79,20 @@ class DetalleCompra(models.Model):
     servicios = models.ManyToManyField('termas.ServicioTerma', blank=True, related_name='detalles_compra')
 
 
+class ServicioExtraDetalle(models.Model):
+    """Modelo intermedio para manejar cantidades de servicios extra en los detalles de compra"""
+    detalle_compra = models.ForeignKey(DetalleCompra, on_delete=models.CASCADE, related_name='servicios_extra')
+    servicio = models.ForeignKey('termas.ServicioTerma', on_delete=models.CASCADE)
+    cantidad = models.IntegerField(default=1)
+    precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
+    
+    class Meta:
+        unique_together = ('detalle_compra', 'servicio')
+    
+    def __str__(self):
+        return f"{self.servicio.servicio} x{self.cantidad} - {self.detalle_compra.compra.id}"
+
+
 class Carrito(models.Model):
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
     horario_disponible = models.ForeignKey(HorarioDisponible, on_delete=models.CASCADE)

@@ -267,7 +267,6 @@ class Calificacion(models.Model):
     fecha = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('usuario', 'terma')
         verbose_name = "Calificación"
         verbose_name_plural = "Calificaciones"
         ordering = ['-fecha']

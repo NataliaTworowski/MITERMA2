@@ -267,6 +267,7 @@ def inicio(request):
         comuna = request.GET.get('comuna', '').strip()
 
         from termas.models import Region, Comuna, Terma
+        from datetime import date
         regiones = Region.objects.all().order_by('nombre')
         comunas = Comuna.objects.all().select_related('region').order_by('region__nombre', 'nombre')
         termas_qs = Terma.objects.filter(estado_suscripcion="activa")
@@ -281,21 +282,54 @@ def inicio(request):
         if comuna:
             termas_qs = termas_qs.filter(comuna__id=comuna)
         
-        # Solo termas con calificación válida
-        termas_qs = termas_qs.filter(calificacion_promedio__isnull=False)
+        # Obtener termas con calificaciones para mostrar solo las que tienen reseñas
+        termas_qs = Terma.objects.filter(estado_suscripcion="activa")
+        # Filtrar solo termas que tienen al menos una calificación
+        termas_con_calificaciones = []
+        for terma in termas_qs:
+            if terma.total_calificaciones() > 0:
+                termas_con_calificaciones.append(terma)
+        
+        if busqueda:
+            from django.db.models import Q
+            termas_qs = termas_qs.filter(
+                Q(nombre_terma__icontains=busqueda) | Q(descripcion_terma__icontains=busqueda)
+            )
+            # Volver a filtrar solo las que tienen calificaciones después de la búsqueda
+            termas_con_calificaciones = []
+            for terma in termas_qs:
+                if terma.total_calificaciones() > 0:
+                    termas_con_calificaciones.append(terma)
+        
+        if region:
+            termas_qs = termas_qs.filter(comuna__region__id=region)
+            termas_con_calificaciones = []
+            for terma in termas_qs:
+                if terma.total_calificaciones() > 0:
+                    termas_con_calificaciones.append(terma)
+        
+        if comuna:
+            termas_qs = termas_qs.filter(comuna__id=comuna)
+            termas_con_calificaciones = []
+            for terma in termas_qs:
+                if terma.total_calificaciones() > 0:
+                    termas_con_calificaciones.append(terma)
         
         orden = request.GET.get('orden', 'populares')
         if orden == 'populares':
-            termas_qs = termas_qs.order_by('-calificacion_promedio')
-            termas_destacadas = termas_qs[:4]
+            # Ordenar por promedio de calificación
+            termas_con_calificaciones.sort(key=lambda t: t.promedio_calificacion() or 0, reverse=True)
+            termas_destacadas = termas_con_calificaciones[:4]
         elif orden == 'recientes':
-            termas_qs = termas_qs.order_by('-fecha_suscripcion')
-            termas_destacadas = termas_qs[:4]
+            # Ordenar por fecha de suscripción
+            termas_con_calificaciones.sort(key=lambda t: t.fecha_suscripcion if t.fecha_suscripcion else date.min, reverse=True)
+            termas_destacadas = termas_con_calificaciones[:4]
         elif orden == 'precio':
-            # Ordenar en Python por el método precio_minimo
-            termas_lista = list(termas_qs)
-            termas_lista.sort(key=lambda t: t.precio_minimo() if t.precio_minimo() is not None else float('inf'))
-            termas_destacadas = termas_lista[:4]
+            # Ordenar por precio mínimo
+            termas_con_calificaciones.sort(key=lambda t: t.precio_minimo() if t.precio_minimo() is not None else float('inf'))
+            termas_destacadas = termas_con_calificaciones[:4]
+        else:
+            termas_destacadas = termas_con_calificaciones[:4]
         
         context = {
             'title': 'Inicio - MiTerma',

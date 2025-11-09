@@ -314,41 +314,78 @@ class ValidarEntradaQRView(View):
                                     }]
                                 
                                 # Preparar información de la entrada
+                                entrada_tipo = detalles.horario_disponible.entrada_tipo
+                                
+                                # Generar texto de duración
+                                duracion_texto = ""
+                                if entrada_tipo.duracion_horas:
+                                    if entrada_tipo.duracion_horas == 1:
+                                        duracion_texto = "1 hora"
+                                    else:
+                                        duracion_texto = f"{entrada_tipo.duracion_horas} horas"
+                                    
+                                    if entrada_tipo.duracion_tipo:
+                                        duracion_texto += f" ({entrada_tipo.duracion_tipo})"
+                                else:
+                                    duracion_texto = "Duración no especificada"
+                                
                                 entrada_info = {
-                                    'tipo': detalles.horario_disponible.entrada_tipo.nombre,
+                                    'tipo': entrada_tipo.nombre,
+                                    'duracion': duracion_texto,
+                                    'duracion_horas': entrada_tipo.duracion_horas,
+                                    'duracion_tipo': entrada_tipo.duracion_tipo,
                                     'hora_inicio': detalles.horario_disponible.hora_inicio.strftime('%H:%M') if detalles.horario_disponible.hora_inicio else '00:00',
                                     'hora_fin': detalles.horario_disponible.hora_fin.strftime('%H:%M') if detalles.horario_disponible.hora_fin else '23:59',
                                     'cantidad_entradas': compra.cantidad,
                                     'servicios_incluidos': servicios_incluidos_list,
                                 }
                                 
-                                # Obtener los servicios extra usando select_related
-                                servicios_extra = detalles.servicios.all().select_related()
-                                logger.info(f"Recuperando servicios extra para detalle {detalles.id}")
-                                logger.info(f"Servicios extra raw query: {servicios_extra.query}")
-                                logger.info(f"Servicios extra encontrados: {[{'id': s.id, 'servicio': s.servicio} for s in servicios_extra]}")
+                                # Obtener los servicios extra usando el nuevo modelo
+                                servicios_extra_nuevos = detalles.servicios_extra.all().select_related('servicio')
+                                logger.info(f"Recuperando servicios extra con cantidades para detalle {detalles.id}")
+                                logger.info(f"Servicios extra con cantidades encontrados: {[(s.servicio.servicio, s.cantidad) for s in servicios_extra_nuevos]}")
                                 
-                                if servicios_extra.exists():
+                                if servicios_extra_nuevos.exists():
                                     entrada_info['servicios_extra'] = [
                                         {
-                                            'nombre': s.servicio,
-                                            'descripcion': s.descripcion,
-                                            'precio': float(s.precio) if s.precio else None,
-                                            'cantidad': 1
+                                            'nombre': extra.servicio.servicio,
+                                            'descripcion': extra.servicio.descripcion,
+                                            'precio': float(extra.precio_unitario) if extra.precio_unitario else None,
+                                            'cantidad': extra.cantidad
                                         }
-                                        for s in servicios_extra
+                                        for extra in servicios_extra_nuevos
                                     ]
                                 else:
-                                    entrada_info['servicios_extra'] = [{
-                                        'nombre': '-',
-                                        'descripcion': 'No hay servicios extra contratados',
-                                        'precio': None,
-                                        'cantidad': 0
-                                    }]
+                                    # Fallback para servicios guardados con el método anterior
+                                    servicios_extra = detalles.servicios.all().select_related()
+                                    logger.info(f"Fallback: Recuperando servicios extra para detalle {detalles.id}")
+                                    logger.info(f"Servicios extra raw query: {servicios_extra.query}")
+                                    logger.info(f"Servicios extra encontrados: {[{'id': s.id, 'servicio': s.servicio} for s in servicios_extra]}")
+                                    
+                                    if servicios_extra.exists():
+                                        entrada_info['servicios_extra'] = [
+                                            {
+                                                'nombre': s.servicio,
+                                                'descripcion': s.descripcion,
+                                                'precio': float(s.precio) if s.precio else None,
+                                                'cantidad': 1
+                                            }
+                                            for s in servicios_extra
+                                        ]
+                                    else:
+                                        entrada_info['servicios_extra'] = [{
+                                            'nombre': '-',
+                                            'descripcion': 'No hay servicios extra contratados',
+                                            'precio': None,
+                                            'cantidad': 0
+                                        }]
                                 
                                 # Log detallado para debug
                                 logger.info(f"Entrada info final: {entrada_info}")
-                                logger.info(f"Servicios extra en detalle: {[s.servicio for s in detalles.servicios.all()]}")
+                                if servicios_extra_nuevos.exists():
+                                    logger.info(f"Servicios extra nuevos en detalle: {[(s.servicio.servicio, s.cantidad) for s in servicios_extra_nuevos]}")
+                                else:
+                                    logger.info(f"Servicios extra antiguos en detalle: {[s.servicio for s in detalles.servicios.all()]}")
                             else:
                                 # Este caso no debería ocurrir ya que ahora lanzamos una excepción si no hay detalles
                                 logger.error(f"No se encontraron detalles para la compra {compra.id}")
@@ -357,6 +394,9 @@ class ValidarEntradaQRView(View):
                             logger.error(f"Error al obtener detalles de la compra {compra.id}: {str(e)}")
                             entrada_info = {
                                 'tipo': 'Entrada General',
+                                'duracion': 'Duración no especificada',
+                                'duracion_horas': None,
+                                'duracion_tipo': None,
                                 'hora_inicio': '00:00',
                                 'hora_fin': '23:59',
                                 'servicios_incluidos': [],

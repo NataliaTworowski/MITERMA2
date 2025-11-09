@@ -884,30 +884,16 @@ def vista_terma(request, terma_id):
             from django.db import IntegrityError, transaction
             
             try:
-                # Verificar si el usuario ya ha calificado esta terma
-                calificacion_existente = Calificacion.objects.filter(
-                    usuario=request.user,
-                    terma=terma
-                ).first()
-                
-                if calificacion_existente:
-                    # Actualizar calificación existente
-                    calificacion_existente.puntuacion = puntuacion
-                    calificacion_existente.comentario = comentario
-                    calificacion_existente.save()
-                    messages.success(request, '¡Tu opinión se ha actualizado correctamente!')
-                    logger.info(f"Usuario {request.user.nombre} (ID: {request.user.id}) actualizó calificación en terma {terma.nombre_terma}")
-                else:
-                    # Crear nueva calificación
-                    with transaction.atomic():
-                        Calificacion.objects.create(
-                            usuario=request.user,
-                            terma=terma,
-                            puntuacion=puntuacion,
-                            comentario=comentario
-                        )
-                    messages.success(request, '¡Tu opinión se ha guardado correctamente!')
-                    logger.info(f"Usuario {request.user.nombre} (ID: {request.user.id}) dejó nueva calificación {puntuacion} en terma {terma.nombre_terma}")
+                # Crear nueva calificación (permitir múltiples comentarios por usuario)
+                with transaction.atomic():
+                    Calificacion.objects.create(
+                        usuario=request.user,
+                        terma=terma,
+                        puntuacion=puntuacion,
+                        comentario=comentario
+                    )
+                messages.success(request, '¡Tu opinión se ha guardado correctamente!')
+                logger.info(f"Usuario {request.user.nombre} (ID: {request.user.id}) dejó nueva calificación {puntuacion} en terma {terma.nombre_terma}")
                 
                 return redirect(request.path)
                 
@@ -925,7 +911,18 @@ def vista_terma(request, terma_id):
             return redirect('usuarios:inicio')
 
     opiniones = terma.calificacion_set.select_related('usuario').order_by('-fecha')
-    cantidad_opiniones = opiniones.count()
+    calificacion_promedio = terma.promedio_calificacion()
+    cantidad_opiniones = terma.total_calificaciones()
+    
+    # Calcular distribución real de calificaciones por estrella
+    distribucion_estrellas = {}
+    for i in range(1, 6):
+        count = terma.calificacion_set.filter(puntuacion=i).count()
+        porcentaje = (count / cantidad_opiniones * 100) if cantidad_opiniones > 0 else 0
+        distribucion_estrellas[i] = {
+            'count': count,
+            'porcentaje': round(porcentaje, 1)
+        }
     
     context = {
         'terma': terma,
@@ -934,12 +931,20 @@ def vista_terma(request, terma_id):
         'imagenes': imagenes,
         'calificacion_promedio': calificacion_promedio,
         'cantidad_opiniones': cantidad_opiniones,
+        'distribucion_estrellas': distribucion_estrellas,
+        # Pasar porcentajes individuales para facilitar acceso en template
+        'porcentaje_5_estrellas': distribucion_estrellas[5]['porcentaje'],
+        'porcentaje_4_estrellas': distribucion_estrellas[4]['porcentaje'],
+        'porcentaje_3_estrellas': distribucion_estrellas[3]['porcentaje'],
+        'porcentaje_2_estrellas': distribucion_estrellas[2]['porcentaje'],
+        'porcentaje_1_estrellas': distribucion_estrellas[1]['porcentaje'],
         'servicios': servicios_incluidos,
         'servicios_extra': servicios_extra,
         'servicios_por_entrada_json': json.dumps(servicios_por_entrada),
         'opiniones': opiniones,
         'usuario': request.user if request.user.is_authenticated else None,
     }
+    
     return render(request, 'administrador_termas/vista_terma.html', context)
 
 @admin_terma_required

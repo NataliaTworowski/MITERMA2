@@ -64,7 +64,7 @@ class EntradaTipo(models.Model):
         )
         return horario
 
-
+#esta no me convence 
 class HorarioDisponible(models.Model):
     terma = models.ForeignKey(Terma, on_delete=models.CASCADE)
     entrada_tipo = models.ForeignKey(EntradaTipo, on_delete=models.CASCADE)

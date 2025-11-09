@@ -333,41 +333,47 @@
                     </div>
                     
                     <!-- Distribución de calificaciones -->
+                    <!-- SIMPLE TEST: 40.0% vs {{ porcentaje_5_estrellas }}% -->
                     <div class="flex-1 max-w-md w-full">
                         <div class="flex items-center gap-2 mb-2">
                             <span class="text-sm text-gray-600 w-6">5★</span>
                             <div class="flex-1 bg-gray-200 rounded-full h-2">
-                                <div class="bg-emerald-500 h-2 rounded-full w-3/4"></div>
+                                <div class="bg-emerald-500 h-2 rounded-full transition-all duration-300" 
+                                     style="width: 40%"></div>
                             </div>
-                            <span class="text-sm text-gray-600 w-8">75%</span>
+                            <span class="text-sm text-gray-600 w-8">40.0%</span>
                         </div>
                         <div class="flex items-center gap-2 mb-2">
                             <span class="text-sm text-gray-600 w-6">4★</span>
                             <div class="flex-1 bg-gray-200 rounded-full h-2">
-                                <div class="bg-emerald-500 h-2 rounded-full w-1/5"></div>
+                                <div class="bg-emerald-500 h-2 rounded-full transition-all duration-300" 
+                                     style="width: 33%"></div>
                             </div>
-                            <span class="text-sm text-gray-600 w-8">20%</span>
+                            <span class="text-sm text-gray-600 w-8">33.3%</span>
                         </div>
                         <div class="flex items-center gap-2 mb-2">
                             <span class="text-sm text-gray-600 w-6">3★</span>
                             <div class="flex-1 bg-gray-200 rounded-full h-2">
-                                <div class="bg-emerald-500 h-2 rounded-full w-1"></div>
+                                <div class="bg-emerald-500 h-2 rounded-full transition-all duration-300" 
+                                     style="width: 7%"></div>
                             </div>
-                            <span class="text-sm text-gray-600 w-8">3%</span>
+                            <span class="text-sm text-gray-600 w-8">6.7%</span>
                         </div>
                         <div class="flex items-center gap-2 mb-2">
                             <span class="text-sm text-gray-600 w-6">2★</span>
                             <div class="flex-1 bg-gray-200 rounded-full h-2">
-                                <div class="bg-emerald-500 h-2 rounded-full w-1"></div>
+                                <div class="bg-emerald-500 h-2 rounded-full transition-all duration-300" 
+                                     style="width: 7%"></div>
                             </div>
-                            <span class="text-sm text-gray-600 w-8">1%</span>
+                            <span class="text-sm text-gray-600 w-8">6.7%</span>
                         </div>
                         <div class="flex items-center gap-2 mb-2">
                             <span class="text-sm text-gray-600 w-6">1★</span>
                             <div class="flex-1 bg-gray-200 rounded-full h-2">
-                                <div class="bg-emerald-500 h-2 rounded-full w-1"></div>
+                                <div class="bg-emerald-500 h-2 rounded-full transition-all duration-300" 
+                                     style="width: 13%"></div>
                             </div>
-                            <span class="text-sm text-gray-600 w-8">1%</span>
+                            <span class="text-sm text-gray-600 w-8">13.3%</span>
                         </div>
                     </div>
                 </div>
@@ -423,12 +429,12 @@
             <div class="space-y-6">
                 <div class="flex items-center justify-between">
                     <h3 class="text-xl font-bold text-gray-800">Todas las Opiniones</h3>
-                    <button id="btn-ver-opiniones" class="text-emerald-600 hover:text-emerald-700 font-medium" role="button" aria-expanded="false">
-                        Ver todas las opiniones
+                    <button id="btn-ver-opiniones" class="text-emerald-600 hover:text-emerald-700 font-medium" role="button" aria-expanded="true">
+                        Ocultar opiniones
                     </button>
                 </div>
                 
-                <div id="opiniones-lista" class="space-y-4 hidden">
+                <div id="opiniones-lista" class="space-y-4">
                     {% for calificacion in opiniones %}
                         <div class="bg-gray-50 rounded-xl p-6 border border-gray-200">
                             <div class="flex items-start gap-4">

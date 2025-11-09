@@ -21,11 +21,14 @@
                 {% if experiencia %}
                 <div class="flex justify-between py-2 border-b border-gray-200"><span class="text-gray-600">Experiencia</span> <span class="font-semibold">{{ experiencia }}</span></div>
                 {% endif %}
+                {% if duracion_texto %}
+                <div class="flex justify-between py-2 border-b border-gray-200"><span class="text-gray-600">Duración</span> <span class="font-semibold">{{ duracion_texto }}</span></div>
+                {% endif %}
                 {% if cantidad_entradas %}
                 <div class="flex justify-between py-2 border-b border-gray-200"><span class="text-gray-600">Cantidad de entradas</span> <span class="font-semibold">{{ cantidad_entradas }}</span></div>
                 {% endif %}
                 {% if fecha %}
-                <div class="flex justify-between py-2 border-b border-gray-200"><span class="text-gray-600">Fecha</span> <span class="font-semibold">{{ fecha }}</span></div>
+                <div class="flex justify-between py-2 border-b border-gray-200"><span class="text-gray-600">Fecha de visita</span> <span class="font-semibold">{{ fecha }}</span></div>
                 {% endif %}
                 {% if precio %}
                 <div class="flex justify-between py-2 border-b border-gray-200"><span class="text-gray-600">Precio unitario</span> <span class="font-semibold">${{ precio }}</span></div>

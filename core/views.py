@@ -4,7 +4,14 @@ from django.shortcuts import render
 from django.http import JsonResponse
 
 def mostrar_termas(request):
-    termas = Terma.objects.all()
+    # Obtener solo termas que tienen calificaciones
+    termas_todas = Terma.objects.all()
+    termas = []
+    
+    for terma in termas_todas:
+        if terma.total_calificaciones() > 0:
+            termas.append(terma)
+    
     context = {
         'usuario': request.user,
         'termas': termas,
