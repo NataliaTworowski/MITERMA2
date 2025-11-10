@@ -1,0 +1,772 @@
+{% extends 'base_admin_general.html' %}
+{% load static %}
+
+{% block title %}Usuarios Registrados - MiTerma{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Encabezado -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">Gestión de Usuarios Registrados</h1>
+        <p class="text-gray-600">Administra todos los usuarios registrados en la plataforma</p>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+        <div class="bg-white rounded-lg p-6 shadow-md border-l-4 border-blue-500">
+            <div class="text-3xl font-bold text-blue-600 mb-2">{{ stats.total_usuarios }}</div>
+            <div class="text-gray-600">Total Usuarios</div>
+        </div>
+        <div class="bg-white rounded-lg p-6 shadow-md border-l-4 border-green-500">
+            <div class="text-3xl font-bold text-green-600 mb-2">{{ stats.usuarios_activos }}</div>
+            <div class="text-gray-600">Usuarios Activos</div>
+        </div>
+        <div class="bg-white rounded-lg p-6 shadow-md border-l-4 border-red-500">
+            <div class="text-3xl font-bold text-red-600 mb-2">{{ stats.usuarios_inactivos }}</div>
+            <div class="text-gray-600">Usuarios Inactivos</div>
+        </div>
+        <div class="bg-white rounded-lg p-6 shadow-md border-l-4 border-purple-500">
+            <div class="text-3xl font-bold text-purple-600 mb-2">{{ stats.admins_terma }}</div>
+            <div class="text-gray-600">Admins de Terma</div>
+        </div>
+        <div class="bg-white rounded-lg p-6 shadow-md border-l-4 border-yellow-500">
+            <div class="text-3xl font-bold text-yellow-600 mb-2">{{ stats.clientes }}</div>
+            <div class="text-gray-600">Clientes</div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <form method="GET" class="space-y-4">
+            <!-- Campos de filtro -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div>
+                    <label for="nombre" class="block text-sm font-medium text-gray-700 mb-2">Nombre</label>
+                    <input type="text" 
+                           class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" 
+                           id="nombre" name="nombre" value="{{ filtros.nombre }}" placeholder="Buscar por nombre...">
+                </div>
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                    <input type="email" 
+                           class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" 
+                           id="email" name="email" value="{{ filtros.email }}" placeholder="Buscar por email...">
+                </div>
+                <div>
+                    <label for="rol" class="block text-sm font-medium text-gray-700 mb-2">Rol</label>
+                    <select class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" id="rol" name="rol">
+                        <option value="">Todos los roles</option>
+                        {% for rol in roles %}
+                            <option value="{{ rol.id }}" {% if filtros.rol == rol.id|stringformat:'s' %}selected{% endif %}>
+                                {{ rol.nombre|title }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="estado" class="block text-sm font-medium text-gray-700 mb-2">Estado</label>
+                    <select class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" id="estado" name="estado">
+                        <option value="">Todos</option>
+                        <option value="activo" {% if filtros.estado == 'activo' %}selected{% endif %}>Activo</option>
+                        <option value="inactivo" {% if filtros.estado == 'inactivo' %}selected{% endif %}>Inactivo</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="terma" class="block text-sm font-medium text-gray-700 mb-2">Terma</label>
+                    <select class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" id="terma" name="terma">
+                        <option value="">Todas las termas</option>
+                        {% for terma in termas %}
+                            <option value="{{ terma.id }}" {% if filtros.terma == terma.id|stringformat:'s' %}selected{% endif %}>
+                                {{ terma.nombre_terma }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Separador -->
+            <div class="border-t border-gray-200 pt-4">
+                <!-- Botones de acción -->
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+                    <div class="flex flex-wrap gap-3">
+                        <button type="submit" class="inline-flex items-center justify-center px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 min-w-[120px]">
+                            <i class="fas fa-search mr-2 text-sm"></i>
+                            <span>Filtrar</span>
+                        </button>
+                        <a href="{% url 'termas:usuarios_registrados' %}" class="inline-flex items-center justify-center px-6 py-2.5 bg-gradient-to-r from-gray-600 to-gray-700 text-white font-medium rounded-lg hover:from-gray-700 hover:to-gray-800 focus:outline-none focus:ring-4 focus:ring-gray-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 min-w-[120px]">
+                            <i class="fas fa-times mr-2 text-sm"></i>
+                            <span>Limpiar</span>
+                        </a>
+                    </div>
+                    <div>
+                        <button type="button" class="inline-flex items-center justify-center px-6 py-2.5 bg-gradient-to-r from-green-600 to-green-700 text-white font-medium rounded-lg hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 min-w-[140px]" onclick="abrirModalCrearUsuario()">
+                            <i class="fas fa-user-plus mr-2 text-sm"></i>
+                            <span>Nuevo Usuario</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Lista de usuarios -->
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        {% if usuarios %}
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usuario</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rol</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Terma</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Registro</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for usuario in usuarios %}
+                        <tr class="hover:bg-gray-50 transition-colors duration-200">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-10 w-10">
+                                        <div class="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold">
+                                            {{ usuario.nombre.0 }}{{ usuario.apellido.0 }}
+                                        </div>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium text-gray-900">{{ usuario.nombre }} {{ usuario.apellido }}</div>
+                                        <div class="text-sm text-gray-500">{{ usuario.telefono|default:"Sin teléfono" }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="text-sm text-gray-900 break-words">{{ usuario.email }}</div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                    {% if usuario.rol.nombre == 'administrador_general' %}bg-red-100 text-red-800
+                                    {% elif usuario.rol.nombre == 'administrador_terma' %}bg-purple-100 text-purple-800
+                                    {% elif usuario.rol.nombre == 'cliente' %}bg-green-100 text-green-800
+                                    {% elif usuario.rol.nombre == 'trabajador' %}bg-blue-100 text-blue-800
+                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ usuario.rol.nombre|title|default:"Sin rol" }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {% if usuario.terma %}
+                                    <div class="max-w-xs truncate">{{ usuario.terma.nombre_terma }}</div>
+                                {% else %}
+                                    <span class="text-gray-500">Sin asignar</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                    {% if usuario.estado %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                                    <span class="w-1.5 h-1.5 mr-1.5 rounded-full 
+                                        {% if usuario.estado %}bg-green-400{% else %}bg-red-400{% endif %}"></span>
+                                    {% if usuario.estado %}Activo{% else %}Inactivo{% endif %}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ usuario.fecha_registro|date:"d/m/Y" }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                                <div class="flex items-center justify-center space-x-2">
+                                    <button onclick="verDetalleUsuario('{{ usuario.id }}')" 
+                                            class="text-blue-600 hover:text-blue-900 transition-colors duration-200" 
+                                            title="Ver detalles">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button onclick="abrirModalEditarUsuario('{{ usuario.id }}')" 
+                                            class="text-yellow-600 hover:text-yellow-900 transition-colors duration-200" 
+                                            title="Editar usuario">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button onclick="cambiarEstadoUsuario('{{ usuario.id }}')" 
+                                            class="{% if usuario.estado %}text-red-600 hover:text-red-900{% else %}text-green-600 hover:text-green-900{% endif %} transition-colors duration-200" 
+                                            title="{% if usuario.estado %}Desactivar{% else %}Activar{% endif %} usuario">
+                                        <i class="fas {% if usuario.estado %}fa-user-slash{% else %}fa-user-check{% endif %}"></i>
+                                    </button>
+                                    <button onclick="resetearPasswordUsuario('{{ usuario.id }}')" 
+                                            class="text-purple-600 hover:text-purple-900 transition-colors duration-200" 
+                                            title="Resetear contraseña">
+                                        <i class="fas fa-key"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Paginación -->
+            {% if page_obj.has_other_pages %}
+            <div class="px-6 py-4 border-t border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div class="text-sm text-gray-700">
+                        Mostrando {{ page_obj.start_index }} - {{ page_obj.end_index }} de {{ page_obj.paginator.count }} usuarios
+                    </div>
+                    <div class="flex space-x-2">
+                        {% if page_obj.has_previous %}
+                            <a href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                               class="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md text-gray-500 hover:text-gray-700">
+                                Anterior
+                            </a>
+                        {% endif %}
+                        
+                        {% for num in page_obj.paginator.page_range %}
+                            {% if page_obj.number == num %}
+                                <span class="px-3 py-2 text-sm bg-blue-600 text-white rounded-md">{{ num }}</span>
+                            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                <a href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                                   class="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md text-gray-500 hover:text-gray-700">
+                                    {{ num }}
+                                </a>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if page_obj.has_next %}
+                            <a href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}" 
+                               class="px-3 py-2 text-sm bg-white border border-gray-300 rounded-md text-gray-500 hover:text-gray-700">
+                                Siguiente
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-12">
+                <i class="fas fa-users text-6xl text-gray-400 mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No se encontraron usuarios</h3>
+                <p class="text-gray-500">No hay usuarios que coincidan con los filtros seleccionados.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal para crear usuario -->
+<div id="modalCrearUsuario" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden z-[9999]" onclick="cerrarModalCrearUsuario(event)">
+    <div class="flex items-center justify-center min-h-screen p-4" onclick="event.stopPropagation()">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-screen overflow-y-auto">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-800">
+                        <i class="fas fa-user-plus mr-2 text-green-600"></i> Crear Nuevo Usuario
+                    </h3>
+                    <button onclick="cerrarModalCrearUsuario()" class="text-gray-400 hover:text-gray-600 transition-colors duration-200">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6">
+                <form id="formCrearUsuario" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="crear_nombre" class="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+                            <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="crear_nombre" name="nombre" required>
+                        </div>
+                        <div>
+                            <label for="crear_apellido" class="block text-sm font-medium text-gray-700 mb-1">Apellido *</label>
+                            <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="crear_apellido" name="apellido" required>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="crear_email" class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                        <input type="email" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="crear_email" name="email" required>
+                    </div>
+                    <div>
+                        <label for="crear_telefono" class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                        <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="crear_telefono" name="telefono">
+                    </div>
+                    <div>
+                        <label for="crear_rol" class="block text-sm font-medium text-gray-700 mb-1">Rol *</label>
+                        <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="crear_rol" name="rol_id" required onchange="toggleTermaField('crear')">
+                            <option value="">Selecciona un rol</option>
+                            {% for rol in roles %}
+                                <option value="{{ rol.id }}">{{ rol.nombre|title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div id="crear_terma_field" class="hidden">
+                        <label for="crear_terma" class="block text-sm font-medium text-gray-700 mb-1">Terma *</label>
+                        <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="crear_terma" name="terma_id">
+                            <option value="">Selecciona una terma</option>
+                            {% for terma in termas %}
+                                <option value="{{ terma.id }}">{{ terma.nombre_terma }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+                <button type="button" onclick="cerrarModalCrearUsuario()" class="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors duration-200">
+                    Cancelar
+                </button>
+                <button type="button" onclick="crearUsuario()" class="px-4 py-2 text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors duration-200">
+                    <i class="fas fa-user-plus mr-2"></i> Crear Usuario
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para editar usuario -->
+<div id="modalEditarUsuario" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden z-[9999]" onclick="cerrarModalEditarUsuario(event)">
+    <div class="flex items-center justify-center min-h-screen p-4" onclick="event.stopPropagation()">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full max-h-screen overflow-y-auto">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-800">
+                        <i class="fas fa-user-edit mr-2 text-blue-600"></i> Editar Usuario
+                    </h3>
+                    <button onclick="cerrarModalEditarUsuario()" class="text-gray-400 hover:text-gray-600 transition-colors duration-200">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="p-6">
+                <form id="formEditarUsuario" class="space-y-4">
+                    <input type="hidden" id="editar_usuario_id">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="editar_nombre" class="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+                            <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="editar_nombre" name="nombre" required>
+                        </div>
+                        <div>
+                            <label for="editar_apellido" class="block text-sm font-medium text-gray-700 mb-1">Apellido *</label>
+                            <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="editar_apellido" name="apellido" required>
+                        </div>
+                    </div>
+                    <div>
+                        <label for="editar_email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" class="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100" id="editar_email" name="email" readonly>
+                        <p class="text-xs text-gray-500 mt-1">El email no se puede modificar</p>
+                    </div>
+                    <div>
+                        <label for="editar_telefono" class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                        <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="editar_telefono" name="telefono">
+                    </div>
+                    <div>
+                        <label for="editar_rol" class="block text-sm font-medium text-gray-700 mb-1">Rol *</label>
+                        <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="editar_rol" name="rol_id" required onchange="toggleTermaField('editar')">
+                            <option value="">Selecciona un rol</option>
+                            {% for rol in roles %}
+                                <option value="{{ rol.id }}">{{ rol.nombre|title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div id="editar_terma_field" class="hidden">
+                        <label for="editar_terma" class="block text-sm font-medium text-gray-700 mb-1">Terma *</label>
+                        <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="editar_terma" name="terma_id">
+                            <option value="">Selecciona una terma</option>
+                            {% for terma in termas %}
+                                <option value="{{ terma.id }}">{{ terma.nombre_terma }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+                <button type="button" onclick="cerrarModalEditarUsuario()" class="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300 transition-colors duration-200">
+                    Cancelar
+                </button>
+                <button type="button" onclick="actualizarUsuario()" class="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors duration-200">
+                    <i class="fas fa-save mr-2"></i> Guardar Cambios
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para ver detalle de usuario -->
+<div id="modalDetalleUsuario" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden z-[9999]" onclick="cerrarModalDetalleUsuario(event)">
+    <div class="flex items-center justify-center min-h-screen p-4" onclick="event.stopPropagation()">
+        <div class="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-screen overflow-y-auto">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-800">
+                        <i class="fas fa-user mr-2 text-blue-600"></i> Detalles del Usuario
+                    </h3>
+                    <button onclick="cerrarModalDetalleUsuario()" class="text-gray-400 hover:text-gray-600 transition-colors duration-200">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="contenidoDetalleUsuario" class="p-6">
+                <!-- El contenido se carga dinámicamente -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Interceptar el scroll cuando los modales estén abiertos
+    const modals = ['modalCrearUsuario', 'modalEditarUsuario', 'modalDetalleUsuario'];
+    modals.forEach(modalId => {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.addEventListener('click', function(e) {
+                if (e.target === this) {
+                    cerrarModal(modalId);
+                }
+            });
+        }
+    });
+
+    // Manejar tecla ESC para cerrar modales
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            cerrarModalCrearUsuario();
+            cerrarModalEditarUsuario();
+            cerrarModalDetalleUsuario();
+        }
+    });
+});
+
+function toggleTermaField(prefix) {
+    const rolSelect = document.getElementById(`${prefix}_rol`);
+    const termaField = document.getElementById(`${prefix}_terma_field`);
+    const termaSelect = document.getElementById(`${prefix}_terma`);
+    
+    if (rolSelect && termaField && termaSelect) {
+        const selectedRol = rolSelect.options[rolSelect.selectedIndex].text.toLowerCase();
+        
+        if (selectedRol.includes('administrador_terma')) {
+            termaField.classList.remove('hidden');
+            termaSelect.required = true;
+        } else {
+            termaField.classList.add('hidden');
+            termaSelect.required = false;
+            termaSelect.value = '';
+        }
+    }
+}
+
+// Funciones para crear usuario
+function abrirModalCrearUsuario() {
+    document.body.style.overflow = 'hidden';
+    document.getElementById('modalCrearUsuario').classList.remove('hidden');
+}
+
+function cerrarModalCrearUsuario(event) {
+    if (event && event.target !== event.currentTarget) return;
+    document.body.style.overflow = 'auto';
+    document.getElementById('modalCrearUsuario').classList.add('hidden');
+    document.getElementById('formCrearUsuario').reset();
+    document.getElementById('crear_terma_field').classList.add('hidden');
+}
+
+function crearUsuario() {
+    const form = document.getElementById('formCrearUsuario');
+    const formData = new FormData(form);
+    
+    const data = {
+        nombre: formData.get('nombre'),
+        apellido: formData.get('apellido'),
+        email: formData.get('email'),
+        telefono: formData.get('telefono'),
+        rol_id: formData.get('rol_id'),
+        terma_id: formData.get('terma_id')
+    };
+    
+    fetch('/termas/crear-usuario/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Usuario creado exitosamente.\nContraseña temporal: ' + data.password_temporal);
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al crear el usuario');
+    });
+}
+
+// Funciones para editar usuario
+function abrirModalEditarUsuario(usuarioId) {
+    fetch(`/termas/detalle-usuario/${usuarioId}/`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const usuario = data.data;
+            
+            document.getElementById('editar_usuario_id').value = usuario.id;
+            document.getElementById('editar_nombre').value = usuario.nombre;
+            document.getElementById('editar_apellido').value = usuario.apellido;
+            document.getElementById('editar_email').value = usuario.email;
+            document.getElementById('editar_telefono').value = usuario.telefono;
+            document.getElementById('editar_rol').value = usuario.rol.id || '';
+            
+            // Manejar campo de terma
+            toggleTermaField('editar');
+            if (usuario.terma && usuario.terma.id) {
+                document.getElementById('editar_terma').value = usuario.terma.id;
+            }
+            
+            document.body.style.overflow = 'hidden';
+            document.getElementById('modalEditarUsuario').classList.remove('hidden');
+        } else {
+            alert('Error al cargar los datos del usuario');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al cargar los datos del usuario');
+    });
+}
+
+function cerrarModalEditarUsuario(event) {
+    if (event && event.target !== event.currentTarget) return;
+    document.body.style.overflow = 'auto';
+    document.getElementById('modalEditarUsuario').classList.add('hidden');
+    document.getElementById('formEditarUsuario').reset();
+    document.getElementById('editar_terma_field').classList.add('hidden');
+}
+
+function actualizarUsuario() {
+    const usuarioId = document.getElementById('editar_usuario_id').value;
+    const form = document.getElementById('formEditarUsuario');
+    const formData = new FormData(form);
+    
+    const data = {
+        nombre: formData.get('nombre'),
+        apellido: formData.get('apellido'),
+        telefono: formData.get('telefono'),
+        rol_id: formData.get('rol_id'),
+        terma_id: formData.get('terma_id')
+    };
+    
+    fetch(`/termas/editar-usuario/${usuarioId}/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Usuario actualizado exitosamente');
+            location.reload();
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error al actualizar el usuario');
+    });
+}
+
+// Función para ver detalles de usuario
+function verDetalleUsuario(usuarioId) {
+    console.log(`Cargando detalles para usuario ID: ${usuarioId}`);
+    
+    fetch(`/termas/detalle-usuario/${usuarioId}/`)
+    .then(response => {
+        console.log(`Respuesta del servidor: ${response.status}`);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Datos recibidos:', data);
+        
+        if (data.success) {
+            const usuario = data.data;
+            console.log('Usuario:', usuario);
+            
+            let estadisticasHtml = '';
+            
+            try {
+                if (usuario.estadisticas && Object.keys(usuario.estadisticas).length > 0) {
+                    const stats = usuario.estadisticas;
+                    estadisticasHtml = `
+                        <div class="mt-6 border-t border-gray-200 pt-4">
+                            <h4 class="text-sm font-semibold text-gray-800 mb-3">Estadísticas del Cliente</h4>
+                            <div class="grid grid-cols-3 gap-4 text-center">
+                                <div class="bg-blue-50 p-3 rounded-lg">
+                                    <div class="text-2xl font-bold text-blue-600">${stats.total_compras || 0}</div>
+                                    <div class="text-xs text-blue-700">Compras</div>
+                                </div>
+                                <div class="bg-green-50 p-3 rounded-lg">
+                                    <div class="text-2xl font-bold text-green-600">$${stats.total_gastado || 0}</div>
+                                    <div class="text-xs text-green-700">Total Gastado</div>
+                                </div>
+                                <div class="bg-purple-50 p-3 rounded-lg">
+                                    <div class="text-sm font-bold text-purple-600">${stats.ultima_compra ? new Date(stats.ultima_compra).toLocaleDateString() : 'Nunca'}</div>
+                                    <div class="text-xs text-purple-700">Última Compra</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (e) {
+                console.error('Error procesando estadísticas:', e);
+                estadisticasHtml = '';
+            }
+            
+            try {
+                // Manejo seguro de campos que pueden ser undefined/null
+                const nombre = usuario.nombre || '';
+                const apellido = usuario.apellido || '';
+                const email = usuario.email || '';
+                const telefono = usuario.telefono || 'No especificado';
+                const fechaRegistro = usuario.fecha_registro || 'No disponible';
+                const rolNombre = (usuario.rol && usuario.rol.nombre) ? 
+                    usuario.rol.nombre.charAt(0).toUpperCase() + usuario.rol.nombre.slice(1) : 'Sin rol';
+                const termaNombre = (usuario.terma && usuario.terma.nombre) ? usuario.terma.nombre : 'Sin asignar';
+                const iniciales = `${nombre.charAt(0)}${apellido.charAt(0)}`;
+                
+                document.getElementById('contenidoDetalleUsuario').innerHTML = `
+                    <div class="space-y-4">
+                        <div class="flex items-center space-x-4">
+                            <div class="h-16 w-16 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-xl">
+                                ${iniciales}
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-800">${nombre} ${apellido}</h3>
+                                <p class="text-gray-600">${email}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <span class="font-semibold text-gray-700">Teléfono:</span><br>
+                                <span class="text-gray-600">${telefono}</span>
+                            </div>
+                            <div>
+                                <span class="font-semibold text-gray-700">Estado:</span><br>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${usuario.estado ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                    ${usuario.estado ? 'Activo' : 'Inactivo'}
+                                </span>
+                            </div>
+                            <div>
+                                <span class="font-semibold text-gray-700">Rol:</span><br>
+                                <span class="text-gray-600">${rolNombre}</span>
+                            </div>
+                            <div>
+                                <span class="font-semibold text-gray-700">Fecha de Registro:</span><br>
+                                <span class="text-gray-600">${fechaRegistro}</span>
+                            </div>
+                            <div class="col-span-2">
+                                <span class="font-semibold text-gray-700">Terma Asignada:</span><br>
+                                <span class="text-gray-600">${termaNombre}</span>
+                            </div>
+                        </div>
+                        
+                        ${estadisticasHtml}
+                    </div>
+                `;
+                
+                document.body.style.overflow = 'hidden';
+                document.getElementById('modalDetalleUsuario').classList.remove('hidden');
+                
+            } catch (e) {
+                console.error('Error construyendo HTML:', e);
+                alert('Error al mostrar los detalles del usuario');
+            }
+            
+        } else {
+            console.error('Error del servidor:', data.message);
+            alert('Error al cargar los detalles del usuario: ' + (data.message || 'Error desconocido'));
+        }
+    })
+    .catch(error => {
+        console.error('Error de red o respuesta:', error);
+        alert('Error al cargar los detalles del usuario: ' + error.message);
+    });
+}
+
+function cerrarModalDetalleUsuario(event) {
+    if (event && event.target !== event.currentTarget) return;
+    document.body.style.overflow = 'auto';
+    document.getElementById('modalDetalleUsuario').classList.add('hidden');
+}
+
+// Función para cambiar estado de usuario
+function cambiarEstadoUsuario(usuarioId) {
+    if (confirm('¿Estás seguro de que quieres cambiar el estado de este usuario?')) {
+        fetch(`/termas/cambiar-estado-usuario/${usuarioId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al cambiar el estado del usuario');
+        });
+    }
+}
+
+// Función para resetear contraseña
+function resetearPasswordUsuario(usuarioId) {
+    if (confirm('¿Estás seguro de que quieres resetear la contraseña de este usuario? Se generará una nueva contraseña temporal.')) {
+        fetch(`/termas/resetear-password-usuario/${usuarioId}/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Contraseña restablecida exitosamente.\nNueva contraseña temporal: ' + data.password_temporal);
+            } else {
+                alert('Error: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error al resetear la contraseña');
+        });
+    }
+}
+
+// Función helper para obtener el CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+</script>
+
+{% endblock %}

@@ -45,4 +45,12 @@ urlpatterns = [
     path('admin/distribuciones-pago/', views_admin.ver_distribuciones_pago, name='admin_distribuciones_pago'),
     path('admin/reporte-comisiones-diarias/', views_admin.reporte_comisiones_diarias, name='admin_reporte_comisiones'),
     path('dashboard-comisiones/<int:terma_id>/', views_admin.dashboard_comisiones_terma, name='dashboard_comisiones'),
+    
+    # URLs para gestión de usuarios (Admin General)
+    path('admin/usuarios-registrados/', views_admin.usuarios_registrados, name='usuarios_registrados'),
+    path('crear-usuario/', views_admin.crear_usuario, name='crear_usuario'),
+    path('editar-usuario/<int:usuario_id>/', views_admin.editar_usuario, name='editar_usuario'),
+    path('cambiar-estado-usuario/<int:usuario_id>/', views_admin.cambiar_estado_usuario, name='cambiar_estado_usuario'),
+    path('detalle-usuario/<int:usuario_id>/', views_admin.detalle_usuario, name='detalle_usuario'),
+    path('resetear-password-usuario/<int:usuario_id>/', views_admin.resetear_password_usuario, name='resetear_password_usuario'),
 ]

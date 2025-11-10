@@ -1,0 +1,106 @@
+<!-- Formulario de Edición de Terma -->
+<div class="space-y-4">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+            <label for="nombre_terma_edit" class="block text-sm font-medium text-gray-700 mb-1">Nombre de la Terma *</label>
+            <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="nombre_terma_edit" name="nombre_terma" value="{{ terma.nombre_terma }}" required>
+        </div>
+        <div>
+            <label for="rut_empresa_edit" class="block text-sm font-medium text-gray-700 mb-1">RUT Empresa</label>
+            <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="rut_empresa_edit" name="rut_empresa" value="{{ terma.rut_empresa|default:'' }}" placeholder="12.345.678-9">
+        </div>
+    </div>
+    
+    <div>
+        <label for="descripcion_terma_edit" class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+        <textarea class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="descripcion_terma_edit" name="descripcion_terma" rows="3">{{ terma.descripcion_terma|default:'' }}</textarea>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+            <label for="email_terma_edit" class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+            <input type="email" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="email_terma_edit" name="email_terma" value="{{ terma.email_terma }}" required>
+        </div>
+        <div>
+            <label for="telefono_terma_edit" class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+            <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="telefono_terma_edit" name="telefono_terma" value="{{ terma.telefono_terma|default:'' }}">
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+            <label for="region_edit" class="block text-sm font-medium text-gray-700 mb-1">Región *</label>
+            <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="region_edit" name="region" required>
+                <option value="">Seleccionar región</option>
+                {% for region in regiones %}
+                    <option value="{{ region.id }}" {% if terma.comuna.region.id == region.id %}selected{% endif %}>
+                        {{ region.nombre }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label for="comuna_edit" class="block text-sm font-medium text-gray-700 mb-1">Comuna *</label>
+            <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="comuna_edit" name="comuna" required>
+                <option value="">Seleccionar comuna</option>
+                {% for comuna in comunas %}
+                    {% if comuna.region.id == terma.comuna.region.id %}
+                        <option value="{{ comuna.id }}" {% if terma.comuna.id == comuna.id %}selected{% endif %}>
+                            {{ comuna.nombre }}
+                        </option>
+                    {% endif %}
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+    
+    <div>
+        <label for="direccion_terma_edit" class="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
+        <textarea class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="direccion_terma_edit" name="direccion_terma" rows="2">{{ terma.direccion_terma|default:'' }}</textarea>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+            <label for="plan_actual_edit" class="block text-sm font-medium text-gray-700 mb-1">Plan de Suscripción</label>
+            <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="plan_actual_edit" name="plan_actual">
+                <option value="">Sin plan</option>
+                {% for plan in planes %}
+                    <option value="{{ plan.id }}" {% if terma.plan_actual.id == plan.id %}selected{% endif %}>
+                        {{ plan.get_nombre_display }} - {{ plan.porcentaje_comision }}% comisión
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label for="estado_suscripcion_edit" class="block text-sm font-medium text-gray-700 mb-1">Estado *</label>
+            <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="estado_suscripcion_edit" name="estado_suscripcion" required>
+                <option value="activa" {% if terma.estado_suscripcion == 'activa' %}selected{% endif %}>Activa</option>
+                <option value="inactiva" {% if terma.estado_suscripcion == 'inactiva' %}selected{% endif %}>Inactiva</option>
+            </select>
+        </div>
+    </div>
+    
+    <!-- Información del administrador actual (solo lectura) -->
+    {% if terma.administrador %}
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <h5 class="font-medium text-blue-800 mb-2">Administrador Actual</h5>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-blue-700">
+            <div>
+                <span class="font-medium">Nombre:</span> {{ terma.administrador.nombre }} {{ terma.administrador.apellido }}
+            </div>
+            <div>
+                <span class="font-medium">Email:</span> {{ terma.administrador.email }}
+            </div>
+        </div>
+        <p class="text-xs text-blue-600 mt-2">
+            <i class="fas fa-info-circle mr-1"></i>
+            Para cambiar el administrador, debe hacerse desde la gestión de usuarios.
+        </p>
+    </div>
+    {% else %}
+    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+        <h5 class="font-medium text-yellow-800 mb-1">Sin Administrador Asignado</h5>
+        <p class="text-sm text-yellow-700">Esta terma no tiene un administrador asignado.</p>
+    </div>
+    {% endif %}
+</div>

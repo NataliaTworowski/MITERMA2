@@ -1,0 +1,163 @@
+<!-- Detalle de la Terma -->
+<div class="space-y-6">
+    <!-- Información básica -->
+    <div class="bg-gray-50 rounded-lg p-4">
+        <h4 class="font-semibold text-gray-800 mb-3">Información Básica</h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div>
+                <span class="font-medium text-gray-700">Nombre:</span><br>
+                <span class="text-gray-900">{{ terma.nombre_terma }}</span>
+            </div>
+            <div>
+                <span class="font-medium text-gray-700">RUT Empresa:</span><br>
+                <span class="text-gray-900">{{ terma.rut_empresa|default:"No especificado" }}</span>
+            </div>
+            <div>
+                <span class="font-medium text-gray-700">Email:</span><br>
+                <span class="text-gray-900">{{ terma.email_terma|default:"No especificado" }}</span>
+            </div>
+            <div>
+                <span class="font-medium text-gray-700">Teléfono:</span><br>
+                <span class="text-gray-900">{{ terma.telefono_terma|default:"No especificado" }}</span>
+            </div>
+            <div>
+                <span class="font-medium text-gray-700">Estado:</span><br>
+                <span class="px-2 py-1 rounded-full text-xs font-semibold {% if terma.estado_suscripcion == 'activa' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                    {{ terma.get_estado_suscripcion_display }}
+                </span>
+            </div>
+            <div>
+                <span class="font-medium text-gray-700">Fecha Suscripción:</span><br>
+                <span class="text-gray-900">{{ terma.fecha_suscripcion|date:"d/m/Y"|default:"No especificada" }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ubicación -->
+    <div class="bg-gray-50 rounded-lg p-4">
+        <h4 class="font-semibold text-gray-800 mb-3">Ubicación</h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div>
+                <span class="font-medium text-gray-700">Región:</span><br>
+                <span class="text-gray-900">{{ terma.comuna.region.nombre|default:"No especificada" }}</span>
+            </div>
+            <div>
+                <span class="font-medium text-gray-700">Comuna:</span><br>
+                <span class="text-gray-900">{{ terma.comuna.nombre|default:"No especificada" }}</span>
+            </div>
+        </div>
+        {% if terma.direccion_terma %}
+        <div class="mt-3">
+            <span class="font-medium text-gray-700">Dirección:</span><br>
+            <span class="text-gray-900">{{ terma.direccion_terma }}</span>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Administrador -->
+    {% if terma.administrador %}
+    <div class="bg-gray-50 rounded-lg p-4">
+        <h4 class="font-semibold text-gray-800 mb-3">Administrador</h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div>
+                <span class="font-medium text-gray-700">Nombre:</span><br>
+                <span class="text-gray-900">{{ terma.administrador.nombre }} {{ terma.administrador.apellido }}</span>
+            </div>
+            <div>
+                <span class="font-medium text-gray-700">Email:</span><br>
+                <span class="text-gray-900">{{ terma.administrador.email }}</span>
+            </div>
+            <div>
+                <span class="font-medium text-gray-700">Teléfono:</span><br>
+                <span class="text-gray-900">{{ terma.administrador.telefono|default:"No especificado" }}</span>
+            </div>
+            <div>
+                <span class="font-medium text-gray-700">Estado:</span><br>
+                <span class="px-2 py-1 rounded-full text-xs font-semibold {% if terma.administrador.estado %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                    {% if terma.administrador.estado %}Activo{% else %}Inactivo{% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Plan y suscripción -->
+    <div class="bg-gray-50 rounded-lg p-4">
+        <h4 class="font-semibold text-gray-800 mb-3">Plan y Suscripción</h4>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+            <div>
+                <span class="font-medium text-gray-700">Plan Actual:</span><br>
+                <span class="text-gray-900">
+                    {% if terma.plan_actual %}
+                        {{ terma.plan_actual.get_nombre_display }}
+                    {% else %}
+                        Sin plan asignado
+                    {% endif %}
+                </span>
+            </div>
+            <div>
+                <span class="font-medium text-gray-700">Comisión Actual:</span><br>
+                <span class="text-gray-900">{{ terma.porcentaje_comision_actual }}%</span>
+            </div>
+            <div>
+                <span class="font-medium text-gray-700">Límite Fotos:</span><br>
+                <span class="text-gray-900">
+                    {% if terma.limite_fotos_actual == -1 %}
+                        Ilimitado
+                    {% else %}
+                        {{ terma.limite_fotos_actual }}
+                    {% endif %}
+                </span>
+            </div>
+            <div>
+                <span class="font-medium text-gray-700">Límite Ventas Diario:</span><br>
+                <span class="text-gray-900">{{ terma.limite_ventas_diario }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Descripción -->
+    {% if terma.descripcion_terma %}
+    <div class="bg-gray-50 rounded-lg p-4">
+        <h4 class="font-semibold text-gray-800 mb-3">Descripción</h4>
+        <p class="text-gray-900 text-sm">{{ terma.descripcion_terma }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Estadísticas básicas -->
+    <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4">
+        <h4 class="font-semibold text-gray-800 mb-3">Estadísticas Básicas</h4>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+            <div class="text-center">
+                <div class="text-2xl font-bold text-blue-600">{{ estadisticas.total_visitantes|default:0 }}</div>
+                <div class="text-xs text-gray-600">Total Visitantes</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-green-600">${{ estadisticas.ingresos_historicos|floatformat:0|default:0 }}</div>
+                <div class="text-xs text-gray-600">Ingresos Históricos</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-purple-600">{{ estadisticas.total_fotos|default:0 }}</div>
+                <div class="text-xs text-gray-600">Total Fotos</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-yellow-600">
+                    {% if estadisticas.calificacion_promedio %}
+                        {{ estadisticas.calificacion_promedio|floatformat:1 }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </div>
+                <div class="text-xs text-gray-600">Calificación</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-indigo-600">{{ estadisticas.total_calificaciones|default:0 }}</div>
+                <div class="text-xs text-gray-600">Calificaciones</div>
+            </div>
+            <div class="text-center">
+                <div class="text-2xl font-bold text-red-600">${{ estadisticas.ingresos_mes|floatformat:0|default:0 }}</div>
+                <div class="text-xs text-gray-600">Ingresos Este Mes</div>
+            </div>
+        </div>
+    </div>
+</div>

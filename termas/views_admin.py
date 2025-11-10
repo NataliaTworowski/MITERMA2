@@ -495,3 +495,466 @@ def ver_detalle_distribucion(request, distribucion_id):
     }
     
     return render(request, 'administrador_general/detalle_distribucion.html', context)
+
+
+@admin_general_required
+def usuarios_registrados(request):
+    """Vista principal para gestión de usuarios registrados"""
+    from django.core.paginator import Paginator
+    from django.db.models import Q, Count
+    
+    # Filtros
+    filtros = {
+        'nombre': request.GET.get('nombre', ''),
+        'email': request.GET.get('email', ''),
+        'rol': request.GET.get('rol', ''),
+        'estado': request.GET.get('estado', ''),
+        'terma': request.GET.get('terma', '')
+    }
+    
+    # Query base
+    usuarios = Usuario.objects.select_related('rol', 'terma').order_by('-fecha_registro')
+    
+    # Aplicar filtros
+    if filtros['nombre']:
+        usuarios = usuarios.filter(
+            Q(nombre__icontains=filtros['nombre']) |
+            Q(apellido__icontains=filtros['nombre'])
+        )
+    
+    if filtros['email']:
+        usuarios = usuarios.filter(email__icontains=filtros['email'])
+    
+    if filtros['rol']:
+        usuarios = usuarios.filter(rol__id=filtros['rol'])
+    
+    if filtros['estado']:
+        estado_bool = filtros['estado'] == 'activo'
+        usuarios = usuarios.filter(estado=estado_bool)
+    
+    if filtros['terma']:
+        usuarios = usuarios.filter(terma__id=filtros['terma'])
+    
+    # Paginación
+    paginator = Paginator(usuarios, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Estadísticas
+    stats = {
+        'total_usuarios': Usuario.objects.count(),
+        'usuarios_activos': Usuario.objects.filter(estado=True).count(),
+        'usuarios_inactivos': Usuario.objects.filter(estado=False).count(),
+        'admins_terma': Usuario.objects.filter(rol__nombre='administrador_terma').count(),
+        'clientes': Usuario.objects.filter(rol__nombre='cliente').count(),
+    }
+    
+    # Datos para formularios
+    roles = Rol.objects.filter(activo=True).order_by('nombre')
+    termas = Terma.objects.filter(estado_suscripcion='activa').order_by('nombre_terma')
+    
+    context = {
+        'page_obj': page_obj,
+        'usuarios': page_obj,
+        'stats': stats,
+        'roles': roles,
+        'termas': termas,
+        'filtros': filtros
+    }
+    
+    return render(request, 'administrador_general/usuarios_registrados.html', context)
+
+
+@admin_general_required
+@require_http_methods(["POST"])
+def crear_usuario(request):
+    """Vista para crear un nuevo usuario"""
+    try:
+        data = json.loads(request.body)
+        
+        # Validar datos requeridos
+        required_fields = ['email', 'nombre', 'apellido', 'rol_id']
+        for field in required_fields:
+            if not data.get(field):
+                return JsonResponse({
+                    'success': False,
+                    'message': f'El campo {field} es requerido.'
+                }, status=400)
+        
+        # Verificar que el email no exista
+        if Usuario.objects.filter(email=data['email']).exists():
+            return JsonResponse({
+                'success': False,
+                'message': 'Ya existe un usuario con este email.'
+            }, status=400)
+        
+        # Obtener el rol
+        try:
+            rol = Rol.objects.get(id=data['rol_id'], activo=True)
+        except Rol.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'message': 'Rol no válido.'
+            }, status=400)
+        
+        # Validar terma si es administrador de terma
+        terma = None
+        if rol.nombre == 'administrador_terma' and data.get('terma_id'):
+            try:
+                terma = Terma.objects.get(id=data['terma_id'])
+                # Verificar que la terma no tenga ya un administrador
+                if Usuario.objects.filter(terma=terma, rol__nombre='administrador_terma').exists():
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Esta terma ya tiene un administrador asignado.'
+                    }, status=400)
+            except Terma.DoesNotExist:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Terma no válida.'
+                }, status=400)
+        
+        # Generar contraseña temporal
+        password_temporal = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
+        
+        # Crear el usuario
+        usuario = Usuario.objects.create(
+            email=data['email'],
+            nombre=data['nombre'],
+            apellido=data['apellido'],
+            telefono=data.get('telefono', ''),
+            rol=rol,
+            terma=terma,
+            estado=True
+        )
+        usuario.set_password(password_temporal)
+        usuario.save()
+        
+        # Si es administrador de terma, asignarlo a la terma
+        if terma and rol.nombre == 'administrador_terma':
+            terma.administrador = usuario
+            terma.save()
+        
+        # Enviar email con credenciales (opcional)
+        try:
+            contexto_email = {
+                'usuario_nombre': usuario.get_full_name(),
+                'email': usuario.email,
+                'password': password_temporal,
+                'rol': rol.nombre,
+                'terma': terma.nombre_terma if terma else None,
+                'login_url': request.build_absolute_uri('/usuarios/login/')
+            }
+            
+            mensaje_html = render_to_string('emails/nuevo_usuario.html', contexto_email)
+            
+            send_mail(
+                subject='Cuenta creada en MiTerma',
+                message='',
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[usuario.email],
+                html_message=mensaje_html,
+                fail_silently=True,
+            )
+        except Exception as e:
+            print(f"Error enviando email: {e}")
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Usuario creado exitosamente.',
+            'password_temporal': password_temporal
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error al crear usuario: {str(e)}'
+        }, status=500)
+
+
+@admin_general_required
+@require_http_methods(["POST"])
+def editar_usuario(request, usuario_id):
+    """Vista para editar un usuario existente"""
+    try:
+        usuario = get_object_or_404(Usuario, id=usuario_id)
+        data = json.loads(request.body)
+        
+        # Validar datos requeridos
+        required_fields = ['nombre', 'apellido', 'rol_id']
+        for field in required_fields:
+            if not data.get(field):
+                return JsonResponse({
+                    'success': False,
+                    'message': f'El campo {field} es requerido.'
+                }, status=400)
+        
+        # Obtener el rol
+        try:
+            rol = Rol.objects.get(id=data['rol_id'], activo=True)
+        except Rol.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'message': 'Rol no válido.'
+            }, status=400)
+        
+        # Validar terma si es administrador de terma
+        terma = None
+        if rol.nombre == 'administrador_terma':
+            if data.get('terma_id'):
+                try:
+                    terma = Terma.objects.get(id=data['terma_id'])
+                    # Verificar que la terma no tenga ya otro administrador
+                    otro_admin = Usuario.objects.filter(
+                        terma=terma, 
+                        rol__nombre='administrador_terma'
+                    ).exclude(id=usuario.id).first()
+                    
+                    if otro_admin:
+                        return JsonResponse({
+                            'success': False,
+                            'message': 'Esta terma ya tiene otro administrador asignado.'
+                        }, status=400)
+                except Terma.DoesNotExist:
+                    return JsonResponse({
+                        'success': False,
+                        'message': 'Terma no válida.'
+                    }, status=400)
+        
+        # Actualizar usuario
+        usuario.nombre = data['nombre']
+        usuario.apellido = data['apellido']
+        usuario.telefono = data.get('telefono', '')
+        
+        # Manejar cambio de rol
+        rol_anterior = usuario.rol
+        usuario.rol = rol
+        
+        # Manejar asignación de terma
+        terma_anterior = usuario.terma
+        usuario.terma = terma
+        
+        usuario.save()
+        
+        # Actualizar relaciones de terma
+        if terma_anterior and terma_anterior != terma:
+            # Remover de terma anterior
+            if terma_anterior.administrador == usuario:
+                terma_anterior.administrador = None
+                terma_anterior.save()
+        
+        if terma and rol.nombre == 'administrador_terma':
+            # Asignar a nueva terma
+            terma.administrador = usuario
+            terma.save()
+        elif rol.nombre != 'administrador_terma' and usuario.terma:
+            # Si cambió de rol y ya no es admin de terma, remover asignación
+            if usuario.terma.administrador == usuario:
+                usuario.terma.administrador = None
+                usuario.terma.save()
+            usuario.terma = None
+            usuario.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Usuario actualizado exitosamente.'
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error al actualizar usuario: {str(e)}'
+        }, status=500)
+
+
+@admin_general_required
+@require_http_methods(["POST"])
+def cambiar_estado_usuario(request, usuario_id):
+    """Vista para habilitar/deshabilitar un usuario"""
+    try:
+        print(f"[DEBUG] Intentando cambiar estado de usuario ID: {usuario_id}")
+        usuario = get_object_or_404(Usuario, id=usuario_id)
+        print(f"[DEBUG] Usuario encontrado: {usuario.email}")
+        
+        # No permitir desactivar al propio usuario
+        # Usar múltiples métodos para obtener el usuario actual
+        usuario_actual = None
+        if hasattr(request, 'user') and hasattr(request.user, 'id'):
+            usuario_actual = request.user
+            print(f"[DEBUG] Usuario actual desde request.user: {usuario_actual.email}")
+        elif 'usuario_id' in request.session:
+            try:
+                usuario_actual = Usuario.objects.get(id=request.session.get('usuario_id'))
+                print(f"[DEBUG] Usuario actual desde sesión: {usuario_actual.email}")
+            except Usuario.DoesNotExist:
+                print(f"[DEBUG] No se encontró usuario con ID: {request.session.get('usuario_id')}")
+                pass
+        
+        if usuario_actual and usuario_actual.id == usuario.id:
+            print(f"[DEBUG] Intento de auto-desactivación bloqueado")
+            return JsonResponse({
+                'success': False,
+                'message': 'No puedes desactivar tu propia cuenta.'
+            }, status=400)
+        
+        # Cambiar estado
+        estado_anterior = usuario.estado
+        usuario.estado = not usuario.estado
+        usuario.is_active = usuario.estado
+        usuario.save()
+        print(f"[DEBUG] Estado cambiado de {estado_anterior} a {usuario.estado}")
+        
+        # Si se desactiva un admin de terma, remover de la terma
+        if not usuario.estado and usuario.terma and usuario.rol and usuario.rol.nombre == 'administrador_terma':
+            if usuario.terma.administrador == usuario:
+                usuario.terma.administrador = None
+                usuario.terma.save()
+                print(f"[DEBUG] Administrador removido de terma: {usuario.terma.nombre_terma}")
+        
+        estado_texto = 'activado' if usuario.estado else 'desactivado'
+        print(f"[DEBUG] Usuario {estado_texto} exitosamente")
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Usuario {estado_texto} exitosamente.',
+            'nuevo_estado': usuario.estado
+        })
+        
+    except Exception as e:
+        print(f"[DEBUG] Error en cambiar_estado_usuario: {e}")
+        print(f"[DEBUG] Tipo de error: {type(e)}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({
+            'success': False,
+            'message': f'Error al cambiar estado del usuario: {str(e)}'
+        }, status=500)
+        
+    except Exception as e:
+        print(f"Error en cambiar_estado_usuario: {e}")
+        return JsonResponse({
+            'success': False,
+            'message': f'Error al cambiar estado del usuario: {str(e)}'
+        }, status=500)
+
+
+@admin_general_required
+@require_http_methods(["GET"])
+def detalle_usuario(request, usuario_id):
+    """Vista para obtener los detalles de un usuario"""
+    try:
+        print(f"[DEBUG] Obteniendo detalles para usuario ID: {usuario_id}")
+        usuario = get_object_or_404(Usuario, id=usuario_id)
+        print(f"[DEBUG] Usuario encontrado: {usuario.email}")
+        
+        # Obtener estadísticas si es cliente
+        estadisticas = {}
+        try:
+            if usuario.rol and usuario.rol.nombre == 'cliente':
+                print(f"[DEBUG] Calculando estadísticas para cliente")
+                from ventas.models import Compra
+                compras = Compra.objects.filter(cliente=usuario)
+                total_gastado = 0
+                for compra in compras:
+                    if compra.monto_total:
+                        total_gastado += float(compra.monto_total)
+                
+                ultima_compra = compras.last()
+                estadisticas = {
+                    'total_compras': compras.count(),
+                    'total_gastado': total_gastado,
+                    'ultima_compra': ultima_compra.fecha_compra.isoformat() if ultima_compra and ultima_compra.fecha_compra else None
+                }
+                print(f"[DEBUG] Estadísticas calculadas: {estadisticas}")
+        except Exception as e:
+            print(f"[DEBUG] Error al calcular estadísticas: {e}")
+            estadisticas = {}
+        
+        # Preparar datos con manejo seguro de None
+        try:
+            data = {
+                'id': usuario.id,
+                'email': usuario.email or '',
+                'nombre': usuario.nombre or '',
+                'apellido': usuario.apellido or '',
+                'telefono': usuario.telefono or '',
+                'estado': bool(usuario.estado),
+                'fecha_registro': usuario.fecha_registro.strftime('%d/%m/%Y %H:%M') if usuario.fecha_registro else 'No disponible',
+                'rol': {
+                    'id': usuario.rol.id if usuario.rol else None,
+                    'nombre': usuario.rol.nombre if usuario.rol else 'Sin rol'
+                },
+                'terma': {
+                    'id': usuario.terma.id if usuario.terma else None,
+                    'nombre': usuario.terma.nombre_terma if usuario.terma else 'Sin asignar'
+                },
+                'estadisticas': estadisticas
+            }
+            print(f"[DEBUG] Datos preparados exitosamente")
+        except Exception as e:
+            print(f"[DEBUG] Error al preparar datos: {e}")
+            raise e
+        
+        return JsonResponse({
+            'success': True,
+            'data': data
+        })
+        
+    except Exception as e:
+        print(f"[DEBUG] Error general en detalle_usuario: {e}")
+        print(f"[DEBUG] Tipo de error: {type(e)}")
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({
+            'success': False,
+            'message': f'Error al obtener detalles del usuario: {str(e)}'
+        }, status=500)
+
+
+@admin_general_required
+@require_http_methods(["POST"])
+def resetear_password_usuario(request, usuario_id):
+    """Vista para resetear la contraseña de un usuario"""
+    try:
+        usuario = get_object_or_404(Usuario, id=usuario_id)
+        
+        # Generar nueva contraseña temporal
+        password_temporal = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
+        
+        # Actualizar contraseña
+        usuario.set_password(password_temporal)
+        usuario.save()
+        
+        # Enviar email con nueva contraseña (opcional)
+        try:
+            contexto_email = {
+                'usuario_nombre': usuario.get_full_name(),
+                'email': usuario.email,
+                'password': password_temporal,
+                'login_url': request.build_absolute_uri('/usuarios/login/')
+            }
+            
+            mensaje_html = render_to_string('emails/password_reset_admin.html', contexto_email)
+            
+            send_mail(
+                subject='Contraseña restablecida - MiTerma',
+                message='',
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[usuario.email],
+                html_message=mensaje_html,
+                fail_silently=True,
+            )
+        except Exception as e:
+            print(f"Error enviando email: {e}")
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Contraseña restablecida exitosamente.',
+            'password_temporal': password_temporal
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error al restablecer contraseña: {str(e)}'
+        }, status=500)

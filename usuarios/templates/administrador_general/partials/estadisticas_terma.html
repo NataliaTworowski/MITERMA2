@@ -1,0 +1,191 @@
+<!-- Estadísticas Detalladas de la Terma -->
+<div class="space-y-6">
+    <!-- Header con nombre de la terma -->
+    <div class="text-center border-b border-gray-200 pb-4">
+        <h3 class="text-xl font-bold text-gray-800">{{ terma.nombre_terma }}</h3>
+        <p class="text-gray-600">Estadísticas detalladas</p>
+    </div>
+
+    <!-- Estadísticas generales en cards -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+            <div class="text-2xl font-bold text-blue-600">{{ estadisticas_generales.total_visitantes|default:0 }}</div>
+            <div class="text-xs text-blue-700">Total Visitantes</div>
+        </div>
+        
+        <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+            <div class="text-2xl font-bold text-green-600">${{ estadisticas_generales.ingresos_historicos|floatformat:0|default:0 }}</div>
+            <div class="text-xs text-green-700">Ingresos Totales</div>
+        </div>
+        
+        <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 text-center">
+            <div class="text-2xl font-bold text-purple-600">${{ estadisticas_generales.ingresos_mes_actual|floatformat:0|default:0 }}</div>
+            <div class="text-xs text-purple-700">Ingresos Este Mes</div>
+        </div>
+        
+        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
+            <div class="text-2xl font-bold text-yellow-600">
+                {% if estadisticas_generales.calificacion_promedio %}
+                    {{ estadisticas_generales.calificacion_promedio|floatformat:1 }}
+                {% else %}
+                    N/A
+                {% endif %}
+            </div>
+            <div class="text-xs text-yellow-700">Calificación</div>
+        </div>
+        
+        <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 text-center">
+            <div class="text-2xl font-bold text-indigo-600">{{ estadisticas_generales.total_calificaciones|default:0 }}</div>
+            <div class="text-xs text-indigo-700">Reseñas</div>
+        </div>
+        
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+            <div class="text-2xl font-bold text-red-600">{{ estadisticas_generales.total_fotos|default:0 }}</div>
+            <div class="text-xs text-red-700">Total Fotos</div>
+        </div>
+    </div>
+
+    <!-- Comparativa mensual vs últimos 30 días -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Estadísticas del mes actual -->
+        <div class="bg-white border border-gray-200 rounded-lg p-4">
+            <h4 class="font-semibold text-gray-800 mb-3 flex items-center">
+                <i class="fas fa-calendar-alt mr-2 text-blue-500"></i>
+                Mes Actual
+            </h4>
+            <div class="space-y-3">
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Ventas:</span>
+                    <span class="font-semibold">{{ ventas_mes.total_ventas|default:0 }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Ingresos:</span>
+                    <span class="font-semibold text-green-600">${{ ventas_mes.ingresos_totales|floatformat:0|default:0 }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Visitantes:</span>
+                    <span class="font-semibold text-blue-600">{{ ventas_mes.visitantes_totales|default:0 }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Estadísticas de los últimos 30 días -->
+        <div class="bg-white border border-gray-200 rounded-lg p-4">
+            <h4 class="font-semibold text-gray-800 mb-3 flex items-center">
+                <i class="fas fa-clock mr-2 text-purple-500"></i>
+                Últimos 30 días
+            </h4>
+            <div class="space-y-3">
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Ventas:</span>
+                    <span class="font-semibold">{{ ventas_30_dias.total_ventas|default:0 }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Ingresos:</span>
+                    <span class="font-semibold text-green-600">${{ ventas_30_dias.ingresos_totales|floatformat:0|default:0 }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">Visitantes:</span>
+                    <span class="font-semibold text-blue-600">{{ ventas_30_dias.visitantes_totales|default:0 }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráfico de ocupación diaria (últimos 30 días) -->
+    <div class="bg-white border border-gray-200 rounded-lg p-4">
+        <h4 class="font-semibold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-chart-line mr-2 text-green-500"></i>
+            Ocupación Diaria (Últimos 30 días)
+        </h4>
+        
+        <!-- Gráfico simple con barras Tailwind CSS -->
+        <div class="space-y-2 max-h-64 overflow-y-auto">
+            {% for dia in ocupacion_diaria %}
+            <div class="flex items-center space-x-3">
+                <div class="w-16 text-xs text-gray-600">{{ dia.fecha }}</div>
+                <div class="flex-1 bg-gray-200 rounded-full h-4 relative">
+                    {% if dia.visitantes > 0 %}
+                        <div class="bg-gradient-to-r from-blue-400 to-blue-600 h-4 rounded-full transition-all duration-300 
+                                    {% if dia.visitantes <= 10 %}w-1/12
+                                    {% elif dia.visitantes <= 20 %}w-2/12
+                                    {% elif dia.visitantes <= 30 %}w-3/12
+                                    {% elif dia.visitantes <= 40 %}w-4/12
+                                    {% elif dia.visitantes <= 50 %}w-5/12
+                                    {% elif dia.visitantes <= 60 %}w-6/12
+                                    {% elif dia.visitantes <= 70 %}w-7/12
+                                    {% elif dia.visitantes <= 80 %}w-8/12
+                                    {% elif dia.visitantes <= 90 %}w-9/12
+                                    {% elif dia.visitantes <= 100 %}w-10/12
+                                    {% else %}w-full
+                                    {% endif %}"></div>
+                    {% endif %}
+                </div>
+                <div class="w-12 text-xs font-semibold text-blue-600">{{ dia.visitantes }}</div>
+            </div>
+            {% empty %}
+            <div class="text-center text-gray-500 py-8">
+                <i class="fas fa-chart-line text-4xl mb-2"></i>
+                <p>No hay datos de ocupación disponibles</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Plan y configuración actual -->
+    <div class="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4">
+        <h4 class="font-semibold text-gray-800 mb-3 flex items-center">
+            <i class="fas fa-cog mr-2 text-blue-500"></i>
+            Configuración Actual
+        </h4>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+            <div>
+                <span class="font-medium text-gray-700">Plan:</span><br>
+                <span class="text-blue-600 font-semibold">
+                    {% if terma.plan_actual %}
+                        {{ terma.plan_actual.get_nombre_display }}
+                    {% else %}
+                        Sin plan
+                    {% endif %}
+                </span>
+            </div>
+            <div>
+                <span class="font-medium text-gray-700">Comisión:</span><br>
+                <span class="text-purple-600 font-semibold">{{ terma.porcentaje_comision_actual }}%</span>
+            </div>
+            <div>
+                <span class="font-medium text-gray-700">Límite Fotos:</span><br>
+                <span class="text-green-600 font-semibold">
+                    {% if terma.limite_fotos_actual == -1 %}
+                        Ilimitado
+                    {% else %}
+                        {{ terma.limite_fotos_actual }}
+                    {% endif %}
+                </span>
+            </div>
+            <div>
+                <span class="font-medium text-gray-700">Límite Ventas/día:</span><br>
+                <span class="text-orange-600 font-semibold">{{ terma.limite_ventas_diario }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estado actual -->
+    <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+        <h4 class="font-semibold text-gray-800 mb-3 flex items-center">
+            <i class="fas fa-info-circle mr-2 text-gray-500"></i>
+            Estado Actual
+        </h4>
+        <div class="flex items-center justify-between">
+            <div>
+                <span class="text-gray-600">Estado de suscripción:</span>
+                <span class="ml-2 px-3 py-1 rounded-full text-sm font-semibold {% if terma.estado_suscripcion == 'activa' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                    {{ terma.get_estado_suscripcion_display }}
+                </span>
+            </div>
+            <div class="text-sm text-gray-600">
+                Desde: {{ terma.fecha_suscripcion|date:"d/m/Y"|default:"N/A" }}
+            </div>
+        </div>
+    </div>
+</div>

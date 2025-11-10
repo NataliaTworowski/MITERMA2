@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuenta creada en MiTerma</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#667eea',
+                        secondary: '#764ba2'
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="font-sans leading-relaxed text-gray-800 max-w-2xl mx-auto p-5 bg-gray-50">
+    <!-- Header -->
+    <div class="bg-gradient-to-r from-primary to-secondary text-white p-8 text-center rounded-t-lg">
+        <h1 class="text-3xl font-bold mb-2">¡Bienvenido a MiTerma!</h1>
+        <p class="text-lg opacity-90">Tu cuenta ha sido creada exitosamente</p>
+    </div>
+    
+    <!-- Content -->
+    <div class="bg-white p-8 rounded-b-lg border border-gray-200 shadow-lg">
+        <p class="mb-6 text-gray-700">Hola <strong class="text-gray-900">{{ usuario_nombre }}</strong>,</p>
+        
+        <p class="mb-6 text-gray-700">Te damos la bienvenida a MiTerma. Tu cuenta ha sido creada exitosamente con los siguientes datos:</p>
+        
+        <!-- Credentials Box -->
+        <div class="bg-gray-50 border border-gray-200 rounded-lg p-6 my-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                <span class="text-2xl mr-2">🔑</span> Credenciales de Acceso
+            </h3>
+            
+            <div class="space-y-4">
+                <div class="bg-white border-l-4 border-blue-500 p-4 rounded">
+                    <span class="font-semibold text-gray-700">Email:</span>
+                    <span class="text-gray-900 ml-2">{{ email }}</span>
+                </div>
+                
+                <div class="bg-white border-l-4 border-green-500 p-4 rounded">
+                    <span class="font-semibold text-gray-700">Contraseña temporal:</span>
+                    <span class="text-gray-900 ml-2 font-mono bg-gray-100 px-2 py-1 rounded">{{ password }}</span>
+                </div>
+                
+                <div class="bg-white border-l-4 border-purple-500 p-4 rounded">
+                    <span class="font-semibold text-gray-700">Rol asignado:</span>
+                    <span class="text-gray-900 ml-2 capitalize">{{ rol|title }}</span>
+                </div>
+                
+                {% if terma %}
+                <div class="bg-white border-l-4 border-yellow-500 p-4 rounded">
+                    <span class="font-semibold text-gray-700">Terma asignada:</span>
+                    <span class="text-gray-900 ml-2">{{ terma }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Login Button -->
+        <div class="text-center my-8">
+            <a href="{{ login_url }}" 
+               class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-lg transition-colors duration-200 no-underline">
+                Iniciar Sesión
+            </a>
+        </div>
+        
+        <!-- Important Notice -->
+        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 my-6">
+            <h4 class="text-yellow-800 font-semibold mb-2 flex items-center">
+                <span class="text-xl mr-2">⚠️</span> Importante:
+            </h4>
+            <p class="text-yellow-700 text-sm leading-relaxed m-0">
+                Por tu seguridad, te recomendamos cambiar tu contraseña después del primer inicio de sesión.
+                Esta contraseña temporal es de un solo uso para configurar tu cuenta.
+            </p>
+        </div>
+        
+        <p class="mb-4 text-gray-700">Si tienes alguna pregunta o necesitas ayuda, no dudes en contactarnos.</p>
+        
+        <p class="mb-0 text-gray-700 font-medium">¡Gracias por formar parte de la comunidad MiTerma!</p>
+    </div>
+    
+    <!-- Footer -->
+    <div class="text-center mt-8 pt-6 border-t border-gray-300 text-gray-500 text-sm">
+        <p class="mb-2">Este es un correo automático, por favor no respondas a este mensaje.</p>
+        <p class="mb-0">&copy; 2025 MiTerma. Todos los derechos reservados.</p>
+    </div>
+</body>
+</html>

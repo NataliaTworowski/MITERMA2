@@ -24,6 +24,17 @@ urlpatterns = [
     path('billetera/', views.billetera, name='billetera'),
     path('vincular-mercadopago/', views.vincular_mercadopago, name='vincular_mercadopago'),
     path('mercadopago-callback/', views.mercadopago_callback, name='mercadopago_callback'),
+    
+    # URLs para gestión de termas asociadas (Admin General)
+    path('admin/termas-asociadas/', views.admin_general_termas_asociadas, name='admin_general_termas_asociadas'),
+    path('admin/crear-terma/', views.admin_general_crear_terma, name='admin_general_crear_terma'),
+    path('admin/terma-detalle/<int:terma_id>/', views.admin_general_terma_detalle, name='admin_general_terma_detalle'),
+    path('admin/terma-editar/<int:terma_id>/', views.admin_general_terma_editar, name='admin_general_terma_editar'),
+    path('admin/terma-actualizar/<int:terma_id>/', views.admin_general_terma_actualizar, name='admin_general_terma_actualizar'),
+    path('admin/terma-cambiar-estado/<int:terma_id>/', views.admin_general_terma_cambiar_estado, name='admin_general_terma_cambiar_estado'),
+    path('admin/terma-estadisticas/<int:terma_id>/', views.admin_general_terma_estadisticas, name='admin_general_terma_estadisticas'),
+    
     # API endpoints
     path('api/login/', api.LoginAPIView.as_view(), name='api_login'),
+    path('api/comunas/<int:region_id>/', views.api_comunas_por_region, name='api_comunas_por_region'),
 ]

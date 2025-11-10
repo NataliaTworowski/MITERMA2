@@ -882,3 +882,488 @@ def mercadopago_callback(request):
         return redirect('usuarios:billetera')
 
 
+# =============================================
+# VISTAS PARA GESTIÓN DE TERMAS ASOCIADAS
+# =============================================
+
+@admin_general_required
+def admin_general_termas_asociadas(request):
+    """Vista principal para gestionar termas asociadas"""
+    from termas.models import Terma, Region, Comuna, PlanSuscripcion
+    from django.core.paginator import Paginator
+    from django.db.models import Count, Q
+    from datetime import datetime, timedelta
+    
+    # Filtros
+    nombre_filtro = request.GET.get('nombre', '')
+    estado_filtro = request.GET.get('estado', '')
+    region_filtro = request.GET.get('region', '')
+    comuna_filtro = request.GET.get('comuna', '')
+    
+    # Query base
+    termas = Terma.objects.select_related('comuna__region', 'administrador', 'plan_actual').all()
+    
+    # Aplicar filtros
+    if nombre_filtro:
+        termas = termas.filter(nombre_terma__icontains=nombre_filtro)
+    
+    if estado_filtro:
+        termas = termas.filter(estado_suscripcion=estado_filtro)
+    
+    if region_filtro:
+        termas = termas.filter(comuna__region_id=region_filtro)
+    
+    if comuna_filtro:
+        termas = termas.filter(comuna_id=comuna_filtro)
+    
+    # Ordenar
+    termas = termas.order_by('-fecha_suscripcion', 'nombre_terma')
+    
+    # Paginación
+    paginator = Paginator(termas, 12)  # 12 termas por página
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Estadísticas
+    today = datetime.now().date()
+    first_day_month = today.replace(day=1)
+    
+    stats = {
+        'total_termas': Terma.objects.count(),
+        'termas_activas': Terma.objects.filter(estado_suscripcion='activa').count(),
+        'termas_inactivas': Terma.objects.filter(estado_suscripcion='inactiva').count(),
+        'termas_mes': Terma.objects.filter(fecha_suscripcion__gte=first_day_month).count(),
+    }
+    
+    # Obtener regiones y comunas para los filtros
+    regiones = Region.objects.all().order_by('nombre')
+    comunas = Comuna.objects.all().order_by('nombre')
+    
+    # Obtener planes disponibles
+    planes = PlanSuscripcion.objects.all()
+    
+    context = {
+        'page_obj': page_obj,
+        'termas': page_obj,
+        'stats': stats,
+        'regiones': regiones,
+        'comunas': comunas,
+        'planes': planes,
+        'filtros': {
+            'nombre': nombre_filtro,
+            'estado': estado_filtro,
+            'region': region_filtro,
+            'comuna': comuna_filtro,
+        },
+    }
+    
+    return render(request, 'administrador_general/termas_asociadas.html', context)
+
+
+@admin_general_required
+@require_http_methods(["POST"])
+def admin_general_crear_terma(request):
+    """Vista para crear una nueva terma"""
+    from termas.models import Terma, Comuna, PlanSuscripcion
+    from django.utils import timezone
+    import json
+    
+    try:
+        # Obtener datos del formulario
+        nombre_terma = request.POST.get('nombre_terma')
+        rut_empresa = request.POST.get('rut_empresa', '')
+        descripcion_terma = request.POST.get('descripcion_terma', '')
+        email_terma = request.POST.get('email_terma')
+        telefono_terma = request.POST.get('telefono_terma', '')
+        comuna_id = request.POST.get('comuna')
+        direccion_terma = request.POST.get('direccion_terma', '')
+        plan_actual_id = request.POST.get('plan_actual')
+        estado_suscripcion = request.POST.get('estado_suscripcion', 'inactiva')
+        
+        # Validaciones básicas
+        if not nombre_terma or not email_terma or not comuna_id:
+            return JsonResponse({
+                'success': False,
+                'message': 'Faltan campos obligatorios (nombre, email, comuna).'
+            }, status=400)
+        
+        # Verificar que la comuna existe
+        try:
+            comuna = Comuna.objects.get(id=comuna_id)
+        except Comuna.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'message': 'Comuna seleccionada no válida.'
+            }, status=400)
+        
+        # Verificar que el plan existe (si se seleccionó)
+        plan_actual = None
+        if plan_actual_id:
+            try:
+                plan_actual = PlanSuscripcion.objects.get(id=plan_actual_id)
+            except PlanSuscripcion.DoesNotExist:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Plan seleccionado no válido.'
+                }, status=400)
+        
+        # Crear la terma
+        terma = Terma.objects.create(
+            nombre_terma=nombre_terma,
+            descripcion_terma=descripcion_terma,
+            direccion_terma=direccion_terma,
+            comuna=comuna,
+            telefono_terma=telefono_terma,
+            email_terma=email_terma,
+            rut_empresa=rut_empresa,
+            estado_suscripcion=estado_suscripcion,
+            fecha_suscripcion=timezone.now().date(),
+            plan_actual=plan_actual
+        )
+        
+        # Actualizar configuración según plan si se asignó uno
+        if plan_actual:
+            terma.actualizar_configuracion_segun_plan()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Terma "{nombre_terma}" creada exitosamente.'
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error al crear la terma: {str(e)}'
+        }, status=500)
+
+
+@admin_general_required
+@require_http_methods(["GET"])
+def admin_general_terma_detalle(request, terma_id):
+    """Vista para obtener los detalles de una terma"""
+    from termas.models import Terma
+    from django.template.loader import render_to_string
+    
+    try:
+        terma = get_object_or_404(Terma, id=terma_id)
+        
+        # Calcular estadísticas básicas
+        estadisticas = {
+            'total_visitantes': terma.total_visitantes(),
+            'ingresos_historicos': terma.ingresos_historicos(),
+            'ingresos_mes': terma.ingresos_totales(),
+            'calificacion_promedio': terma.promedio_calificacion(),
+            'total_calificaciones': terma.total_calificaciones(),
+            'total_fotos': terma.total_fotos(),
+        }
+        
+        html_content = render_to_string('administrador_general/partials/detalle_terma.html', {
+            'terma': terma,
+            'estadisticas': estadisticas
+        })
+        
+        return JsonResponse({
+            'success': True,
+            'html': html_content
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error al obtener el detalle: {str(e)}'
+        }, status=500)
+
+
+@admin_general_required
+@require_http_methods(["GET"])
+def admin_general_terma_editar(request, terma_id):
+    """Vista para obtener el formulario de edición de una terma"""
+    from termas.models import Terma, Region, Comuna, PlanSuscripcion
+    from django.template.loader import render_to_string
+    
+    try:
+        terma = get_object_or_404(Terma, id=terma_id)
+        
+        # Obtener datos para el formulario
+        regiones = Region.objects.all().order_by('nombre')
+        comunas = Comuna.objects.all().order_by('nombre')
+        planes = PlanSuscripcion.objects.all()
+        
+        html_content = render_to_string('administrador_general/partials/editar_terma_form.html', {
+            'terma': terma,
+            'regiones': regiones,
+            'comunas': comunas,
+            'planes': planes,
+        })
+        
+        return JsonResponse({
+            'success': True,
+            'html': html_content
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error al cargar los datos para edición: {str(e)}'
+        }, status=500)
+
+
+@admin_general_required
+@require_http_methods(["POST"])
+def admin_general_terma_actualizar(request, terma_id):
+    """Vista para actualizar una terma"""
+    from termas.models import Terma, Comuna, PlanSuscripcion
+    
+    try:
+        terma = get_object_or_404(Terma, id=terma_id)
+        
+        # Obtener datos del formulario
+        nombre_terma = request.POST.get('nombre_terma')
+        rut_empresa = request.POST.get('rut_empresa', '')
+        descripcion_terma = request.POST.get('descripcion_terma', '')
+        email_terma = request.POST.get('email_terma')
+        telefono_terma = request.POST.get('telefono_terma', '')
+        comuna_id = request.POST.get('comuna')
+        direccion_terma = request.POST.get('direccion_terma', '')
+        plan_actual_id = request.POST.get('plan_actual')
+        estado_suscripcion = request.POST.get('estado_suscripcion', 'inactiva')
+        
+        # Validaciones básicas
+        if not nombre_terma or not email_terma or not comuna_id:
+            return JsonResponse({
+                'success': False,
+                'message': 'Faltan campos obligatorios (nombre, email, comuna).'
+            }, status=400)
+        
+        # Verificar que la comuna existe
+        try:
+            comuna = Comuna.objects.get(id=comuna_id)
+        except Comuna.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'message': 'Comuna seleccionada no válida.'
+            }, status=400)
+        
+        # Verificar que el plan existe (si se seleccionó)
+        plan_actual = None
+        if plan_actual_id:
+            try:
+                plan_actual = PlanSuscripcion.objects.get(id=plan_actual_id)
+            except PlanSuscripcion.DoesNotExist:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Plan seleccionado no válido.'
+                }, status=400)
+        
+        # Actualizar la terma
+        terma.nombre_terma = nombre_terma
+        terma.descripcion_terma = descripcion_terma
+        terma.direccion_terma = direccion_terma
+        terma.comuna = comuna
+        terma.telefono_terma = telefono_terma
+        terma.email_terma = email_terma
+        terma.rut_empresa = rut_empresa
+        terma.estado_suscripcion = estado_suscripcion
+        terma.plan_actual = plan_actual
+        terma.save()
+        
+        # Actualizar configuración según plan si se cambió
+        if plan_actual:
+            terma.actualizar_configuracion_segun_plan()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Terma "{nombre_terma}" actualizada exitosamente.'
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error al actualizar la terma: {str(e)}'
+        }, status=500)
+
+
+@admin_general_required
+@require_http_methods(["POST"])
+def admin_general_terma_cambiar_estado(request, terma_id):
+    """Vista para cambiar el estado de una terma (activar/desactivar)"""
+    from termas.models import Terma
+    import json
+    
+    try:
+        terma = get_object_or_404(Terma, id=terma_id)
+        
+        data = json.loads(request.body)
+        nuevo_estado = data.get('estado')
+        
+        if nuevo_estado not in ['activa', 'inactiva']:
+            return JsonResponse({
+                'success': False,
+                'message': 'Estado no válido.'
+            }, status=400)
+        
+        terma.estado_suscripcion = nuevo_estado
+        terma.save()
+        
+        mensaje = f'Terma "{terma.nombre_terma}" {"activada" if nuevo_estado == "activa" else "desactivada"} exitosamente.'
+        
+        return JsonResponse({
+            'success': True,
+            'message': mensaje
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'message': f'Error al cambiar el estado: {str(e)}'
+        }, status=500)
+
+
+@admin_general_required
+@require_http_methods(["GET"])
+def admin_general_terma_estadisticas(request, terma_id):
+    """Vista para obtener estadísticas detalladas de una terma"""
+    from termas.models import Terma
+    from ventas.models import Compra, DetalleCompra
+    from django.template.loader import render_to_string
+    from django.db.models import Sum, Count, Avg
+    from datetime import datetime, timedelta
+    
+    try:
+        terma = get_object_or_404(Terma, id=terma_id)
+        
+        # Calcular estadísticas detalladas
+        hoy = datetime.now().date()
+        hace_30_dias = hoy - timedelta(days=30)
+        primer_dia_mes = hoy.replace(day=1)
+        
+        # Estadísticas generales
+        try:
+            estadisticas_generales = {
+                'total_visitantes': terma.total_visitantes() or 0,
+                'ingresos_historicos': terma.ingresos_historicos() or 0,
+                'ingresos_mes_actual': terma.ingresos_totales() or 0,
+                'calificacion_promedio': terma.promedio_calificacion(),
+                'total_calificaciones': terma.total_calificaciones() or 0,
+                'total_fotos': terma.total_fotos() or 0,
+            }
+        except Exception as e:
+            print(f"Error en estadísticas generales: {e}")
+            estadisticas_generales = {
+                'total_visitantes': 0,
+                'ingresos_historicos': 0,
+                'ingresos_mes_actual': 0,
+                'calificacion_promedio': None,
+                'total_calificaciones': 0,
+                'total_fotos': 0,
+            }
+        
+        # Estadísticas de ventas del último mes
+        try:
+            ventas_mes = Compra.objects.filter(
+                terma=terma,
+                estado_pago='pagado',
+                fecha_compra__date__gte=primer_dia_mes,
+                fecha_compra__date__lte=hoy
+            ).aggregate(
+                total_ventas=Count('id'),
+                ingresos_totales=Sum('total'),
+                visitantes_totales=Sum('detalles__cantidad')
+            )
+            
+            # Asegurar valores no nulos
+            ventas_mes = {
+                'total_ventas': ventas_mes['total_ventas'] or 0,
+                'ingresos_totales': ventas_mes['ingresos_totales'] or 0,
+                'visitantes_totales': ventas_mes['visitantes_totales'] or 0,
+            }
+        except Exception as e:
+            print(f"Error en ventas del mes: {e}")
+            ventas_mes = {
+                'total_ventas': 0,
+                'ingresos_totales': 0,
+                'visitantes_totales': 0,
+            }
+        
+        # Estadísticas de los últimos 30 días
+        try:
+            ventas_30_dias = Compra.objects.filter(
+                terma=terma,
+                estado_pago='pagado',
+                fecha_compra__date__gte=hace_30_dias,
+                fecha_compra__date__lte=hoy
+            ).aggregate(
+                total_ventas=Count('id'),
+                ingresos_totales=Sum('total'),
+                visitantes_totales=Sum('detalles__cantidad')
+            )
+            
+            # Asegurar valores no nulos
+            ventas_30_dias = {
+                'total_ventas': ventas_30_dias['total_ventas'] or 0,
+                'ingresos_totales': ventas_30_dias['ingresos_totales'] or 0,
+                'visitantes_totales': ventas_30_dias['visitantes_totales'] or 0,
+            }
+        except Exception as e:
+            print(f"Error en ventas de 30 días: {e}")
+            ventas_30_dias = {
+                'total_ventas': 0,
+                'ingresos_totales': 0,
+                'visitantes_totales': 0,
+            }
+        
+        # Ocupación promedio por día (últimos 30 días)
+        ocupacion_diaria = []
+        for i in range(30):
+            fecha = hoy - timedelta(days=i)
+            try:
+                ventas_dia = DetalleCompra.objects.filter(
+                    horario_disponible__terma=terma,
+                    horario_disponible__fecha=fecha,
+                    compra__estado_pago='pagado'
+                ).aggregate(
+                    total_visitantes=Sum('cantidad')
+                )['total_visitantes'] or 0
+            except Exception as e:
+                print(f"Error calculando ocupación para fecha {fecha}: {e}")
+                ventas_dia = 0
+            
+            ocupacion_diaria.append({
+                'fecha': fecha.strftime('%d/%m'),
+                'visitantes': ventas_dia
+            })
+        
+        ocupacion_diaria.reverse()  # Mostrar del más antiguo al más reciente
+        
+        html_content = render_to_string('administrador_general/partials/estadisticas_terma.html', {
+            'terma': terma,
+            'estadisticas_generales': estadisticas_generales,
+            'ventas_mes': ventas_mes,
+            'ventas_30_dias': ventas_30_dias,
+            'ocupacion_diaria': ocupacion_diaria,
+        })
+        
+        return JsonResponse({
+            'success': True,
+            'html': html_content
+        })
+        
+    except Exception as e:
+        print(f"Error general en estadísticas: {e}")
+        return JsonResponse({
+            'success': False,
+            'message': f'Error al cargar las estadísticas: {str(e)}'
+        }, status=500)
+
+
+@require_http_methods(["GET"])
+def api_comunas_por_region(request, region_id):
+    """API para obtener comunas de una región"""
+    from termas.models import Comuna
+    try:
+        comunas = Comuna.objects.filter(region_id=region_id).values('id', 'nombre').order_by('nombre')
+        return JsonResponse(list(comunas), safe=False)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+

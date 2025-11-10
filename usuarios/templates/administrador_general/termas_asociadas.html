@@ -1,0 +1,686 @@
+{% extends 'base_admin_general.html' %}
+{% load static %}
+
+{% block title %}Termas Asociadas - MiTerma{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-6">
+    <!-- Encabezado -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-2">Gestión de Termas Asociadas</h1>
+        <p class="text-gray-600">Administra todas las termas registradas en la plataforma</p>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-lg p-6 shadow-md border-l-4 border-blue-500">
+            <div class="text-3xl font-bold text-blue-600 mb-2">{{ stats.total_termas }}</div>
+            <div class="text-gray-600">Total Termas</div>
+        </div>
+        <div class="bg-white rounded-lg p-6 shadow-md border-l-4 border-green-500">
+            <div class="text-3xl font-bold text-green-600 mb-2">{{ stats.termas_activas }}</div>
+            <div class="text-gray-600">Activas</div>
+        </div>
+        <div class="bg-white rounded-lg p-6 shadow-md border-l-4 border-red-500">
+            <div class="text-3xl font-bold text-red-600 mb-2">{{ stats.termas_inactivas }}</div>
+            <div class="text-gray-600">Inactivas</div>
+        </div>
+        <div class="bg-white rounded-lg p-6 shadow-md border-l-4 border-purple-500">
+            <div class="text-3xl font-bold text-purple-600 mb-2">{{ stats.termas_mes }}</div>
+            <div class="text-gray-600">Nuevas este mes</div>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+        <form method="GET" class="space-y-4">
+            <!-- Campos de filtro -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                    <label for="nombre" class="block text-sm font-medium text-gray-700 mb-2">Nombre de Terma</label>
+                    <input type="text" 
+                           class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" 
+                           id="nombre" name="nombre" value="{{ filtros.nombre }}" placeholder="Buscar por nombre...">
+                </div>
+                <div>
+                    <label for="estado" class="block text-sm font-medium text-gray-700 mb-2">Estado</label>
+                    <select class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" id="estado" name="estado">
+                        <option value="">Todos</option>
+                        <option value="activa" {% if filtros.estado == 'activa' %}selected{% endif %}>Activa</option>
+                        <option value="inactiva" {% if filtros.estado == 'inactiva' %}selected{% endif %}>Inactiva</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="region" class="block text-sm font-medium text-gray-700 mb-2">Región</label>
+                    <select class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" id="region" name="region">
+                        <option value="">Todas</option>
+                        {% for region in regiones %}
+                            <option value="{{ region.id }}" {% if filtros.region == region.id|stringformat:'s' %}selected{% endif %}>
+                                {{ region.nombre }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="comuna" class="block text-sm font-medium text-gray-700 mb-2">Comuna</label>
+                    <select class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200" id="comuna" name="comuna">
+                        <option value="">Todas</option>
+                        {% for comuna in comunas %}
+                            <option value="{{ comuna.id }}" {% if filtros.comuna == comuna.id|stringformat:'s' %}selected{% endif %}>
+                                {{ comuna.nombre }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Separador -->
+            <div class="border-t border-gray-200 pt-4">
+                <!-- Botones de acción -->
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+                    <div class="flex flex-wrap gap-3">
+                        <button type="submit" class="inline-flex items-center justify-center px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium rounded-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 min-w-[120px]">
+                            <i class="fas fa-search mr-2 text-sm"></i>
+                            <span>Filtrar</span>
+                        </button>
+                        <a href="{% url 'usuarios:admin_general_termas_asociadas' %}" class="inline-flex items-center justify-center px-6 py-2.5 bg-gradient-to-r from-gray-600 to-gray-700 text-white font-medium rounded-lg hover:from-gray-700 hover:to-gray-800 focus:outline-none focus:ring-4 focus:ring-gray-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 min-w-[120px]">
+                            <i class="fas fa-times mr-2 text-sm"></i>
+                            <span>Limpiar</span>
+                        </a>
+                    </div>
+                    <div>
+                        <button type="button" class="inline-flex items-center justify-center px-6 py-2.5 bg-gradient-to-r from-green-600 to-green-700 text-white font-medium rounded-lg hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-4 focus:ring-green-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 min-w-[140px]" onclick="abrirModalCrear()">
+                            <i class="fas fa-plus mr-2 text-sm"></i>
+                            <span>Nueva Terma</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Lista de Termas -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for terma in page_obj %}
+        <div class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
+            <!-- Header de la tarjeta -->
+            <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-t-lg">
+                <div class="flex justify-between items-center">
+                    <h5 class="font-bold text-lg">{{ terma.nombre_terma }}</h5>
+                    <span class="px-3 py-1 rounded-full text-xs font-semibold {% if terma.estado_suscripcion == 'activa' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+                        {{ terma.get_estado_suscripcion_display }}
+                    </span>
+                </div>
+            </div>
+            
+            <!-- Cuerpo de la tarjeta -->
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+                    <div>
+                        <span class="font-semibold text-gray-700">Comuna:</span><br>
+                        <span class="text-gray-600">{{ terma.comuna.nombre|default:"No especificada" }}</span>
+                    </div>
+                    <div>
+                        <span class="font-semibold text-gray-700">Administrador:</span><br>
+                        <span class="text-gray-600">
+                            {% if terma.administrador %}
+                                {{ terma.administrador.nombre }} {{ terma.administrador.apellido }}
+                            {% else %}
+                                Sin asignar
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div>
+                        <span class="font-semibold text-gray-700">Email:</span><br>
+                        <span class="text-gray-600 break-words">{{ terma.email_terma|default:"No especificado" }}</span>
+                    </div>
+                    <div>
+                        <span class="font-semibold text-gray-700">Teléfono:</span><br>
+                        <span class="text-gray-600">{{ terma.telefono_terma|default:"No especificado" }}</span>
+                    </div>
+                    <div>
+                        <span class="font-semibold text-gray-700">Plan Actual:</span><br>
+                        <span class="text-gray-600">
+                            {% if terma.plan_actual %}
+                                {{ terma.plan_actual.get_nombre_display }}
+                            {% else %}
+                                Sin plan
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div>
+                        <span class="font-semibold text-gray-700">Fecha Suscripción:</span><br>
+                        <span class="text-gray-600">{{ terma.fecha_suscripcion|date:"d/m/Y"|default:"No especificada" }}</span>
+                    </div>
+                </div>
+                
+                {% if terma.descripcion_terma %}
+                <div class="mt-4">
+                    <span class="font-semibold text-gray-700">Descripción:</span><br>
+                    <span class="text-gray-600 text-sm">{{ terma.descripcion_terma|truncatewords:20 }}</span>
+                </div>
+                {% endif %}
+                
+                <!-- Botones de acción -->
+                <div class="mt-6 flex flex-wrap gap-2">
+                    <button class="px-3 py-1 text-xs bg-blue-100 text-blue-800 rounded-md hover:bg-blue-200 transition duration-200" onclick="verDetalleTerma('{{ terma.id }}')">
+                        <i class="fas fa-eye mr-1"></i> Ver Detalle
+                    </button>
+                    <button class="px-3 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-md hover:bg-yellow-200 transition duration-200" onclick="editarTerma('{{ terma.id }}')">
+                        <i class="fas fa-edit mr-1"></i> Editar
+                    </button>
+                    {% if terma.estado_suscripcion == 'activa' %}
+                    <button class="px-3 py-1 text-xs bg-red-100 text-red-800 rounded-md hover:bg-red-200 transition duration-200" onclick="desactivarTerma('{{ terma.id }}')">
+                        <i class="fas fa-ban mr-1"></i> Desactivar
+                    </button>
+                    {% else %}
+                    <button class="px-3 py-1 text-xs bg-green-100 text-green-800 rounded-md hover:bg-green-200 transition duration-200" onclick="activarTerma('{{ terma.id }}')">
+                        <i class="fas fa-check mr-1"></i> Activar
+                    </button>
+                    {% endif %}
+                    <button class="px-3 py-1 text-xs bg-purple-100 text-purple-800 rounded-md hover:bg-purple-200 transition duration-200" onclick="verEstadisticas('{{ terma.id }}')">
+                        <i class="fas fa-chart-bar mr-1"></i> Estadísticas
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-span-full">
+            <div class="text-center py-12">
+                <i class="fas fa-search text-6xl text-gray-400 mb-4"></i>
+                <h4 class="text-xl font-semibold text-gray-600 mb-2">No se encontraron termas</h4>
+                <p class="text-gray-500">Intenta ajustar los filtros de búsqueda</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Paginación -->
+    {% if page_obj.has_other_pages %}
+    <div class="mt-8">
+        <nav aria-label="Paginación">
+            <div class="flex justify-center">
+                <div class="flex space-x-2">
+                    {% if page_obj.has_previous %}
+                    <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}" class="px-3 py-2 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition duration-200">Anterior</a>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <span class="px-3 py-2 bg-blue-600 text-white rounded-md">{{ num }}</span>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}" class="px-3 py-2 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition duration-200">{{ num }}</a>
+                    {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                    <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}" class="px-3 py-2 bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition duration-200">Siguiente</a>
+                    {% endif %}
+                </div>
+            </div>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal para crear nueva terma -->
+<div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-[9999]" id="crearTermaModal">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-gray-900">
+                    <i class="fas fa-plus mr-2"></i> Crear Nueva Terma
+                </h3>
+                <button type="button" class="text-gray-400 hover:text-gray-600" onclick="closeModal('crearTermaModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="formCrearTerma" method="POST" class="space-y-4">
+                {% csrf_token %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="nombre_terma" class="block text-sm font-medium text-gray-700 mb-1">Nombre de la Terma *</label>
+                        <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="nombre_terma" name="nombre_terma" required>
+                    </div>
+                    <div>
+                        <label for="rut_empresa" class="block text-sm font-medium text-gray-700 mb-1">RUT Empresa</label>
+                        <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="rut_empresa" name="rut_empresa" placeholder="12.345.678-9">
+                    </div>
+                </div>
+                
+                <div>
+                    <label for="descripcion_terma" class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                    <textarea class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="descripcion_terma" name="descripcion_terma" rows="3"></textarea>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="email_terma" class="block text-sm font-medium text-gray-700 mb-1">Email *</label>
+                        <input type="email" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="email_terma" name="email_terma" required>
+                    </div>
+                    <div>
+                        <label for="telefono_terma" class="block text-sm font-medium text-gray-700 mb-1">Teléfono</label>
+                        <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="telefono_terma" name="telefono_terma">
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="region_crear" class="block text-sm font-medium text-gray-700 mb-1">Región *</label>
+                        <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="region_crear" name="region" required>
+                            <option value="">Seleccionar región</option>
+                            {% for region in regiones %}
+                                <option value="{{ region.id }}">{{ region.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="comuna_crear" class="block text-sm font-medium text-gray-700 mb-1">Comuna *</label>
+                        <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="comuna_crear" name="comuna" required>
+                            <option value="">Seleccionar comuna</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div>
+                    <label for="direccion_terma" class="block text-sm font-medium text-gray-700 mb-1">Dirección</label>
+                    <textarea class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="direccion_terma" name="direccion_terma" rows="2"></textarea>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="plan_actual" class="block text-sm font-medium text-gray-700 mb-1">Plan de Suscripción</label>
+                        <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="plan_actual" name="plan_actual">
+                            <option value="">Sin plan</option>
+                            {% for plan in planes %}
+                                <option value="{{ plan.id }}">{{ plan.get_nombre_display }} - {{ plan.porcentaje_comision }}% comisión</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="estado_suscripcion" class="block text-sm font-medium text-gray-700 mb-1">Estado *</label>
+                        <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" id="estado_suscripcion" name="estado_suscripcion" required>
+                            <option value="activa">Activa</option>
+                            <option value="inactiva">Inactiva</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-2 pt-4">
+                    <button type="button" class="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition duration-200" onclick="closeModal('crearTermaModal')">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition duration-200">
+                        <i class="fas fa-save mr-2"></i> Crear Terma
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para editar terma -->
+<div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-[9999]" id="editarTermaModal">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-gray-900">
+                    <i class="fas fa-edit mr-2"></i> Editar Terma
+                </h3>
+                <button type="button" class="text-gray-400 hover:text-gray-600" onclick="closeModal('editarTermaModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <form id="formEditarTerma" method="POST">
+                {% csrf_token %}
+                <input type="hidden" id="terma_id_edit" name="terma_id">
+                <div id="contenidoEdicion">
+                    <!-- Los campos se cargarán dinámicamente via JavaScript -->
+                </div>
+                <div class="flex justify-end space-x-2 pt-4">
+                    <button type="button" class="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition duration-200" onclick="closeModal('editarTermaModal')">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-200">
+                        <i class="fas fa-save mr-2"></i> Guardar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para ver detalle de terma -->
+<div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-[9999]" id="detalleTermaModal">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-gray-900">
+                    <i class="fas fa-info-circle mr-2"></i> Detalle de Terma
+                </h3>
+                <button type="button" class="text-gray-400 hover:text-gray-600" onclick="closeModal('detalleTermaModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div id="contenidoDetalle">
+                <!-- El contenido se cargará dinámicamente -->
+            </div>
+            
+            <div class="flex justify-end pt-4">
+                <button type="button" class="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition duration-200" onclick="closeModal('detalleTermaModal')">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para estadísticas -->
+<div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-[9999]" id="estadisticasModal">
+    <div class="relative top-5 mx-auto p-5 border w-11/12 md:w-4/5 lg:w-4/5 xl:w-3/4 shadow-lg rounded-md bg-white max-h-[95vh] overflow-y-auto">
+        <div class="mt-3">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-gray-900">
+                    <i class="fas fa-chart-bar mr-2"></i> Estadísticas de Terma
+                </h3>
+                <button type="button" class="text-gray-400 hover:text-gray-600" onclick="closeModal('estadisticasModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div id="contenidoEstadisticas">
+                <!-- El contenido se cargará dinámicamente -->
+            </div>
+            
+            <div class="flex justify-end pt-4 border-t border-gray-200">
+                <button type="button" class="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition duration-200" onclick="closeModal('estadisticasModal')">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+// Funciones para manejar modales de Tailwind CSS
+function showModal(modalId) {
+    document.getElementById(modalId).classList.remove('hidden');
+    // Prevenir scroll del body
+    document.body.style.overflow = 'hidden';
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.add('hidden');
+    // Restaurar scroll del body
+    document.body.style.overflow = 'auto';
+}
+
+// Cerrar modal al hacer click fuera de él
+window.addEventListener('click', function(event) {
+    const modals = ['crearTermaModal', 'editarTermaModal', 'detalleTermaModal', 'estadisticasModal'];
+    modals.forEach(modalId => {
+        const modal = document.getElementById(modalId);
+        if (event.target === modal) {
+            closeModal(modalId);
+        }
+    });
+});
+
+// Cerrar modal con tecla ESC
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        const modals = ['crearTermaModal', 'editarTermaModal', 'detalleTermaModal', 'estadisticasModal'];
+        modals.forEach(modalId => {
+            const modal = document.getElementById(modalId);
+            if (!modal.classList.contains('hidden')) {
+                closeModal(modalId);
+            }
+        });
+    }
+});
+
+// Cargar comunas según región seleccionada (para crear terma)
+document.getElementById('region_crear').addEventListener('change', function() {
+    const regionId = this.value;
+    const comunaSelect = document.getElementById('comuna_crear');
+    
+    comunaSelect.innerHTML = '<option value="">Seleccionar comuna</option>';
+    
+    if (regionId) {
+        fetch(`/usuarios/api/comunas/${regionId}/`)
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(comuna => {
+                    const option = new Option(comuna.nombre, comuna.id);
+                    comunaSelect.add(option);
+                });
+            })
+            .catch(error => {
+                console.error('Error al cargar comunas:', error);
+            });
+    }
+});
+
+// Función para abrir modal de crear terma
+function abrirModalCrear() {
+    showModal('crearTermaModal');
+}
+
+// Actualizar los enlaces de "Nueva Terma" para usar la función personalizada
+document.addEventListener('DOMContentLoaded', function() {
+    const btnNuevaTerma = document.querySelector('[data-bs-target="#crearTermaModal"]');
+    if (btnNuevaTerma) {
+        btnNuevaTerma.removeAttribute('data-bs-toggle');
+        btnNuevaTerma.removeAttribute('data-bs-target');
+        btnNuevaTerma.addEventListener('click', abrirModalCrear);
+    }
+});
+
+// Función para ver detalle de terma
+function verDetalleTerma(termaId) {
+    fetch(`/usuarios/admin/terma-detalle/${termaId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('contenidoDetalle').innerHTML = data.html;
+                showModal('detalleTermaModal');
+            } else {
+                Swal.fire('Error', data.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire('Error', 'Error al cargar el detalle de la terma', 'error');
+        });
+}
+
+// Función para editar terma
+function editarTerma(termaId) {
+    fetch(`/usuarios/admin/terma-editar/${termaId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('terma_id_edit').value = termaId;
+                document.getElementById('contenidoEdicion').innerHTML = data.html;
+                showModal('editarTermaModal');
+                
+                // Configurar el event listener para cargar comunas en el modal de edición
+                const regionEditSelect = document.getElementById('region_edit');
+                if (regionEditSelect) {
+                    regionEditSelect.addEventListener('change', function() {
+                        const regionId = this.value;
+                        const comunaSelect = document.getElementById('comuna_edit');
+                        
+                        comunaSelect.innerHTML = '<option value="">Seleccionar comuna</option>';
+                        
+                        if (regionId) {
+                            fetch(`/usuarios/api/comunas/${regionId}/`)
+                                .then(response => response.json())
+                                .then(data => {
+                                    data.forEach(comuna => {
+                                        const option = new Option(comuna.nombre, comuna.id);
+                                        comunaSelect.add(option);
+                                    });
+                                })
+                                .catch(error => {
+                                    console.error('Error al cargar comunas:', error);
+                                });
+                        }
+                    });
+                }
+            } else {
+                Swal.fire('Error', data.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire('Error', 'Error al cargar los datos para edición', 'error');
+        });
+}
+
+// Función para desactivar terma
+function desactivarTerma(termaId) {
+    Swal.fire({
+        title: '¿Desactivar terma?',
+        text: 'La terma no será visible para los usuarios',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Sí, desactivar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            cambiarEstadoTerma(termaId, 'inactiva');
+        }
+    });
+}
+
+// Función para activar terma
+function activarTerma(termaId) {
+    Swal.fire({
+        title: '¿Activar terma?',
+        text: 'La terma será visible para los usuarios',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#28a745',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Sí, activar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            cambiarEstadoTerma(termaId, 'activa');
+        }
+    });
+}
+
+// Función para cambiar estado de terma
+function cambiarEstadoTerma(termaId, nuevoEstado) {
+    fetch(`/usuarios/admin/terma-cambiar-estado/${termaId}/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify({ estado: nuevoEstado })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire('Éxito', data.message, 'success').then(() => {
+                location.reload();
+            });
+        } else {
+            Swal.fire('Error', data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire('Error', 'Error al cambiar el estado de la terma', 'error');
+    });
+}
+
+// Función para ver estadísticas
+function verEstadisticas(termaId) {
+    fetch(`/usuarios/admin/terma-estadisticas/${termaId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('contenidoEstadisticas').innerHTML = data.html;
+                showModal('estadisticasModal');
+            } else {
+                Swal.fire('Error', data.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire('Error', 'Error al cargar las estadísticas', 'error');
+        });
+}
+
+// Manejar envío del formulario de crear terma
+document.getElementById('formCrearTerma').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch('{% url "usuarios:admin_general_crear_terma" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire('Éxito', data.message, 'success').then(() => {
+                location.reload();
+            });
+        } else {
+            Swal.fire('Error', data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire('Error', 'Error al crear la terma', 'error');
+    });
+});
+
+// Manejar envío del formulario de editar terma
+document.getElementById('formEditarTerma').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const termaId = document.getElementById('terma_id_edit').value;
+    
+    fetch(`/usuarios/admin/terma-actualizar/${termaId}/`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire('Éxito', data.message, 'success').then(() => {
+                location.reload();
+            });
+        } else {
+            Swal.fire('Error', data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire('Error', 'Error al actualizar la terma', 'error');
+    });
+});
+</script>
+{% endblock %}
