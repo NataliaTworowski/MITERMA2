@@ -53,4 +53,11 @@ urlpatterns = [
     path('cambiar-estado-usuario/<int:usuario_id>/', views_admin.cambiar_estado_usuario, name='cambiar_estado_usuario'),
     path('detalle-usuario/<int:usuario_id>/', views_admin.detalle_usuario, name='detalle_usuario'),
     path('resetear-password-usuario/<int:usuario_id>/', views_admin.resetear_password_usuario, name='resetear_password_usuario'),
+    
+    # URLs para gestión de trabajadores (Admin Terma)
+    path('trabajadores/', views.trabajadores_terma, name='trabajadores_terma'),
+    path('crear-trabajador/', views.crear_trabajador, name='crear_trabajador'),
+    path('editar-trabajador/<int:trabajador_id>/', views.editar_trabajador, name='editar_trabajador'),
+    path('cambiar-estado-trabajador/<int:trabajador_id>/', views.cambiar_estado_trabajador, name='cambiar_estado_trabajador'),
+    path('detalle-trabajador/<int:trabajador_id>/', views.detalle_trabajador, name='detalle_trabajador'),
 ]

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bienvenido como trabajador - {{ terma_nombre }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden my-8">
+        <!-- Header -->
+        <div class="bg-gradient-to-br from-blue-500 to-purple-600 p-8 text-center text-white">
+            <div class="w-16 h-16 mx-auto mb-4 bg-white/20 rounded-full flex items-center justify-center text-3xl">
+                🌊
+            </div>
+            <h1 class="text-2xl font-semibold">¡Bienvenido al equipo!</h1>
+        </div>
+        
+        <!-- Content -->
+        <div class="p-8">
+            <!-- Welcome Message -->
+            <div class="bg-blue-50 border-l-4 border-blue-400 p-6 rounded-r-lg mb-6">
+                <h2 class="text-xl font-medium text-gray-800 mb-3">Hola {{ trabajador_nombre }},</h2>
+                <p class="text-gray-700 mb-2">¡Nos complace informarte que has sido agregado como <strong>trabajador</strong> en <strong>{{ terma_nombre }}</strong>!</p>
+                <p class="text-gray-700">A partir de ahora formas parte de nuestro equipo y tendrás acceso al sistema de gestión para realizar tus labores diarias.</p>
+            </div>
+            
+            <!-- Credenciales -->
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6">
+                <h3 class="text-lg font-medium text-yellow-800 mb-4">🔐 Credenciales de Acceso</h3>
+                <div class="space-y-4">
+                    <div class="bg-white p-4 rounded border-l-4 border-yellow-400">
+                        <div class="font-semibold text-gray-700">Usuario (Email):</div>
+                        <div class="bg-gray-100 px-3 py-1 rounded mt-2 font-mono text-sm">{{ trabajador_email }}</div>
+                    </div>
+                    <div class="bg-white p-4 rounded border-l-4 border-yellow-400">
+                        <div class="font-semibold text-gray-700">Contraseña temporal:</div>
+                        <div class="bg-gray-100 px-3 py-1 rounded mt-2 font-mono text-sm">{{ password_temporal }}</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Información de la terma -->
+            <div class="bg-teal-50 rounded-lg p-6 mb-6">
+                <h3 class="text-lg font-medium text-teal-700 mb-4">🏢 Información de la Terma</h3>
+                <div class="space-y-2 text-gray-700">
+                    <div><span class="font-semibold text-teal-700">Nombre:</span> {{ terma_nombre }}</div>
+                    {% if terma_direccion %}
+                    <div><span class="font-semibold text-teal-700">Dirección:</span> {{ terma_direccion }}</div>
+                    {% endif %}
+                    {% if terma_telefono %}
+                    <div><span class="font-semibold text-teal-700">Teléfono:</span> {{ terma_telefono }}</div>
+                    {% endif %}
+                    <div><span class="font-semibold text-teal-700">Tu rol:</span> Trabajador</div>
+                    <div><span class="font-semibold text-teal-700">Fecha de incorporación:</span> {{ fecha_actual|date:"d/m/Y" }}</div>
+                </div>
+            </div>
+            
+            <!-- Security Notice -->
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+                <h4 class="font-medium text-red-800 text-sm mb-2">⚠️ Importante - Seguridad de tu cuenta</h4>
+                <p class="text-red-700 text-sm">
+                    <strong>Por tu seguridad, te recomendamos cambiar tu contraseña temporal en tu primer inicio de sesión.</strong> 
+                    Nunca compartas tus credenciales con terceros y asegúrate de cerrar sesión al finalizar tu jornada laboral.
+                </p>
+            </div>
+            
+            <!-- Botón de acceso -->
+            <div class="text-center mb-8">
+                <a href="{{ site_url }}/usuarios/login/" class="inline-block bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold px-8 py-3 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-colors">
+                    Ingresar al Sistema
+                </a>
+            </div>
+            
+            <!-- Próximos pasos -->
+            <div class="border-t pt-6">
+                <h3 class="text-lg font-medium text-gray-800 mb-4">📋 Próximos pasos:</h3>
+                <ol class="text-gray-700 space-y-2 pl-4">
+                    <li class="flex items-start">
+                        <span class="bg-blue-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center mr-3 mt-0.5">1</span>
+                        Ingresa al sistema usando las credenciales proporcionadas
+                    </li>
+                    <li class="flex items-start">
+                        <span class="bg-blue-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center mr-3 mt-0.5">2</span>
+                        Cambia tu contraseña temporal por una segura
+                    </li>
+                    <li class="flex items-start">
+                        <span class="bg-blue-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center mr-3 mt-0.5">3</span>
+                        Familiarízate con las funciones disponibles
+                    </li>
+                    <li class="flex items-start">
+                        <span class="bg-blue-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center mr-3 mt-0.5">4</span>
+                        Contacta a tu supervisor si tienes dudas
+                    </li>
+                </ol>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="bg-gray-50 border-t px-8 py-6 text-center text-gray-600 text-xs">
+            <p class="font-semibold mb-1">{{ terma_nombre }} - Sistema de Gestión de Termas</p>
+            <p class="mb-1">Este es un mensaje automático, por favor no respondas a este correo.</p>
+            {% if terma_email %}
+            <p class="mb-1">Para consultas, contacta a: {{ terma_email }}</p>
+            {% endif %}
+            <p>© {{ fecha_actual|date:"Y" }} MiTerma. Todos los derechos reservados.</p>
+        </div>
+    </div>
+</body>
+</html>

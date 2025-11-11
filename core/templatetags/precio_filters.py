@@ -51,6 +51,21 @@ def formato_precio(value):
         return str(value)
 
 @register.filter
+def add_thousand_separator(value):
+    """
+    Agrega separadores de miles en formato chileno.
+    Ejemplo: 15000 -> 15.000
+    """
+    if value is None or value == '':
+        return '0'
+    
+    try:
+        numero = int(float(value))
+        return f"{numero:,}".replace(',', '.')
+    except (ValueError, TypeError):
+        return str(value)
+
+@register.filter
 def duracion_formato(value):
     """
     Formatea duración en horas.

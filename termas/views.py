@@ -3,6 +3,7 @@ from django.http import JsonResponse
 from django.db.models import Q
 from django.contrib import messages
 from django.views.decorators.http import require_http_methods
+from django.utils import timezone
 from .models import Terma, Region, Comuna, ImagenTerma
 from usuarios.models import Usuario
 from usuarios.decorators import admin_terma_required
@@ -10,7 +11,7 @@ import os
 import logging
 from entradas.models import EntradaTipo
 
-logger = logging.getLogger('seguridad')
+logger = logging.getLogger('termas.views')
 
 def lista_termas(request):
     """Vista para mostrar lista de termas."""
@@ -409,26 +410,19 @@ def analisis_terma(request):
         tipos_labels = list(tipos.keys())
         tipos_values = list(tipos.values())
 
-            # Análisis de servicios más vendidos usando ServicioTerma
-        from termas.models import ServicioTerma
-        servicios_terma = ServicioTerma.objects.filter(terma=terma)
-        servicios_populares = []
-        servicios_populares_total = 0
-        # Contar servicios vendidos usando la relación ManyToMany en DetalleCompra
-        for servicio in servicios_terma:
-            cantidad_vendida = DetalleCompra.objects.filter(
-                compra__terma=terma,
-                compra__estado_pago='pagado',
-                servicios=servicio
-            ).aggregate(total=Sum('cantidad'))['total'] or 0
-            servicios_populares.append({
-                'servicio': servicio.servicio,
-                'total_vendidos': cantidad_vendida
-            })
-            servicios_populares_total += cantidad_vendida
+            # Análisis de servicios más vendidos usando el nuevo método del modelo
+        servicios_data = terma.servicios_populares()
+        servicios_populares = [
+            {
+                'servicio': label,
+                'total_vendidos': data
+            }
+            for label, data in zip(servicios_data['labels'], servicios_data['data'])
+        ]
+        servicios_populares_total = sum(servicios_data['data'])
 
-        servicios_labels = [s['servicio'] for s in servicios_populares]
-        servicios_values = [s['total_vendidos'] for s in servicios_populares]
+        servicios_labels = servicios_data['labels']
+        servicios_values = servicios_data['data']
         
         # Análisis por día de la semana
         dias_semana = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
@@ -1168,4 +1162,509 @@ def cambiar_suscripcion(request):
     }
     
     return render(request, 'cambiar_suscripcion.html', context)
+
+
+@admin_terma_required
+def trabajadores_terma(request):
+    """Vista para gestionar trabajadores de la terma."""
+    try:
+        from usuarios.models import Usuario, Rol
+        from django.db.models import Q
+        from django.contrib.auth.hashers import make_password
+        import json
+        
+        usuario = request.user
+        terma = usuario.terma
+        
+        if not terma:
+            messages.error(request, 'No tienes una terma asignada.')
+            return redirect('usuarios:adm_termas')
+        
+        # Obtener todos los trabajadores relacionados con esta terma
+        # Esto incluye tanto trabajadores activos como históricos
+        from usuarios.models import HistorialTrabajador
+        from django.db.models import Q
+        
+        # Obtener IDs de usuarios que han trabajado en esta terma (activos o históricos)
+        usuarios_trabajadores_ids = set()
+        
+        # 1. Trabajadores actualmente activos en esta terma
+        trabajadores_activos = Usuario.objects.filter(
+            terma=terma,
+            rol__nombre='trabajador',
+            is_active=True
+        )
+        usuarios_trabajadores_ids.update(trabajadores_activos.values_list('id', flat=True))
+        
+        # 2. Trabajadores que aparecen en el historial de esta terma
+        historial_trabajadores_ids = HistorialTrabajador.objects.filter(
+            terma=terma
+        ).values_list('usuario_id', flat=True)
+        usuarios_trabajadores_ids.update(historial_trabajadores_ids)
+        
+        # Obtener todos los usuarios trabajadores (activos e inactivos)
+        trabajadores = Usuario.objects.filter(
+            id__in=usuarios_trabajadores_ids
+        ).select_related('rol').order_by('date_joined')
+        
+        # TODO: Eliminar estas líneas comentadas después de confirmar que funciona
+        # # Opción 1: Solo trabajadores activos con esta terma
+        # trabajadores_activos = Usuario.objects.filter(
+        #     terma=terma,
+        #     rol__nombre='trabajador',
+        #     is_active=True
+        # ).select_related('rol')
+        # 
+        # # Opción 2: Trabajadores inactivos que tienen rol 'cliente' pero que fueron trabajadores
+        # # Por ahora, vamos a mostrar solo los activos hasta implementar un mejor sistema
+        # trabajadores = trabajadores_activos.order_by('date_joined')
+        # 
+        # # TODO: Implementar sistema para recordar trabajadores anteriores de la terma
+        
+        # Obtener roles disponibles para trabajadores (solo 'trabajador')
+        roles_trabajador = Rol.objects.filter(nombre='trabajador').order_by('nombre')
+        logger.info(f"Roles trabajador disponibles: {[f'{r.nombre} (ID: {r.id})' for r in roles_trabajador]}")
+        
+        # Logging detallado de trabajadores
+        logger.info(f"=== LISTADO COMPLETO DE TRABAJADORES ===")
+        for trabajador in trabajadores:
+            estado_texto = "ACTIVO" if trabajador.is_active else "INACTIVO"
+            logger.info(f"ID: {trabajador.id} | {trabajador.get_full_name()} ({trabajador.email}) | Estado: {estado_texto}")
+        
+        # Estadísticas básicas
+        stats = {
+            'total_trabajadores': trabajadores.count(),
+            'trabajadores_activos': trabajadores.filter(is_active=True).count(),
+            'trabajadores_inactivos': trabajadores.filter(is_active=False).count(),
+        }
+        
+        logger.info(f"=== ESTADÍSTICAS CALCULADAS ===")
+        logger.info(f"Total: {stats['total_trabajadores']} | Activos: {stats['trabajadores_activos']} | Inactivos: {stats['trabajadores_inactivos']}")
+        
+        # Distribución por roles
+        distribuciones_roles = {}
+        for trabajador in trabajadores:
+            rol_nombre = trabajador.rol.nombre if trabajador.rol else 'Sin rol'
+            distribuciones_roles[rol_nombre] = distribuciones_roles.get(rol_nombre, 0) + 1
+        
+        context = {
+            'title': f'Trabajadores - {terma.nombre_terma}',
+            'usuario': usuario,
+            'terma': terma,
+            'trabajadores': trabajadores,
+            'roles_trabajador': roles_trabajador,
+            'stats': stats,
+            'distribuciones_roles': distribuciones_roles,
+        }
+        
+        return render(request, 'administrador_termas/trabajadores_terma.html', context)
+        
+    except Exception as e:
+        logger.error(f"Error en vista trabajadores_terma para usuario {request.user.email}: {str(e)}")
+        messages.error(request, 'Ocurrió un error al cargar la lista de trabajadores.')
+        return redirect('usuarios:adm_termas')
+
+
+@admin_terma_required
+def crear_trabajador(request):
+    """Vista para crear nuevo trabajador o actualizar rol de usuario existente."""
+    print("DEBUG: INICIO CREAR_TRABAJADOR - PRINT")
+    logger.info("=== INICIO CREAR_TRABAJADOR ===")
+    try:
+        from usuarios.models import Usuario, Rol
+        from django.contrib.auth.hashers import make_password
+        import json
+        import secrets
+        import string
+        
+        logger.info("=== IMPORTS OK ===")
+        
+        if request.method != 'POST':
+            return JsonResponse({'success': False, 'error': 'Método no permitido'})
+        
+        logger.info("=== METODO POST OK ===")
+        
+        usuario_admin = request.user
+        terma = usuario_admin.terma
+        
+        logger.info(f"=== USUARIO ADMIN: {usuario_admin.email}, TERMA: {terma.nombre_terma if terma else 'None'} ===")
+        
+        if not terma:
+            return JsonResponse({'success': False, 'error': 'No tienes una terma asignada.'})
+        
+        # Obtener datos del formulario
+        email = request.POST.get('email', '').strip().lower()
+        nombre = request.POST.get('nombre', '').strip()
+        apellido = request.POST.get('apellido', '').strip()
+        telefono = request.POST.get('telefono', '').strip()
+        
+        logger.info(f"=== DATOS RECIBIDOS: email={email}, nombre={nombre}, apellido={apellido} ===")
+        
+        # Validaciones
+        if not all([email, nombre, apellido]):
+            return JsonResponse({'success': False, 'error': 'Email, nombre y apellido son obligatorios.'})
+        
+        # SIEMPRE usar rol de trabajador - no confiar en el frontend
+        try:
+            rol = Rol.objects.get(nombre='trabajador')
+            logger.info(f"=== ROL ENCONTRADO: {rol.nombre} (ID: {rol.id}) ===")
+        except Rol.DoesNotExist:
+            logger.error("=== ROL TRABAJADOR NO EXISTE ===")
+            return JsonResponse({'success': False, 'error': 'Error: Rol de trabajador no encontrado en el sistema.'})
+        
+        # Verificar si el usuario ya existe
+        usuario_existente = Usuario.objects.filter(email=email).first()
+        
+        if usuario_existente:
+            logger.info(f"=== USUARIO EXISTE: {email} ===")
+            # Usuario existe - actualizar rol y terma
+            usuario_existente.rol = rol
+            usuario_existente.terma = terma
+            usuario_existente.is_active = True
+            usuario_existente.save()
+            
+            mensaje = f"Usuario {email} actualizado con rol {rol.nombre} para la terma {terma.nombre_terma}."
+            
+            return JsonResponse({
+                'success': True,
+                'mensaje': mensaje,
+                'usuario_id': usuario_existente.id
+            })
+        else:
+            logger.info(f"=== CREANDO NUEVO USUARIO: {email} ===")
+            # Crear nuevo usuario
+            # Generar contraseña temporal
+            password_temporal = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
+            
+            logger.info(f"=== PASSWORD TEMPORAL GENERADA ===")
+            
+            try:
+                nuevo_usuario = Usuario.objects.create(
+                    email=email,
+                    nombre=nombre,
+                    apellido=apellido,
+                    telefono=telefono,
+                    rol=rol,
+                    terma=terma,
+                    password=make_password(password_temporal),
+                    is_active=True,
+                    estado=True
+                )
+                logger.info(f"=== USUARIO CREADO: {nuevo_usuario.email} ===")
+            except Exception as e:
+                logger.error(f"=== ERROR AL CREAR USUARIO: {str(e)} ===")
+                return JsonResponse({'success': False, 'error': f'Error al crear usuario: {str(e)}'})
+            
+            # Enviar email de bienvenida al nuevo trabajador
+            logger.info(f"=== INICIO ENVIO EMAIL ===")
+            
+            try:
+                from .email_utils import enviar_email_bienvenida_trabajador
+                logger.info(f"=== LLAMANDO FUNCION EMAIL ===")
+                email_enviado = enviar_email_bienvenida_trabajador(nuevo_usuario, password_temporal, terma)
+                logger.info(f"=== RESULTADO EMAIL: {email_enviado} ===")
+            except Exception as e:
+                logger.error(f"=== ERROR EN ENVIO EMAIL: {str(e)} ===")
+                import traceback
+                logger.error(f"=== TRACEBACK: {traceback.format_exc()} ===")
+                email_enviado = False
+            
+            mensaje_email = " Se ha enviado un correo con las credenciales de acceso." if email_enviado else " No se pudo enviar el correo de bienvenida."
+            
+            logger.info(f"=== ANTES DE RETURN ===")
+            
+            return JsonResponse({
+                'success': True,
+                'mensaje': f"Trabajador {nombre} {apellido} creado exitosamente.{mensaje_email}",
+                'usuario_id': nuevo_usuario.id,
+                'password_temporal': password_temporal
+            })
+            
+    except Exception as e:
+        logger.error(f"=== ERROR GENERAL EN CREAR_TRABAJADOR: {str(e)} ===")
+        import traceback
+        logger.error(f"=== TRACEBACK COMPLETO: {traceback.format_exc()} ===")
+        return JsonResponse({'success': False, 'error': f'Error interno: {str(e)}'})
+
+
+@admin_terma_required
+def editar_trabajador(request, trabajador_id):
+    """Vista para editar trabajador."""
+    try:
+        from usuarios.models import Usuario, Rol
+        from .email_utils import enviar_email_actualizacion_trabajador
+        
+        if request.method != 'POST':
+            return JsonResponse({'success': False, 'error': 'Método no permitido'})
+        
+        usuario_admin = request.user
+        terma = usuario_admin.terma
+        
+        # Obtener trabajador
+        trabajador = get_object_or_404(Usuario, id=trabajador_id)
+        
+        # Verificar que el trabajador pertenece a la terma y tiene rol trabajador
+        if trabajador.terma != terma or (trabajador.rol and trabajador.rol.nombre != 'trabajador'):
+            return JsonResponse({'success': False, 'error': 'No tienes permisos para editar este trabajador.'})
+        
+        # Obtener datos del formulario
+        nombre = request.POST.get('nombre', '').strip()
+        apellido = request.POST.get('apellido', '').strip()
+        telefono = request.POST.get('telefono', '').strip()
+        rol_id = request.POST.get('rol_id')
+        
+        # Validaciones
+        if not all([nombre, apellido, rol_id]):
+            return JsonResponse({'success': False, 'error': 'Nombre, apellido y rol son obligatorios.'})
+        
+        # Verificar rol
+        try:
+            rol = Rol.objects.get(id=rol_id)
+            if rol.nombre != 'trabajador':
+                return JsonResponse({'success': False, 'error': 'Solo puedes asignar el rol de trabajador.'})
+        except Rol.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Rol no válido.'})
+        
+        # Actualizar trabajador
+        campos_anteriores = {
+            'nombre': trabajador.nombre,
+            'apellido': trabajador.apellido,
+            'telefono': trabajador.telefono
+        }
+        
+        trabajador.nombre = nombre
+        trabajador.apellido = apellido
+        trabajador.telefono = telefono or None
+        trabajador.rol = rol
+        trabajador.save()
+        
+        # Identificar campos que cambiaron para el email
+        campos_actualizados = {}
+        if campos_anteriores['nombre'] != nombre:
+            campos_actualizados['Nombre'] = nombre
+        if campos_anteriores['apellido'] != apellido:
+            campos_actualizados['Apellido'] = apellido
+        if campos_anteriores['telefono'] != (telefono or None):
+            campos_actualizados['Teléfono'] = telefono or 'Sin teléfono'
+        
+        # Enviar email si hubo cambios
+        email_enviado = False
+        if campos_actualizados:
+            email_enviado = enviar_email_actualizacion_trabajador(trabajador, terma, campos_actualizados)
+        
+        mensaje_email = " Se ha enviado una notificación por correo." if email_enviado else ""
+        
+        return JsonResponse({
+            'success': True,
+            'mensaje': f"Trabajador {nombre} {apellido} actualizado exitosamente.{mensaje_email}"
+        })
+        
+    except Exception as e:
+        logger.error(f"Error al editar trabajador: {str(e)}")
+        return JsonResponse({'success': False, 'error': f'Error interno: {str(e)}'})
+
+
+@admin_terma_required
+def cambiar_estado_trabajador(request, trabajador_id):
+    """Vista para habilitar/inhabilitar trabajador."""
+    print(f"FUNCIÓN CAMBIAR ESTADO LLAMADA - ID: {trabajador_id} ")
+    logger.info(f" FUNCIÓN CAMBIAR ESTADO LLAMADA - ID: {trabajador_id}")
+    logger.info(f"=== INICIO CAMBIAR ESTADO TRABAJADOR ID: {trabajador_id} ===")
+    try:
+        from usuarios.models import Usuario, Rol
+        from .email_utils import enviar_email_cambio_estado_trabajador
+        
+        if request.method != 'POST':
+            return JsonResponse({'success': False, 'error': 'Método no permitido'})
+        
+        usuario_admin = request.user
+        terma = usuario_admin.terma
+        
+        # Obtener trabajador
+        trabajador = get_object_or_404(Usuario, id=trabajador_id)
+        logger.info(f"=== TRABAJADOR ENCONTRADO: {trabajador.email}, ESTADO ACTUAL: {trabajador.is_active} ===")
+        
+        # Verificar que el trabajador pertenece a la terma y tiene rol trabajador
+        if trabajador.terma != terma or (trabajador.rol and trabajador.rol.nombre != 'trabajador'):
+            return JsonResponse({'success': False, 'error': 'No tienes permisos para modificar este trabajador.'})
+        
+        # No permitir desactivar al mismo administrador
+        if trabajador.id == usuario_admin.id:
+            return JsonResponse({'success': False, 'error': 'No puedes desactivar tu propia cuenta.'})
+        
+        # Cambiar estado
+        nuevo_estado = not trabajador.is_active
+        logger.info(f"=== CAMBIANDO ESTADO DE {trabajador.is_active} A {nuevo_estado} ===")
+        logger.info(f"=== VALOR ACTUAL DEL CAMPO 'estado': {trabajador.estado} ===")
+        
+        trabajador.is_active = nuevo_estado
+        trabajador.estado = nuevo_estado
+        
+        # Si se está DESACTIVANDO el trabajador
+        if not nuevo_estado:
+            logger.info(f"=== DESACTIVANDO - ROL ACTUAL: {trabajador.rol.nombre if trabajador.rol else None} (ID: {trabajador.rol.id if trabajador.rol else None}) ===")
+            logger.info(f"=== DESACTIVANDO - TERMA ACTUAL: {trabajador.terma.nombre_terma if trabajador.terma else None} ===")
+            
+            # Importar el modelo HistorialTrabajador
+            from usuarios.models import HistorialTrabajador
+            
+            # Finalizar el historial activo del trabajador en esta terma
+            historial_activo = HistorialTrabajador.objects.filter(
+                usuario=trabajador, 
+                terma=terma, 
+                activo=True
+            ).first()
+            
+            if historial_activo:
+                historial_activo.finalizar(motivo='desactivado')
+                logger.info(f"=== HISTORIAL FINALIZADO ===")
+            else:
+                # Si no existe historial, crearlo y finalizarlo inmediatamente
+                HistorialTrabajador.objects.create(
+                    usuario=trabajador,
+                    terma=terma,
+                    rol=trabajador.rol,
+                    fecha_inicio=trabajador.date_joined,
+                    fecha_fin=timezone.now(),
+                    motivo_fin='desactivado',
+                    activo=False
+                )
+                logger.info(f"=== HISTORIAL CREADO Y FINALIZADO ===")
+            
+            # Cambiar rol a cliente (rol_id = 1)
+            try:
+                rol_cliente = Rol.objects.get(id=1)
+                trabajador.rol = rol_cliente
+                logger.info(f"=== ROL CAMBIADO A: {rol_cliente.nombre} (ID: {rol_cliente.id}) ===")
+            except Rol.DoesNotExist:
+                logger.warning("=== ROL CLIENTE (ID: 1) NO ENCONTRADO ===")
+            
+            # Desvincular de la terma
+            trabajador.terma = None
+            logger.info(f"=== TRABAJADOR DESVINCULADO DE LA TERMA ===")
+        
+        # Si se está REACTIVANDO, volver a asignar rol trabajador y terma
+        elif nuevo_estado:
+            from usuarios.models import HistorialTrabajador
+            try:
+                rol_trabajador = Rol.objects.get(nombre='trabajador')
+                trabajador.rol = rol_trabajador
+                trabajador.terma = terma
+                
+                # Crear nuevo historial activo
+                HistorialTrabajador.crear_historial(trabajador, terma, rol_trabajador)
+                logger.info(f"=== REACTIVADO: ROL Y TERMA RESTAURADOS + HISTORIAL CREADO ===")
+            except Rol.DoesNotExist:
+                logger.warning("=== ROL TRABAJADOR NO ENCONTRADO ===")
+        
+        trabajador.save()
+        
+        # Verificar que los cambios se guardaron correctamente
+        trabajador.refresh_from_db()
+        logger.info(f"=== POST-SAVE: Estado = {trabajador.is_active} ===")
+        logger.info(f"=== POST-SAVE: Rol = {trabajador.rol.nombre if trabajador.rol else None} (ID: {trabajador.rol.id if trabajador.rol else None}) ===")
+        logger.info(f"=== POST-SAVE: Terma = {trabajador.terma.nombre_terma if trabajador.terma else None} ===")
+        logger.info(f"=== POST-SAVE: Campo estado = {trabajador.estado} ===")
+        
+        logger.info(f"=== ESTADO GUARDADO, ENVIANDO EMAIL ===")
+        # Enviar email de notificación de cambio de estado
+        email_enviado = enviar_email_cambio_estado_trabajador(trabajador, terma, nuevo_estado)
+        
+        estado_texto = "activado" if nuevo_estado else "desactivado"
+        mensaje_email = " Se ha enviado una notificación por correo." if email_enviado else ""
+        
+        logger.info(f"=== RETORNANDO RESPUESTA: {estado_texto} ===")
+        return JsonResponse({
+            'success': True,
+            'mensaje': f"Trabajador {trabajador.get_full_name()} {estado_texto} exitosamente.{mensaje_email}",
+            'nuevo_estado': nuevo_estado
+        })
+        
+    except Exception as e:
+        logger.error(f"Error al cambiar estado trabajador: {str(e)}")
+        return JsonResponse({'success': False, 'error': f'Error interno: {str(e)}'})
+
+
+@admin_terma_required
+def detalle_trabajador(request, trabajador_id):
+    """Vista para obtener detalles de un trabajador."""
+    try:
+        logger.info(f"=== DETALLE TRABAJADOR - ID: {trabajador_id} ===")
+        from usuarios.models import Usuario, HistorialTrabajador
+        
+        usuario_admin = request.user
+        terma = usuario_admin.terma
+        logger.info(f"=== ADMIN: {usuario_admin.email}, TERMA: {terma.nombre_terma if terma else 'None'} ===")
+        
+        # Obtener trabajador
+        trabajador = get_object_or_404(Usuario, id=trabajador_id)
+        logger.info(f"=== TRABAJADOR ENCONTRADO: {trabajador.email} ===")
+        logger.info(f"=== TRABAJADOR - Activo: {trabajador.is_active}, Rol: {trabajador.rol.nombre if trabajador.rol else 'None'}, Terma: {trabajador.terma.nombre_terma if trabajador.terma else 'None'} ===")
+        
+        # Verificar permisos usando el historial de trabajadores
+        tiene_permisos = False
+        motivo_permiso = ""
+        
+        # Verificar si es trabajador activo en esta terma
+        if trabajador.is_active and trabajador.terma == terma and trabajador.rol and trabajador.rol.nombre == 'trabajador':
+            tiene_permisos = True
+            motivo_permiso = "trabajador activo"
+            logger.info(f"=== PERMISO CONCEDIDO: {motivo_permiso} ===")
+        
+        # Verificar si aparece en el historial de trabajadores de esta terma
+        elif HistorialTrabajador.objects.filter(usuario=trabajador, terma=terma).exists():
+            tiene_permisos = True
+            motivo_permiso = "en historial de terma"
+            logger.info(f"=== PERMISO CONCEDIDO: {motivo_permiso} ===")
+        else:
+            logger.warning(f"=== PERMISO DENEGADO - No es trabajador activo ni está en historial ===")
+        
+        if not tiene_permisos:
+            return JsonResponse({'success': False, 'error': 'No tienes permisos para ver este trabajador.'})
+        
+        # Construir datos del trabajador de forma segura
+        try:
+            fecha_registro = 'No disponible'
+            if hasattr(trabajador, 'date_joined') and trabajador.date_joined:
+                fecha_registro = trabajador.date_joined.strftime('%d/%m/%Y %H:%M')
+            elif hasattr(trabajador, 'fecha_registro') and trabajador.fecha_registro:
+                fecha_registro = trabajador.fecha_registro.strftime('%d/%m/%Y %H:%M')
+            
+            ultimo_login = 'Nunca'
+            if trabajador.last_login:
+                ultimo_login = trabajador.last_login.strftime('%d/%m/%Y %H:%M')
+                
+            rol_info = {
+                'id': trabajador.rol.id if trabajador.rol else None,
+                'nombre': trabajador.rol.nombre if trabajador.rol else 'Sin rol'
+            }
+            
+            data = {
+                'success': True,
+                'trabajador': {
+                    'id': trabajador.id,
+                    'email': trabajador.email,
+                    'nombre': trabajador.nombre,
+                    'apellido': trabajador.apellido,
+                    'telefono': trabajador.telefono or 'No especificado',
+                    'rol': rol_info,
+                    'is_active': trabajador.is_active,
+                    'fecha_registro': fecha_registro,
+                    'ultimo_login': ultimo_login,
+                    'estado': trabajador.estado
+                }
+            }
+            
+            logger.info(f"=== DATOS CONSTRUIDOS EXITOSAMENTE ===")
+            return JsonResponse(data)
+            
+        except Exception as data_error:
+            logger.error(f"Error construyendo datos del trabajador: {str(data_error)}")
+            return JsonResponse({'success': False, 'error': f'Error procesando datos: {str(data_error)}'})
+        
+    except Exception as e:
+        logger.error(f"Error general en detalle_trabajador: {str(e)}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return JsonResponse({'success': False, 'error': f'Error interno: {str(e)}'})
 

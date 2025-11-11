@@ -497,6 +497,7 @@ def adm_termas(request):
             context.update({
                 'calificaciones_filtradas': terma.filtro_calificaciones(filtro_comentarios),
                 'estadisticas_calificaciones': terma.estadisticas_calificaciones(),
+                'servicios_populares': terma.servicios_populares(),
                 'filtro_actual': filtro_comentarios,
                 'reservas_hoy': reservas_hoy,
             })

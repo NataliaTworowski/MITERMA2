@@ -258,6 +258,58 @@ class Terma(models.Model):
             )['promedio'] or 0,    
         }
 
+    def servicios_populares(self):
+        """Retorna estadísticas de servicios más utilizados"""
+        from collections import Counter
+        from ventas.models import ServicioExtraDetalle, DetalleCompra
+        from django.db.models import Sum
+        
+        servicios_stats = {}
+        
+        # 1. Servicios incluidos en entradas vendidas
+        entradas_vendidas = DetalleCompra.objects.filter(
+            horario_disponible__terma=self,
+            compra__estado_pago='pagado'
+        ).select_related('horario_disponible__entrada_tipo')
+        
+        for detalle in entradas_vendidas:
+            servicios_incluidos = detalle.horario_disponible.entrada_tipo.servicios.all()
+            cantidad_entradas = detalle.cantidad
+            
+            for servicio in servicios_incluidos:
+                if servicio.servicio not in servicios_stats:
+                    servicios_stats[servicio.servicio] = 0
+                servicios_stats[servicio.servicio] += cantidad_entradas
+        
+        # 2. Servicios extra vendidos por separado
+        servicios_extra = ServicioExtraDetalle.objects.filter(
+            detalle_compra__horario_disponible__terma=self,
+            detalle_compra__compra__estado_pago='pagado'
+        ).select_related('servicio').values('servicio__servicio').annotate(
+            total_cantidad=Sum('cantidad')
+        )
+        
+        for servicio_extra in servicios_extra:
+            nombre_servicio = servicio_extra['servicio__servicio']
+            cantidad = servicio_extra['total_cantidad']
+            
+            if nombre_servicio not in servicios_stats:
+                servicios_stats[nombre_servicio] = 0
+            servicios_stats[nombre_servicio] += cantidad
+        
+        # Convertir a lista ordenada para el gráfico
+        servicios_ordenados = sorted(servicios_stats.items(), key=lambda x: x[1], reverse=True)
+        
+        # Tomar los top 5 servicios
+        top_servicios = servicios_ordenados[:5]
+        
+        return {
+            'labels': [servicio[0] for servicio in top_servicios],
+            'data': [servicio[1] for servicio in top_servicios],
+            'total_servicios': len(servicios_stats),
+            'detalle_completo': servicios_ordenados
+        }
+
 
 class Calificacion(models.Model):
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)

@@ -286,6 +286,23 @@ def ver_distribuciones_pago(request):
     mes_filtro = request.GET.get('mes', '')
     año_filtro = request.GET.get('año', '')
     
+    # Convertir mes y año a enteros si no están vacíos
+    if mes_filtro:
+        try:
+            mes_filtro = int(mes_filtro)
+        except (ValueError, TypeError):
+            mes_filtro = None
+    else:
+        mes_filtro = None
+        
+    if año_filtro:
+        try:
+            año_filtro = int(año_filtro)
+        except (ValueError, TypeError):
+            año_filtro = None
+    else:
+        año_filtro = None
+    
     # Query base
     distribuciones = DistribucionPago.objects.select_related(
         'compra', 'terma', 'plan_utilizado'
@@ -298,11 +315,11 @@ def ver_distribuciones_pago(request):
     if terma_filtro:
         distribuciones = distribuciones.filter(terma__nombre_terma__icontains=terma_filtro)
     
-    if mes_filtro and año_filtro:
-        distribuciones = distribuciones.filter(
-            fecha_calculo__month=mes_filtro,
-            fecha_calculo__year=año_filtro
-        )
+    if mes_filtro:
+        distribuciones = distribuciones.filter(fecha_calculo__month=mes_filtro)
+    
+    if año_filtro:
+        distribuciones = distribuciones.filter(fecha_calculo__year=año_filtro)
     
     # Paginación
     paginator = Paginator(distribuciones, 20)
@@ -332,8 +349,8 @@ def ver_distribuciones_pago(request):
         'filtros': {
             'estado': estado_filtro,
             'terma': terma_filtro,
-            'mes': mes_filtro,
-            'año': año_filtro,
+            'mes': request.GET.get('mes', ''),  # Usar valor original de string
+            'año': request.GET.get('año', ''),  # Usar valor original de string
         },
         'estados_choices': DistribucionPago.ESTADO_DISTRIBUCION,
         'current_year': timezone.now().year,
@@ -420,6 +437,15 @@ def reporte_comisiones_diarias(request):
     fecha_fin_str = request.GET.get('fecha_fin')
     terma_id = request.GET.get('terma_id')
     
+    # Convertir terma_id a entero si no está vacío
+    if terma_id:
+        try:
+            terma_id = int(terma_id)
+        except (ValueError, TypeError):
+            terma_id = None
+    else:
+        terma_id = None
+    
     # Procesar fechas
     try:
         if fecha_inicio_str:
@@ -471,7 +497,7 @@ def reporte_comisiones_diarias(request):
         'filtros': {
             'fecha_inicio': fecha_inicio.strftime('%Y-%m-%d'),
             'fecha_fin': fecha_fin.strftime('%Y-%m-%d'),
-            'terma_id': terma_id
+            'terma_id': request.GET.get('terma_id', '')  # Usar valor original de string
         },
         'mes_actual': mes_actual,
         'año_actual': año_actual,

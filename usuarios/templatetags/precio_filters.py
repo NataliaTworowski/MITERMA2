@@ -70,3 +70,18 @@ def duracion_formato(value):
             return f'{horas} horas'
     except (ValueError, TypeError):
         return f'{value} horas'
+
+@register.filter
+def add_thousand_separator(value):
+    """
+    Agrega separadores de miles en formato chileno.
+    Ejemplo: 15000 -> 15.000
+    """
+    if value is None or value == '':
+        return '0'
+    
+    try:
+        numero = int(float(value))
+        return f"{numero:,}".replace(',', '.')
+    except (ValueError, TypeError):
+        return str(value)

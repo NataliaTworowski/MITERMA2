@@ -305,3 +305,65 @@ class Favorito(models.Model):
     
     def __str__(self):
         return f"{self.usuario.get_full_name()} - {self.terma.nombre_terma}"
+
+
+class HistorialTrabajador(models.Model):
+    """
+    Modelo para mantener el historial de trabajadores en las termas.
+    Permite recordar qué usuarios trabajaron en qué termas y cuándo.
+    """
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='historial_trabajador')
+    terma = models.ForeignKey('termas.Terma', on_delete=models.CASCADE, related_name='historial_trabajadores')
+    rol = models.ForeignKey(Rol, on_delete=models.CASCADE)
+    fecha_inicio = models.DateTimeField(auto_now_add=True, help_text="Fecha en que comenzó a trabajar en la terma")
+    fecha_fin = models.DateTimeField(null=True, blank=True, help_text="Fecha en que dejó de trabajar (null = aún activo)")
+    motivo_fin = models.CharField(
+        max_length=20, 
+        choices=[
+            ('desactivado', 'Cuenta desactivada'),
+            ('cambio_rol', 'Cambio de rol'),
+            ('transferido', 'Transferido a otra terma'),
+            ('renuncia', 'Renuncia voluntaria'),
+        ],
+        null=True, 
+        blank=True,
+        help_text="Motivo por el cual dejó de trabajar"
+    )
+    activo = models.BooleanField(default=True, help_text="Indica si este es el registro actual activo")
+    
+    class Meta:
+        verbose_name = "Historial de Trabajador"
+        verbose_name_plural = "Historiales de Trabajadores"
+        ordering = ['-fecha_inicio']
+        indexes = [
+            models.Index(fields=['usuario', 'terma']),
+            models.Index(fields=['terma', 'activo']),
+            models.Index(fields=['usuario', 'activo']),
+        ]
+    
+    def __str__(self):
+        estado = "Activo" if self.activo else f"Finalizado ({self.motivo_fin})"
+        return f"{self.usuario.get_full_name()} en {self.terma.nombre_terma} - {estado}"
+    
+    def finalizar(self, motivo='desactivado'):
+        """Marca este historial como finalizado"""
+        self.fecha_fin = timezone.now()
+        self.motivo_fin = motivo
+        self.activo = False
+        self.save(update_fields=['fecha_fin', 'motivo_fin', 'activo'])
+    
+    @classmethod
+    def crear_historial(cls, usuario, terma, rol):
+        """Crea un nuevo registro de historial para un trabajador"""
+        # Finalizar cualquier historial activo existente para este usuario en esta terma
+        cls.objects.filter(usuario=usuario, terma=terma, activo=True).update(
+            fecha_fin=timezone.now(),
+            activo=False
+        )
+        
+        # Crear nuevo registro
+        return cls.objects.create(
+            usuario=usuario,
+            terma=terma,
+            rol=rol
+        )

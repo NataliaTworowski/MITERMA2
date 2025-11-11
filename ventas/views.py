@@ -10,12 +10,50 @@ from termas.models import Terma
 from usuarios.models import Usuario
 from usuarios.models import Usuario
 from usuarios.decorators import cliente_required
+from ventas.models import Compra
 
 # Cargar variables de entorno
 load_dotenv()
 
 def pago(request, terma_id=None):
     datos = {}
+    
+    # VALIDACIÓN PREVIA: Verificar compras recientes antes de mostrar el formulario
+    if request.user.is_authenticated and request.method == 'GET':
+        # Obtener parámetros de la URL para validar
+        entrada_id = request.GET.get('entrada_id')
+        fecha_visita_str = request.GET.get('fecha')
+        cantidad = request.GET.get('cantidad', 1)
+        
+        if entrada_id and fecha_visita_str:
+            from datetime import datetime, timedelta
+            from django.utils import timezone
+            
+            try:
+                fecha_visita_obj = datetime.strptime(fecha_visita_str, '%Y-%m-%d').date()
+                tiempo_limite = timezone.now() - timedelta(minutes=15)
+                
+                # Buscar compra idéntica muy reciente (pagada O pendiente)
+                compra_reciente = Compra.objects.filter(
+                    usuario=request.user,
+                    terma_id=terma_id,
+                    fecha_visita=fecha_visita_obj,
+                    estado_pago__in=['pagado', 'pendiente'],  # Incluir pendientes también
+                    detalles__horario_disponible__entrada_tipo_id=entrada_id,
+                    cantidad=int(cantidad),
+                    fecha_compra__gt=tiempo_limite
+                ).first()
+                
+                if compra_reciente:
+                    if compra_reciente.estado_pago == 'pagado':
+                        datos['compra_error'] = f"Ya realizaste esta compra hace pocos minutos (ID: {compra_reciente.id}). Revisa tu historial de compras."
+                    else:
+                        datos['compra_error'] = f"Ya tienes una compra pendiente idéntica (ID: {compra_reciente.id}). Espera a que se procese antes de intentar otra."
+                    return render(request, 'ventas/pago.html', datos)
+                    
+            except (ValueError, TypeError):
+                pass  # Continúa normal si hay error en los parámetros
+    
     if request.method == 'POST':
         datos['terma_id'] = request.POST.get('terma_id') or terma_id
         access_token = os.getenv("MP_ACCESS_TOKEN")
@@ -32,7 +70,92 @@ def pago(request, terma_id=None):
         datos['fecha'] = request.POST.get('fecha')
         datos['cantidad_entradas'] = request.POST.get('cantidad')
         
-                # Obtener descripción detallada de servicios extra
+        # VALIDACION ANTI-DUPLICADOS: Verificar usuario autenticado
+        if not request.user.is_authenticated:
+            datos['compra_error'] = "Debes iniciar sesión para realizar una compra."
+            return render(request, 'ventas/pago.html', datos)
+        
+        usuario = request.user
+        
+        # Obtener datos críticos para verificación
+        entrada_id = datos.get('entrada_id')
+        fecha_visita = datos.get('fecha')
+        total_amount = datos.get('total')
+        
+        if not all([entrada_id, fecha_visita, total_amount]):
+            datos['compra_error'] = "Faltan datos requeridos para procesar el pago."
+            return render(request, 'ventas/pago.html', datos)
+        
+        # VERIFICAR SI YA EXISTE UNA COMPRA ACTIVA/EXITOSA PARA ESTOS MISMOS PARÁMETROS
+        from ventas.models import Compra
+        from datetime import datetime
+        
+        try:
+            fecha_visita_obj = datetime.strptime(fecha_visita, '%Y-%m-%d').date()
+        except ValueError:
+            datos['compra_error'] = "Fecha de visita inválida."
+            return render(request, 'ventas/pago.html', datos)
+        
+        # VALIDACIÓN ANTI-SPAM: Solo bloquear clicks múltiples accidentales inmediatos
+        # Buscar compra muy reciente (últimos 15 minutos) con parámetros idénticos
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        tiempo_limite = timezone.now() - timedelta(minutes=15)
+        compra_reciente = Compra.objects.filter(
+            usuario=usuario,
+            terma_id=datos['terma_id'],
+            fecha_visita=fecha_visita_obj,
+            estado_pago__in=['pendiente', 'pagado'],
+            detalles__horario_disponible__entrada_tipo_id=entrada_id,
+            cantidad=int(datos.get('cantidad_entradas', 1)),
+            fecha_compra__gt=tiempo_limite  # Solo últimos 15 minutos
+        ).first()
+        
+        if compra_reciente:
+            if compra_reciente.estado_pago == 'pagado':
+                datos['compra_error'] = f"Ya realizaste esta compra (ID: {compra_reciente.id}). Revisa tu historial de compras."
+                return render(request, 'ventas/pago.html', datos)
+            elif compra_reciente.estado_pago == 'pendiente':
+                datos['compra_error'] = f"Ya tienes una compra pendiente idéntica (ID: {compra_reciente.id}). No hagas múltiples pagos."
+                return render(request, 'ventas/pago.html', datos)
+        
+        # Buscar compra pendiente para reutilizar
+        compra_existente = Compra.objects.filter(
+            usuario=usuario,
+            terma_id=datos['terma_id'],
+            fecha_visita=fecha_visita_obj,
+            estado_pago='pendiente',
+            detalles__horario_disponible__entrada_tipo_id=entrada_id,
+            cantidad=int(datos.get('cantidad_entradas', 1))
+        ).first()
+        
+        if compra_existente:
+            # Verificar si la compra pendiente es reciente (últimos 30 minutos)
+            tiempo_limite_pendiente = timezone.now() - timedelta(minutes=30)
+            if compra_existente.fecha_compra > tiempo_limite_pendiente:
+                # Usar la compra existente
+                compra = compra_existente
+                datos['compra_existente'] = True
+                datos['compra_id'] = compra.id
+                print(f"[SEGURIDAD] Usando compra existente ID: {compra.id}")
+                
+                # Generar nueva preferencia para la compra existente
+                if compra.mercado_pago_id:
+                    mercado_pago_id = compra.mercado_pago_id
+                else:
+                    import uuid
+                    mercado_pago_id = f"{access_token[:10]}-{uuid.uuid4()}"
+                    compra.mercado_pago_id = mercado_pago_id
+                    compra.save()
+            else:
+                # Compra pendiente muy antigua, marcar como cancelada y crear nueva
+                compra_existente.estado_pago = 'cancelado'
+                compra_existente.save()
+                print(f"[SEGURIDAD] Compra {compra_existente.id} cancelada por timeout")
+                compra = None
+        
+        # Obtener descripción detallada de servicios extra
         from termas.models import ServicioTerma
         if datos.get('extras') and datos['extras'].strip():
             try:
@@ -100,19 +223,10 @@ def pago(request, terma_id=None):
                 datos['servicios_extra_ids'] = []
         else:
             datos['extras_descripcion'] = '-'
-            datos['servicios_extra_ids'] = []        # Obtener usuario
-        usuario = None
-        if request.user.is_authenticated:
-            # Usuario autenticado con Django Auth
-            usuario = request.user
-        else:
-            # Fallback para casos especiales (si aplica)
-            usuario_id = request.POST.get('usuario_id')
-            if usuario_id:
-                usuario = Usuario.objects.filter(id=usuario_id).first()
-        
+            datos['servicios_extra_ids'] = []        
+
         # Obtener terma
-        terma_id = request.POST.get('terma_id')
+        terma_id = datos.get('terma_id')
         terma = None
         if terma_id:
             terma = Terma.objects.filter(id=terma_id).first()
@@ -172,170 +286,171 @@ def pago(request, terma_id=None):
                 datos['compra_error'] = f"Solo quedan {cupos_restantes} cupos disponibles para la fecha seleccionada."
                 return render(request, 'ventas/pago.html', datos)
 
-            # CREAR LA COMPRA ANTES de generar la preferencia
-        try:
-            from ventas.models import Compra, MetodoPago, DetalleCompra
-            from entradas.models import HorarioDisponible
-            from termas.models import ServicioTerma
-            import uuid
-
-            metodo_pago = MetodoPago.objects.filter(nombre__icontains="Mercado Pago").first()
-
-            # Generar un ID único para esta compra ANTES de crear la preferencia
-            mercado_pago_id = f"{access_token[:10]}-{uuid.uuid4()}"
-
-            # Validar y obtener o crear el horario disponible
-            if not datos.get('entrada_id') or not datos.get('fecha'):
-                raise ValueError("No se especificó el ID de la entrada o la fecha")
-
+            # CREAR LA COMPRA ANTES de generar la preferencia (solo si no existe una)
+        if not locals().get('compra'):  # Solo crear si no hay compra existente
             try:
-                entrada_tipo = EntradaTipo.objects.get(id=datos['entrada_id'])
-                fecha_visita = datetime.strptime(datos['fecha'], '%Y-%m-%d').date()
+                from ventas.models import Compra, MetodoPago, DetalleCompra
+                from entradas.models import HorarioDisponible
+                from termas.models import ServicioTerma
+                import uuid
+
+                metodo_pago = MetodoPago.objects.filter(nombre__icontains="Mercado Pago").first()
+
+                # Generar un ID único para esta compra ANTES de crear la preferencia
+                mercado_pago_id = f"{access_token[:10]}-{uuid.uuid4()}"
+
+                # Validar y obtener o crear el horario disponible
+                if not datos.get('entrada_id') or not datos.get('fecha'):
+                    raise ValueError("No se especificó el ID de la entrada o la fecha")
+
+                try:
+                    entrada_tipo = EntradaTipo.objects.get(id=datos['entrada_id'])
+                    fecha_visita = datetime.strptime(datos['fecha'], '%Y-%m-%d').date()
+                    
+                    # Intentar obtener un horario existente o crear uno nuevo
+                    horario = HorarioDisponible.objects.filter(
+                        entrada_tipo=entrada_tipo,
+                        fecha=fecha_visita
+                    ).first()
+
+                    if not horario:
+                        # Crear nuevo horario disponible
+                        horario = entrada_tipo.create_horario_disponible(fecha_visita)
+
+                    # Verificar disponibilidad
+                    if horario.cupos_disponibles < int(datos['cantidad_entradas']):
+                        raise ValueError(f"Solo quedan {horario.cupos_disponibles} cupos disponibles para esta fecha")
+
+                except Exception as e:
+                    raise ValueError(f"Error al obtener o crear el horario disponible: {str(e)}")
                 
-                # Intentar obtener un horario existente o crear uno nuevo
-                horario = HorarioDisponible.objects.filter(
-                    entrada_tipo=entrada_tipo,
-                    fecha=fecha_visita
-                ).first()
+                # Calcular precio con extras si hay
+                try:
+                    precio_unitario = float(datos['precio'].replace(',', '.')) if datos.get('precio') else 0.0
+                    cantidad = int(datos['cantidad_entradas']) if datos.get('cantidad_entradas') else 1
+                    if cantidad <= 0:
+                        raise ValueError("La cantidad debe ser mayor a 0")
+                    subtotal = precio_unitario * cantidad
+                except (ValueError, TypeError) as e:
+                    raise ValueError(f"Error en los datos de precio o cantidad: {str(e)}")
 
-                if not horario:
-                    # Crear nuevo horario disponible
-                    horario = entrada_tipo.create_horario_disponible(fecha_visita)
-
-                # Verificar disponibilidad
-                if horario.cupos_disponibles < int(datos['cantidad_entradas']):
-                    raise ValueError(f"Solo quedan {horario.cupos_disponibles} cupos disponibles para esta fecha")
+                # Crear la compra
+                compra = Compra.objects.create(
+                    usuario=usuario,
+                    metodo_pago=metodo_pago,
+                    terma=terma,
+                    fecha_visita=datos['fecha'] if datos['fecha'] else None,
+                    total=datos['total'] if datos['total'] else 0,
+                    estado_pago="pendiente",
+                    mercado_pago_id=mercado_pago_id,
+                    cantidad=cantidad,
+                )
+                
+                # Crear el detalle de compra
+                print(f"\n[DEBUG] Creando detalle de compra...")
+                detalle = DetalleCompra.objects.create(
+                    compra=compra,
+                    horario_disponible=horario,
+                    cantidad=cantidad,
+                    precio_unitario=precio_unitario,
+                    subtotal=subtotal
+                )
+                print(f"[DEBUG] Detalle creado: ID={detalle.id}")
+                
+                print(f"[NUEVA COMPRA] Compra creada: id={compra.id}, mercado_pago_id={compra.mercado_pago_id}")
 
             except Exception as e:
-                raise ValueError(f"Error al obtener o crear el horario disponible: {str(e)}")
+                datos['compra_error'] = f"Error al guardar la compra: {str(e)}"
+                return render(request, 'ventas/pago.html', datos)
+        else:
+            print(f"[COMPRA EXISTENTE] Usando compra existente: id={compra.id}, estado={compra.estado_pago}")
+            # Para compra existente, obtener el detalle para procesar servicios extra
+            detalle = compra.detalles.first()
+            if not detalle:
+                datos['compra_error'] = "Error: La compra existente no tiene detalles válidos."
+                return render(request, 'ventas/pago.html', datos)
             
-            # Calcular precio con extras si hay
-            try:
-                precio_unitario = float(datos['precio'].replace(',', '.')) if datos.get('precio') else 0.0
-                cantidad = int(datos['cantidad_entradas']) if datos.get('cantidad_entradas') else 1
-                if cantidad <= 0:
-                    raise ValueError("La cantidad debe ser mayor a 0")
-                subtotal = precio_unitario * cantidad
-            except (ValueError, TypeError) as e:
-                raise ValueError(f"Error en los datos de precio o cantidad: {str(e)}")
-
-            # Crear la compra
-            compra = Compra.objects.create(
-                usuario=usuario,
-                metodo_pago=metodo_pago,
-                terma=terma,
-                fecha_visita=datos['fecha'] if datos['fecha'] else None,
-                total=datos['total'] if datos['total'] else 0,
-                estado_pago="pendiente",
-                mercado_pago_id=mercado_pago_id,
-                cantidad=cantidad,
-            )
-            
-            # Crear el detalle de compra
-            print(f"\n[DEBUG] Creando detalle de compra...")
-            detalle = DetalleCompra.objects.create(
-                compra=compra,
-                horario_disponible=horario,
-                cantidad=cantidad,
-                precio_unitario=precio_unitario,
-                subtotal=subtotal
-            )
-            print(f"[DEBUG] Detalle creado: ID={detalle.id}")
-            
-            # Debug de datos recibidos
-            print(f"[DEBUG] Datos de extras recibidos: {datos.get('extras', 'No hay extras')}")
-            print(f"[DEBUG] Tipo de datos extras: {type(datos.get('extras', ''))}")
-            
-            # Agregar servicios extra
+        # Procesar servicios extra (tanto para compras nuevas como existentes)
+        # Debug de datos recibidos
+        print(f"[DEBUG] Datos de extras recibidos: {datos.get('extras', 'No hay extras')}")
+        print(f"[DEBUG] Tipo de datos extras: {type(datos.get('extras', ''))}")
+        
+        # Agregar servicios extra
+        try:
             if 'servicios_extra_ids' in request.session and request.session['servicios_extra_ids']:
-                try:
-                    from .models import ServicioExtraDetalle
-                    servicios_ids = request.session['servicios_extra_ids']
-                    print(f"\n[DEBUG] Recuperando servicios_extra_ids de sesión: {servicios_ids}")
-                    
-                    # Crear diccionario para contar servicios
-                    servicios_conteo = {}
-                    for servicio_id in servicios_ids:
-                        servicios_conteo[servicio_id] = servicios_conteo.get(servicio_id, 0) + 1
-                    
-                    print(f"[DEBUG] Conteo de servicios: {servicios_conteo}")
-                    
-                    # Limpiar servicios existentes del método anterior
-                    detalle.servicios.clear()
-                    
-                    # Crear registros en ServicioExtraDetalle
-                    for servicio_id, cantidad in servicios_conteo.items():
-                        try:
-                            servicio = ServicioTerma.objects.get(id=servicio_id)
-                            ServicioExtraDetalle.objects.create(
-                                detalle_compra=detalle,
-                                servicio=servicio,
-                                cantidad=cantidad,
-                                precio_unitario=servicio.precio
-                            )
-                            print(f"[DEBUG] ServicioExtraDetalle creado: {servicio.servicio} x{cantidad}")
-                        except ServicioTerma.DoesNotExist:
-                            print(f"[DEBUG] Servicio no encontrado con ID: {servicio_id}")
-                    
-                    # Guardar explícitamente
-                    detalle.save()
-                    
-                    # Verificar que se guardaron
-                    servicios_extra_guardados = detalle.servicios_extra.all()
-                    print(f"[DEBUG] Total servicios extra guardados: {len(servicios_extra_guardados)}")
-                    for extra in servicios_extra_guardados:
-                        print(f"[DEBUG] - {extra.servicio.servicio} x{extra.cantidad}")
-                    
-                    # Limpiar la sesión
-                    del request.session['servicios_extra_ids']
-                except Exception as e:
-                    print(f"[DEBUG] Error al agregar servicios extra: {str(e)}")
-                    import traceback
-                    print(traceback.format_exc())
+                from .models import ServicioExtraDetalle
+                servicios_ids = request.session['servicios_extra_ids']
+                print(f"\n[DEBUG] Recuperando servicios_extra_ids de sesión: {servicios_ids}")
+                
+                # Crear diccionario para contar servicios
+                servicios_conteo = {}
+                for servicio_id in servicios_ids:
+                    servicios_conteo[servicio_id] = servicios_conteo.get(servicio_id, 0) + 1
+                
+                print(f"[DEBUG] Conteo de servicios: {servicios_conteo}")
+                
+                # Limpiar servicios existentes del método anterior
+                detalle.servicios.clear()
+                
+                # Crear registros en ServicioExtraDetalle
+                for servicio_id, cantidad in servicios_conteo.items():
                     try:
-                        # Asegurarnos de limpiar la sesión en caso de error
-                        if 'servicios_extra_ids' in request.session:
-                            del request.session['servicios_extra_ids']
-                    except:
-                        pass
+                        servicio = ServicioTerma.objects.get(id=servicio_id)
+                        ServicioExtraDetalle.objects.create(
+                            detalle_compra=detalle,
+                            servicio=servicio,
+                            cantidad=cantidad,
+                            precio_unitario=servicio.precio
+                        )
+                        print(f"[DEBUG] ServicioExtraDetalle creado: {servicio.servicio} x{cantidad}")
+                    except ServicioTerma.DoesNotExist:
+                        print(f"[DEBUG] Servicio no encontrado con ID: {servicio_id}")
+                
+                # Guardar explícitamente
+                detalle.save()
+                
+                # Verificar que se guardaron
+                servicios_extra_guardados = detalle.servicios_extra.all()
+                print(f"[DEBUG] Total servicios extra guardados: {len(servicios_extra_guardados)}")
+                for extra in servicios_extra_guardados:
+                    print(f"[DEBUG] - {extra.servicio.servicio} x{extra.cantidad}")
+                
+                # Limpiar la sesión
+                del request.session['servicios_extra_ids']
+            
             # Mantener compatibilidad con el código anterior (servicios individuales)
             elif 'servicio_extra_id' in request.session:
-                try:
-                    servicio_id = request.session['servicio_extra_id']
-                    print(f"\n[DEBUG] Recuperando servicio_extra_id individual de sesión: {servicio_id}")
-                    
-                    servicio = ServicioTerma.objects.get(id=servicio_id)
-                    print(f"[DEBUG] Servicio encontrado para agregar: {servicio.servicio}")
-                    
-                    # Limpiar servicios existentes y agregar el nuevo
-                    detalle.servicios.clear()
-                    detalle.servicios.add(servicio)
-                    
-                    # Guardar explícitamente
-                    detalle.save()
-                    
-                    # Verificar que se guardó
-                    servicios_guardados = list(detalle.servicios.all())
-                    print(f"[DEBUG] Servicios guardados en detalle {detalle.id}: {[s.servicio for s in servicios_guardados]}")
-                    
-                    # Limpiar la sesión
-                    del request.session['servicio_extra_id']
-                except Exception as e:
-                    print(f"[DEBUG] Error al agregar servicio extra: {str(e)}")
-                    import traceback
-                    print(traceback.format_exc())
-                    try:
-                        # Asegurarnos de limpiar la sesión en caso de error
-                        if 'servicio_extra_id' in request.session:
-                            del request.session['servicio_extra_id']
-                    except:
-                        pass
-            
-            print(f"Compra creada: id={compra.id}, mercado_pago_id={compra.mercado_pago_id}")
-
+                servicio_id = request.session['servicio_extra_id']
+                print(f"\n[DEBUG] Recuperando servicio_extra_id individual de sesión: {servicio_id}")
+                
+                servicio = ServicioTerma.objects.get(id=servicio_id)
+                print(f"[DEBUG] Servicio encontrado para agregar: {servicio.servicio}")
+                
+                # Limpiar servicios existentes y agregar el nuevo
+                detalle.servicios.clear()
+                detalle.servicios.add(servicio)
+                
+                # Guardar explícitamente
+                detalle.save()
+                
+                # Verificar que se guardó
+                servicios_guardados = list(detalle.servicios.all())
+                print(f"[DEBUG] Servicios guardados en detalle {detalle.id}: {[s.servicio for s in servicios_guardados]}")
+                
+                # Limpiar la sesión
+                del request.session['servicio_extra_id']
         except Exception as e:
-            datos['compra_error'] = f"Error al guardar la compra: {str(e)}"
-            return render(request, 'ventas/pago.html', datos)
+            print(f"[DEBUG] Error al agregar servicios extra: {str(e)}")
+            import traceback
+            print(traceback.format_exc())
+            try:
+                # Asegurarnos de limpiar la sesión en caso de error
+                if 'servicios_extra_ids' in request.session:
+                    del request.session['servicios_extra_ids']
+                if 'servicio_extra_id' in request.session:
+                    del request.session['servicio_extra_id']
+            except:
+                pass
 
         # Mercado Pago integración
         env_base = os.getenv('MP_BASE_URL')
@@ -675,12 +790,35 @@ def pago_exitoso(request):
                             error_message = "Este pago ya fue procesado anteriormente."
                     else:
                         print(f"[PAGO_EXITOSO] No se encontró compra pendiente con external_reference: {external_reference}")
+                        
                         # Intentar buscar si la compra ya existe con este payment_id (ya fue procesada)
                         compra = Compra.objects.filter(payment_id=str(payment_id)).first()
                         if compra:
                             print(f"[PAGO_EXITOSO] Compra ya procesada: {compra.id}")
+                            # No mostrar error si ya fue procesada, mostrar la compra exitosa
                         else:
-                            error_message = "No se encontró la compra asociada a este pago."
+                            # Buscar compras similares para detectar duplicados
+                            from django.db.models import Q
+                            from datetime import timedelta
+                            compras_similares = Compra.objects.filter(
+                                Q(mercado_pago_id__icontains=external_reference[:10]) | 
+                                Q(estado_pago='pagado', fecha_compra__gte=timezone.now() - timedelta(hours=1))
+                            ).order_by('-fecha_compra')[:5]
+                            
+                            if compras_similares.exists():
+                                print(f"[PAGO_EXITOSO] Encontradas {compras_similares.count()} compras similares recientes")
+                                # Buscar una compra que coincida con el usuario actual si está autenticado
+                                if hasattr(request, 'user') and request.user.is_authenticated:
+                                    compra_usuario = compras_similares.filter(usuario=request.user).first()
+                                    if compra_usuario:
+                                        compra = compra_usuario
+                                        print(f"[PAGO_EXITOSO] Usando compra del usuario actual: {compra.id}")
+                                    else:
+                                        error_message = f"Pago procesado pero no se encontró tu compra. Payment ID: {payment_id}. Contacta soporte."
+                                else:
+                                    error_message = f"Pago procesado exitosamente pero no se pudo asociar la compra. Payment ID: {payment_id}. Contacta soporte."
+                            else:
+                                error_message = f"No se encontró la compra asociada al pago {payment_id}. Contacta soporte."
                 else:
                     error_message = "No se pudo obtener la referencia del pago."
             else:

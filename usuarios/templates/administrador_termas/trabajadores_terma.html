@@ -1,0 +1,721 @@
+{% load static %}
+{% load precio_filters %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>{{ title }}</title>
+    {% include 'partials/head.html' %}
+</head>
+<body class="flex min-h-screen bg-gray-50">
+    <!-- navbar / sidebar -->
+    {% include 'partials/navbar_adm_termas.html' %}
+    
+    <!-- Mensaje de bienvenida-->
+    {% if messages %}
+        <div class="fixed top-20 right-4 z-50 space-y-2">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} p-4 rounded-lg shadow-lg max-w-sm 
+                    {% if message.tags == 'success' %}bg-green-100 border border-green-400 text-green-700
+                    {% elif message.tags == 'error' %}bg-red-100 border border-red-400 text-red-700
+                    {% elif message.tags == 'warning' %}bg-yellow-100 border border-yellow-400 text-yellow-700
+                    {% else %}bg-blue-100 border border-blue-400 text-blue-700{% endif %}"
+                    role="alert">
+                    <div class="flex items-center justify-between">
+                        <span>{{ message }}</span>
+                        <button type="button" class="ml-2 text-gray-500 hover:text-gray-700" onclick="this.parentElement.parentElement.remove()">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <main class="flex-1 p-6 md:ml-50">
+        <!-- Header -->
+        <div class="bg-[#374151] border-b-2 border-gray-200 pt-6 pb-4 px-8 w-full" style="margin-top:0; border-radius:0; box-shadow:none;">
+            <h1 class="text-4xl font-extrabold text-white tracking-wide text-left">Gestión de Trabajadores - <span class="text-orange-400">{{ terma.nombre_terma }}</span></h1>
+            <p class="text-gray-400 mt-2 text-base">{{ now|date:'d/m/Y H:i' }}</p>
+        </div>
+
+        <!-- Estadísticas rápidas -->
+        <div class="max-w-7xl mx-auto mt-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <!-- Total Trabajadores -->
+                <div class="bg-white rounded-xl shadow-md border border-gray-200 p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="flex items-center justify-center w-8 h-8 bg-blue-500 rounded-md">
+                                <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Total Trabajadores</dt>
+                                <dd class="text-3xl font-bold text-gray-900">{{ stats.total_trabajadores }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trabajadores Activos -->
+                <div class="bg-white rounded-xl shadow-md border border-gray-200 p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="flex items-center justify-center w-8 h-8 bg-green-500 rounded-md">
+                                <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Activos</dt>
+                                <dd class="text-3xl font-bold text-green-600">{{ stats.trabajadores_activos }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trabajadores Inactivos -->
+                <div class="bg-white rounded-xl shadow-md border border-gray-200 p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="flex items-center justify-center w-8 h-8 bg-red-500 rounded-md">
+                                <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Inactivos</dt>
+                                <dd class="text-3xl font-bold text-red-600">{{ stats.trabajadores_inactivos }}</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botón Agregar -->
+                <div class="bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl shadow-md p-6 flex items-center justify-center">
+                    <button onclick="abrirModalCrear()" class="flex items-center justify-center w-full text-white font-semibold">
+                        <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Agregar Trabajador
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filtros y búsqueda -->
+            <div class="bg-white rounded-xl shadow-md border border-gray-200 p-6 mb-6">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                    <div class="flex flex-col md:flex-row gap-4">
+                        <!-- Búsqueda -->
+                        <div class="relative">
+                            <input type="text" id="buscarTrabajador" placeholder="Buscar por nombre, email..." class="w-full md:w-80 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                            <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                        </div>
+
+                        <!-- Filtro por estado -->
+                        <select id="filtroEstado" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                            <option value="">Todos los estados</option>
+                            <option value="activo">Solo activos</option>
+                            <option value="inactivo">Solo inactivos</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-center gap-2 text-sm text-gray-600">
+                        <span id="contadorResultados">{{ trabajadores|length }} trabajador{{ trabajadores|length|pluralize:"es" }} encontrado{{ trabajadores|length|pluralize:"s" }}</span>
+                    <div class="flex items-center gap-2 text-sm text-gray-600">
+                        <span id="contadorResultados">{{ trabajadores|length }} trabajador{{ trabajadores|length|pluralize:"es" }} encontrado{{ trabajadores|length|pluralize:"s" }}</span>
+                        <span class="text-gray-400">|</span>
+                        <span class="text-xs text-gray-500">
+                            Trabajadores de tu Terma
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de trabajadores -->
+            <div class="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-900">Trabajadores de la Terma</h3>
+                    <p class="text-sm text-gray-500 mt-1">
+                        Gestiona los trabajadores de tu terma
+                    </p>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trabajador</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Último acceso</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaTrabajadores" class="bg-white divide-y divide-gray-200">
+                            {% for trabajador in trabajadores %}
+                            <tr class="hover:bg-gray-50 trabajador-row" data-email="{{ trabajador.email|lower }}" data-nombre="{{ trabajador.get_full_name|lower }}" data-estado="{% if trabajador.is_active %}activo{% else %}inactivo{% endif %}">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10">
+                                            <div class="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold">
+                                                {{ trabajador.nombre.0|upper }}{{ trabajador.apellido.0|upper }}
+                                            </div>
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="text-sm font-medium text-gray-900">{{ trabajador.get_full_name }}</div>
+                                            <div class="text-sm text-gray-500">{{ trabajador.email }}</div>
+                                            {% if trabajador.telefono %}
+                                            <div class="text-xs text-gray-400">{{ trabajador.telefono }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    {% if trabajador.is_active %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        <svg class="w-2 h-2 mr-1" fill="currentColor" viewBox="0 0 8 8">
+                                            <circle cx="4" cy="4" r="3"/>
+                                        </svg>
+                                        Activo
+                                    </span>
+                                    {% else %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                        <svg class="w-2 h-2 mr-1" fill="currentColor" viewBox="0 0 8 8">
+                                            <circle cx="4" cy="4" r="3"/>
+                                        </svg>
+                                        Inactivo
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {% if trabajador.last_login %}
+                                        {{ trabajador.last_login|date:"d/m/Y H:i" }}
+                                    {% else %}
+                                        <span class="text-gray-400">Nunca</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <div class="flex items-center space-x-2">
+                                        <!-- Ver detalles -->
+                                        <button data-action="ver" data-id="{{ trabajador.id }}" class="text-blue-600 hover:text-blue-900 transition-colors" title="Ver detalles">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                            </svg>
+                                        </button>
+
+                                        <!-- Editar -->
+                                        <button data-action="editar" data-id="{{ trabajador.id }}" class="text-yellow-600 hover:text-yellow-900 transition-colors" title="Editar">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                            </svg>
+                                        </button>
+
+                                        <!-- Cambiar estado -->
+                                        {% if trabajador.id != usuario.id %}
+                                        <button data-action="cambiar" data-id="{{ trabajador.id }}" data-newstate="{% if trabajador.is_active %}false{% else %}true{% endif %}" 
+                                                class="{% if trabajador.is_active %}text-red-600 hover:text-red-900{% else %}text-green-600 hover:text-green-900{% endif %} transition-colors" 
+                                                title="{% if trabajador.is_active %}Desactivar{% else %}Activar{% endif %}">
+                                            {% if trabajador.is_active %}
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728"></path>
+                                            </svg>
+                                            {% else %}
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                            {% endif %}
+                                        </button>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="px-6 py-12 text-center">
+                                    <div class="text-gray-500">
+                                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                        </svg>
+                                        <h3 class="mt-2 text-lg font-medium text-gray-900">Sin trabajadores</h3>
+                                        <p class="mt-1 text-gray-500">Comienza agregando trabajadores a tu terma.</p>
+                                        <div class="mt-6">
+                                            <button onclick="abrirModalCrear()" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700">
+                                                <svg class="-ml-1 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                                </svg>
+                                                Agregar trabajador
+                                            </button>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Crear/Editar Trabajador -->
+        <div id="modalTrabajador" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+            <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+                <div class="mt-3">
+                    <h3 id="modalTitulo" class="text-lg font-medium text-gray-900 mb-4">Agregar Trabajador</h3>
+                    
+                    <form id="formTrabajador">
+                        <input type="hidden" id="trabajadorId" name="trabajador_id">
+                        <input type="hidden" id="rol_id" name="rol_id" value="">
+                        
+                        <div class="mb-4">
+                            <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email *</label>
+                            <input type="email" id="email" name="email" required 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                            <p class="mt-1 text-xs text-gray-500">Si el email ya existe, se actualizará el rol del usuario.</p>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label for="nombre" class="block text-sm font-medium text-gray-700 mb-2">Nombre *</label>
+                                <input type="text" id="nombre" name="nombre" required 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label for="apellido" class="block text-sm font-medium text-gray-700 mb-2">Apellido *</label>
+                                <input type="text" id="apellido" name="apellido" required 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="telefono" class="block text-sm font-medium text-gray-700 mb-2">Teléfono</label>
+                            <input type="text" id="telefono" name="telefono" 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                        </div>
+
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Rol</label>
+                            <div class="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-gray-600">
+                                Trabajador (asignado automáticamente)
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-end space-x-3">
+                            <button type="button" onclick="cerrarModal()" 
+                                    class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 transition-colors">
+                                Cancelar
+                            </button>
+                            <button type="submit" 
+                                    class="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors">
+                                <span id="btnTexto">Agregar</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Ver Detalles -->
+        <div id="modalDetalles" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+            <div class="relative top-20 mx-auto p-5 border w-full max-w-lg shadow-lg rounded-md bg-white">
+                <div class="mt-3">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-medium text-gray-900">Detalles del Trabajador</h3>
+                        <button onclick="cerrarModalDetalles()" class="text-gray-400 hover:text-gray-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                    
+                    <div id="contenidoDetalles">
+                        <!-- Se carga dinámicamente -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script>
+        // Variables globales
+        let trabajadores = [];
+        let modalActual = 'crear';
+        let trabajadorEditando = null;
+
+        // Funciones de modal
+        function abrirModalCrear() {
+            modalActual = 'crear';
+            trabajadorEditando = null;
+            document.getElementById('modalTitulo').textContent = 'Agregar Trabajador';
+            document.getElementById('btnTexto').textContent = 'Agregar';
+            document.getElementById('formTrabajador').reset();
+            document.getElementById('trabajadorId').value = '';
+            document.getElementById('rol_id').value = '3'; // ID del rol trabajador
+            document.getElementById('email').readOnly = false;
+            document.getElementById('modalTrabajador').classList.remove('hidden');
+        }
+
+        function editarTrabajador(trabajadorId) {
+            console.log('✏️ EDITANDO TRABAJADOR - ID:', trabajadorId);
+            // Obtener detalles del trabajador
+            fetch(`/termas/detalle-trabajador/${trabajadorId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        modalActual = 'editar';
+                        trabajadorEditando = trabajadorId;
+                        document.getElementById('modalTitulo').textContent = 'Editar Trabajador';
+                        document.getElementById('btnTexto').textContent = 'Actualizar';
+                        
+                        // Llenar formulario con verificación de elementos
+                        const setElementValue = (id, value) => {
+                            const element = document.getElementById(id);
+                            if (element) {
+                                element.value = value;
+                                console.log(`✅ ${id} = ${value}`);
+                            } else {
+                                console.warn(`⚠️ Elemento ${id} no encontrado`);
+                            }
+                        };
+                        
+                        const setElementProperty = (id, property, value) => {
+                            const element = document.getElementById(id);
+                            if (element) {
+                                element[property] = value;
+                                console.log(`✅ ${id}.${property} = ${value}`);
+                            } else {
+                                console.warn(`⚠️ Elemento ${id} no encontrado`);
+                            }
+                        };
+                        
+                        const setElementText = (id, text) => {
+                            const element = document.getElementById(id);
+                            if (element) {
+                                element.textContent = text;
+                                console.log(`✅ ${id}.textContent = ${text}`);
+                            } else {
+                                console.warn(`⚠️ Elemento ${id} no encontrado`);
+                            }
+                        };
+                        
+                        setElementValue('trabajadorId', trabajadorId);
+                        setElementValue('email', data.trabajador.email);
+                        setElementProperty('email', 'readOnly', true);
+                        setElementValue('nombre', data.trabajador.nombre);
+                        setElementValue('apellido', data.trabajador.apellido);
+                        setElementValue('telefono', data.trabajador.telefono === 'No especificado' ? '' : data.trabajador.telefono);
+                        setElementValue('rol_id', data.trabajador.rol.id);
+                        setElementText('modalTitulo', 'Editar Trabajador');
+                        setElementText('btnTexto', 'Actualizar');
+                        
+                        const modalElement = document.getElementById('modalTrabajador');
+                        if (modalElement) {
+                            modalElement.classList.remove('hidden');
+                            console.log('✅ Modal de edición abierto');
+                        } else {
+                            console.error('❌ Modal modalTrabajador no encontrado');
+                        }
+                    } else {
+                        mostrarMensaje('error', data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    mostrarMensaje('error', 'Error al cargar los detalles del trabajador');
+                });
+        }
+
+        function cerrarModal() {
+            document.getElementById('modalTrabajador').classList.add('hidden');
+        }
+
+        function cerrarModalDetalles() {
+            document.getElementById('modalDetalles').classList.add('hidden');
+        }
+
+        // Función para ver detalles
+        function verDetalles(trabajadorId) {
+            console.log('🔍 Intentando cargar detalles para trabajador ID:', trabajadorId);
+            fetch(`/termas/detalle-trabajador/${trabajadorId}/`)
+                .then(response => {
+                    console.log('📡 Respuesta recibida - Status:', response.status, 'OK:', response.ok);
+                    if (!response.ok) {
+                        throw new Error(`HTTP Error: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('📊 Datos procesados:', data);
+                    if (data.success) {
+                        const trabajador = data.trabajador;
+                        console.log('✅ Datos del trabajador:', trabajador);
+                        const contenido = `
+                            <div class="space-y-4">
+                                <div class="flex items-center space-x-4">
+                                    <div class="flex-shrink-0 h-16 w-16">
+                                        <div class="h-16 w-16 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold text-xl">
+                                            ${trabajador.nombre.charAt(0).toUpperCase()}${trabajador.apellido.charAt(0).toUpperCase()}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-xl font-semibold text-gray-900">${trabajador.nombre} ${trabajador.apellido}</h4>
+                                        <p class="text-gray-600">${trabajador.email}</p>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <span class="text-sm font-medium text-gray-500">Teléfono:</span>
+                                        <p class="text-sm text-gray-900">${trabajador.telefono}</p>
+                                    </div>
+                                    <div>
+                                        <span class="text-sm font-medium text-gray-500">Rol:</span>
+                                        <p class="text-sm text-gray-900">${trabajador.rol.nombre}</p>
+                                    </div>
+                                    <div>
+                                        <span class="text-sm font-medium text-gray-500">Estado:</span>
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${trabajador.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                            ${trabajador.is_active ? 'Activo' : 'Inactivo'}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <span class="text-sm font-medium text-gray-500">Estado general:</span>
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${trabajador.estado ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                            ${trabajador.estado ? 'Habilitado' : 'Deshabilitado'}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <span class="text-sm font-medium text-gray-500">Fecha de registro:</span>
+                                        <p class="text-sm text-gray-900">${trabajador.fecha_registro}</p>
+                                    </div>
+                                    <div>
+                                        <span class="text-sm font-medium text-gray-500">Último acceso:</span>
+                                        <p class="text-sm text-gray-900">${trabajador.ultimo_login}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        console.log('🎨 Contenido HTML generado, insertando en modal');
+                        
+                        // Verificar que los elementos existen antes de usarlos
+                        const contenidoElement = document.getElementById('contenidoDetalles');
+                        const modalElement = document.getElementById('modalDetalles');
+                        
+                        if (!contenidoElement) {
+                            console.error('❌ Elemento contenidoDetalles no encontrado');
+                            mostrarMensaje('error', 'Error: Elemento del modal no encontrado');
+                            return;
+                        }
+                        
+                        if (!modalElement) {
+                            console.error('❌ Elemento modalDetalles no encontrado');
+                            mostrarMensaje('error', 'Error: Modal no encontrado');
+                            return;
+                        }
+                        
+                        contenidoElement.innerHTML = contenido;
+                        modalElement.classList.remove('hidden');
+                        console.log('✅ Modal abierto exitosamente');
+                    } else {
+                        console.error('❌ Error del servidor:', data.error);
+                        mostrarMensaje('error', data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('💥 Error en verDetalles:', error);
+                    console.error('💥 Stack trace:', error.stack);
+                    mostrarMensaje('error', 'Error al cargar los detalles del trabajador: ' + error.message);
+                });
+        }
+
+        // Función para cambiar estado
+        function cambiarEstado(trabajadorId, nuevoEstado) {
+            const accion = nuevoEstado ? 'activar' : 'desactivar';
+            if (confirm(`¿Estás seguro que deseas ${accion} este trabajador?`)) {
+                fetch(`/termas/cambiar-estado-trabajador/${trabajadorId}/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCookie('csrftoken'),
+                        'Content-Type': 'application/json',
+                    },
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        mostrarMensaje('success', data.mensaje);
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1500);
+                    } else {
+                        mostrarMensaje('error', data.error);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    mostrarMensaje('error', 'Error al cambiar el estado del trabajador');
+                });
+            }
+        }
+
+        // Manejar envío del formulario
+        document.getElementById('formTrabajador').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const url = modalActual === 'crear' ? '/termas/crear-trabajador/' : `/termas/editar-trabajador/${trabajadorEditando}/`;
+            
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    mostrarMensaje('success', data.mensaje);
+                    cerrarModal();
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1500);
+                } else {
+                    mostrarMensaje('error', data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                mostrarMensaje('error', 'Error al procesar la solicitud');
+            });
+        });
+
+        // Funciones de filtrado
+        function aplicarFiltros() {
+            const busqueda = document.getElementById('buscarTrabajador').value.toLowerCase();
+            const filtroEstado = document.getElementById('filtroEstado').value;
+            
+            const filas = document.querySelectorAll('.trabajador-row');
+            let contador = 0;
+            
+            filas.forEach(fila => {
+                const email = fila.dataset.email;
+                const nombre = fila.dataset.nombre;
+                const estado = fila.dataset.estado;
+                
+                let mostrar = true;
+                
+                // Filtro de búsqueda
+                if (busqueda && !email.includes(busqueda) && !nombre.includes(busqueda)) {
+                    mostrar = false;
+                }
+                
+                // Filtro de estado
+                if (filtroEstado && estado !== filtroEstado) {
+                    mostrar = false;
+                }
+                
+                if (mostrar) {
+                    fila.style.display = '';
+                    contador++;
+                } else {
+                    fila.style.display = 'none';
+                }
+            });
+            
+            document.getElementById('contadorResultados').textContent = 
+                `${contador} trabajador${contador !== 1 ? 'es' : ''} encontrado${contador !== 1 ? 's' : ''}`;
+        }
+
+        // Event listeners para filtros
+        document.getElementById('buscarTrabajador').addEventListener('input', aplicarFiltros);
+        document.getElementById('filtroEstado').addEventListener('change', aplicarFiltros);
+
+        // Función auxiliar para obtener cookie CSRF
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // Función para mostrar mensajes
+        function mostrarMensaje(tipo, mensaje) {
+            // Crear elemento de mensaje
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `fixed top-20 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm animate-pulse ${
+                tipo === 'success' ? 'bg-green-100 border border-green-400 text-green-700' :
+                tipo === 'error' ? 'bg-red-100 border border-red-400 text-red-700' :
+                'bg-blue-100 border border-blue-400 text-blue-700'
+            }`;
+            
+            alertDiv.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <span>${mensaje}</span>
+                    <button type="button" class="ml-2 text-gray-500 hover:text-gray-700" onclick="this.parentElement.parentElement.remove()">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                        </svg>
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(alertDiv);
+            
+            // Auto-eliminar después de 5 segundos
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.parentNode.removeChild(alertDiv);
+                }
+            }, 5000);
+        }
+
+        // Cerrar modal con Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                cerrarModal();
+                cerrarModalDetalles();
+            }
+        });
+
+        // Delegated handlers for action buttons (evita onclick inline y conflictos con analizadores)
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('button[data-action]');
+            if (!btn) return;
+            const id = btn.dataset.id;
+            const action = btn.dataset.action;
+            console.log('🎯 Botón clickeado - Acción:', action, 'ID:', id);
+            if (action === 'ver') {
+                console.log('👁️ Llamando verDetalles');
+                verDetalles(id);
+            } else if (action === 'editar') {
+                console.log('✏️ Llamando editarTrabajador');
+                editarTrabajador(id);
+            } else if (action === 'cambiar') {
+                const newState = btn.dataset.newstate === 'true';
+                console.log('🔄 Llamando cambiarEstado');
+                cambiarEstado(id, newState);
+            }
+        });
+    </script>
+</body>
+</html>
