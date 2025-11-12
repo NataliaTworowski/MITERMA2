@@ -139,7 +139,7 @@ def mostrar_entradas(request):
         visible=True
     ).order_by('-fecha_compra').select_related(
         'terma', 'codigoqr'  # Incluir la relación con CodigoQR
-    ).prefetch_related('detalles', 'detalles__horario_disponible', 'detalles__servicios')
+    ).prefetch_related('detalles', 'detalles__entrada_tipo', 'detalles__servicios')
     
     context = {
         'title': 'Mis Entradas - MiTerma',

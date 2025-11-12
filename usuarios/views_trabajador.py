@@ -197,7 +197,7 @@ def escanear_qr(request):
 
 @trabajador_required
 def buscar_entrada(request):
-    """Vista para buscar entradas por DNI, email o código."""
+    """Vista para buscar entradas por email o código."""
     query = request.GET.get('q', '').strip()
     
     if not query:
@@ -280,8 +280,7 @@ def registro_entradas_escaneadas(request):
         'compra__terma'
     ).prefetch_related(
         'compra__detalles',
-        'compra__detalles__horario_disponible',
-        'compra__detalles__horario_disponible__entrada_tipo'
+        'compra__detalles__entrada_tipo'
     ).filter(
         compra__terma=terma,
         usado=True,
@@ -299,8 +298,8 @@ def registro_entradas_escaneadas(request):
         duracion_horas = 0
         tipo_entrada_nombre = "Entrada General"
         
-        if detalle and detalle.horario_disponible and detalle.horario_disponible.entrada_tipo:
-            entrada_tipo = detalle.horario_disponible.entrada_tipo
+        if detalle and detalle.entrada_tipo:
+            entrada_tipo = detalle.entrada_tipo
             duracion_horas = getattr(entrada_tipo, 'duracion_horas', 0) or 0
             tipo_entrada_nombre = entrada_tipo.nombre
         

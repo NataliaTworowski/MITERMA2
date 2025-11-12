@@ -1,7 +1,7 @@
 from django.db import models
 from datetime import date
 from usuarios.models import Usuario
-from entradas.models import HorarioDisponible
+from entradas.models import EntradaTipo
 
 class MetodoPago(models.Model):
     nombre = models.CharField(max_length=50)
@@ -72,7 +72,7 @@ class CuponUsado(models.Model):
 class DetalleCompra(models.Model):
     id = models.AutoField(primary_key=True)
     compra = models.ForeignKey(Compra, on_delete=models.CASCADE, related_name="detalles")
-    horario_disponible = models.ForeignKey(HorarioDisponible, on_delete=models.CASCADE)
+    entrada_tipo = models.ForeignKey(EntradaTipo, on_delete=models.CASCADE, null=True, blank=True)
     cantidad = models.IntegerField()
     precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
     subtotal = models.DecimalField(max_digits=10, decimal_places=2)
@@ -95,7 +95,7 @@ class ServicioExtraDetalle(models.Model):
 
 class Carrito(models.Model):
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
-    horario_disponible = models.ForeignKey(HorarioDisponible, on_delete=models.CASCADE)
+    entrada_tipo = models.ForeignKey(EntradaTipo, on_delete=models.CASCADE, null=True, blank=True)
     cantidad = models.IntegerField(default=1)
     precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
     fecha_agregado = models.DateTimeField(auto_now_add=True)

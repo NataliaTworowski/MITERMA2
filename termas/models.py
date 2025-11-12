@@ -49,9 +49,19 @@ class Terma(models.Model):
         entrada_minima = self.entradatipo_set.filter(estado=True).order_by('precio').first()
         return entrada_minima.precio if entrada_minima else None
     
-    # Método para obtener todos los tipos de entrada activos
+    # Método para obtener todos los tipos de entrada activos (solo templates, sin fecha)
     def get_tipos_entrada(self):
-        return self.entradatipo_set.filter(estado=True).order_by('precio')
+        return self.entradatipo_set.filter(estado=True, fecha__isnull=True).order_by('precio')
+    
+    # Método para obtener entradas específicas para una fecha
+    def get_entradas_fecha(self, fecha):
+        """Obtiene las entradas específicas para una fecha determinada"""
+        return self.entradatipo_set.filter(estado=True, fecha=fecha).order_by('precio')
+    
+    # Método para obtener todas las entradas (templates y específicas)
+    def get_todas_entradas(self):
+        """Obtiene todas las entradas de la terma (para admin)"""
+        return self.entradatipo_set.filter(estado=True).order_by('nombre', 'fecha')
     
     # Método para verificar si tiene tipos de entrada
     def tiene_precios(self):
@@ -176,7 +186,7 @@ class Terma(models.Model):
         from ventas.models import DetalleCompra
         from django.db.models import Sum
         total = DetalleCompra.objects.filter(
-            horario_disponible__terma=self,
+            entrada_tipo__terma=self,
             compra__estado_pago='pagado'
         ).aggregate(total=Sum('cantidad'))['total']
         return total or 0
@@ -192,8 +202,8 @@ class Terma(models.Model):
         
         # Obtener el total de entradas vendidas para esa fecha
         ventas_dia = DetalleCompra.objects.filter(
-            horario_disponible__terma=self,
-            horario_disponible__fecha=fecha,
+            entrada_tipo__terma=self,
+            entrada_tipo__fecha=fecha,
             compra__estado_pago='pagado'
         ).aggregate(total=Sum('cantidad'))['total'] or 0
         
@@ -268,12 +278,16 @@ class Terma(models.Model):
         
         # 1. Servicios incluidos en entradas vendidas
         entradas_vendidas = DetalleCompra.objects.filter(
-            horario_disponible__terma=self,
+            entrada_tipo__terma=self,
             compra__estado_pago='pagado'
-        ).select_related('horario_disponible__entrada_tipo')
+        ).select_related('entrada_tipo')
         
         for detalle in entradas_vendidas:
-            servicios_incluidos = detalle.horario_disponible.entrada_tipo.servicios.all()
+            # Validar que entrada_tipo no sea None
+            if not detalle.entrada_tipo:
+                continue
+                
+            servicios_incluidos = detalle.entrada_tipo.servicios.all()
             cantidad_entradas = detalle.cantidad
             
             for servicio in servicios_incluidos:
@@ -283,7 +297,7 @@ class Terma(models.Model):
         
         # 2. Servicios extra vendidos por separado
         servicios_extra = ServicioExtraDetalle.objects.filter(
-            detalle_compra__horario_disponible__terma=self,
+            detalle_compra__entrada_tipo__terma=self,
             detalle_compra__compra__estado_pago='pagado'
         ).select_related('servicio').values('servicio__servicio').annotate(
             total_cantidad=Sum('cantidad')
@@ -293,6 +307,10 @@ class Terma(models.Model):
             nombre_servicio = servicio_extra['servicio__servicio']
             cantidad = servicio_extra['total_cantidad']
             
+            # Validar que nombre_servicio no sea None
+            if not nombre_servicio:
+                continue
+                
             if nombre_servicio not in servicios_stats:
                 servicios_stats[nombre_servicio] = 0
             servicios_stats[nombre_servicio] += cantidad

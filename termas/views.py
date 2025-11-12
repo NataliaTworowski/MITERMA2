@@ -402,10 +402,13 @@ def analisis_terma(request):
             compra__estado_pago='pagado',
             compra__fecha_compra__date__gte=fecha_inicio,
             compra__fecha_compra__date__lte=hoy
-        ).select_related('horario_disponible__entrada_tipo')
+        ).select_related('entrada_tipo')
         tipos = {}
         for detalle in detalles:
-            tipo = detalle.horario_disponible.entrada_tipo.nombre
+            # Validar que entrada_tipo no sea None
+            if not detalle.entrada_tipo:
+                continue
+            tipo = detalle.entrada_tipo.nombre
             tipos[tipo] = tipos.get(tipo, 0) + detalle.cantidad
         tipos_labels = list(tipos.keys())
         tipos_values = list(tipos.values())

@@ -26,6 +26,16 @@ class EntradaTipo(models.Model):
     )
     estado = models.BooleanField(default=True)
     servicios = models.ManyToManyField('termas.ServicioTerma', blank=True, related_name='entradas')
+    
+    # Campos agregados de HorarioDisponible
+    fecha = models.DateField(null=True, blank=True, help_text='Fecha para la cual esta entrada está disponible')
+    cupos_totales = models.IntegerField(null=True, blank=True, help_text='Total de cupos disponibles para esta fecha')
+    cupos_disponibles = models.IntegerField(null=True, blank=True, help_text='Cupos restantes para esta fecha')
+
+    
+    class Meta:
+        # Permitir múltiples entradas por fecha, pero únicas por terma, nombre y fecha
+        unique_together = ['terma', 'nombre', 'fecha']
 
     def save(self, *args, **kwargs):
         # Set default duracion_horas based on duracion_tipo if not specified
@@ -36,46 +46,77 @@ class EntradaTipo(models.Model):
                 self.duracion_horas = 12
             elif self.duracion_tipo == 'dia_completo':
                 self.duracion_horas = 24
+        
+        # Set default cupos if fecha is specified but cupos are not
+        if self.fecha and not self.cupos_totales:
+            self.cupos_totales = self.terma.limite_ventas_diario if self.terma else 50
+        if self.fecha and self.cupos_disponibles is None:
+            self.cupos_disponibles = self.cupos_totales or 50
+            
         super().save(*args, **kwargs)
 
-    def create_horario_disponible(self, fecha):
-        """Crea un horario disponible para esta entrada en la fecha especificada."""
-        from datetime import datetime, time
-        if self.duracion_tipo == 'dia':
-            hora_inicio = time(8, 0)  # 8:00 AM
-            hora_fin = time(20, 0)    # 8:00 PM
-        elif self.duracion_tipo == 'noche':
-            hora_inicio = time(18, 0)  # 6:00 PM
-            hora_fin = time(10, 0)     # 10:00 AM (siguiente día)
-        else:  # dia_completo
-            hora_inicio = time(8, 0)   # 8:00 AM
-            hora_fin = time(8, 0)      # 8:00 AM (siguiente día)
+    def __str__(self):
+        if self.fecha:
+            return f"{self.nombre} - {self.fecha} ({self.cupos_disponibles}/{self.cupos_totales})"
+        return self.nombre
 
-        horario, created = HorarioDisponible.objects.get_or_create(
+    def crear_instancia_para_fecha(self, fecha):
+        """Crea una instancia específica de esta entrada para una fecha determinada."""
+        instancia, created = EntradaTipo.objects.get_or_create(
             terma=self.terma,
-            entrada_tipo=self,
+            nombre=self.nombre,
             fecha=fecha,
             defaults={
-                'hora_inicio': hora_inicio,
-                'hora_fin': hora_fin,
+                'descripcion': self.descripcion,
+                'precio': self.precio,
+                'duracion_horas': self.duracion_horas,
+                'duracion_tipo': self.duracion_tipo,
+                'estado': self.estado,
                 'cupos_totales': self.terma.limite_ventas_diario,
                 'cupos_disponibles': self.terma.limite_ventas_diario
             }
         )
-        return horario
-
-#esta no me convence 
-class HorarioDisponible(models.Model):
-    terma = models.ForeignKey(Terma, on_delete=models.CASCADE)
-    entrada_tipo = models.ForeignKey(EntradaTipo, on_delete=models.CASCADE)
-    fecha = models.DateField()
-    hora_inicio = models.TimeField()
-    hora_fin = models.TimeField()
-    cupos_totales = models.IntegerField()
-    cupos_disponibles = models.IntegerField()
-
-    class Meta:
-        unique_together = ['terma', 'entrada_tipo', 'fecha']
         
-    def __str__(self):
-        return f"{self.entrada_tipo.nombre} - {self.fecha} ({self.cupos_disponibles}/{self.cupos_totales})"
+        if created:
+            # Copiar servicios de la entrada template
+            instancia.servicios.set(self.servicios.all())
+            
+        return instancia
+
+    def reducir_cupos(self, cantidad):
+        """Reduce los cupos disponibles en la cantidad especificada."""
+        if self.cupos_disponibles is not None:
+            self.cupos_disponibles = max(0, self.cupos_disponibles - cantidad)
+            self.save(update_fields=['cupos_disponibles'])
+
+    def aumentar_cupos(self, cantidad):
+        """Aumenta los cupos disponibles en la cantidad especificada."""
+        if self.cupos_disponibles is not None and self.cupos_totales is not None:
+            self.cupos_disponibles = min(self.cupos_totales, self.cupos_disponibles + cantidad)
+            self.save(update_fields=['cupos_disponibles'])
+
+    def tiene_cupos_suficientes(self, cantidad):
+        """Verifica si hay cupos suficientes para la cantidad solicitada."""
+        if self.cupos_disponibles is None:
+            return True  # Si no hay límite de cupos, siempre hay disponibilidad
+        return self.cupos_disponibles >= cantidad
+
+    @classmethod
+    def get_entrada_template(cls, terma, nombre):
+        """Obtiene la entrada template (sin fecha) para una terma y nombre específico."""
+        return cls.objects.filter(terma=terma, nombre=nombre, fecha__isnull=True).first()
+
+    @classmethod  
+    def get_entrada_para_fecha(cls, terma, nombre, fecha):
+        """Obtiene o crea la entrada específica para una fecha."""
+        # Primero buscar si ya existe para esa fecha
+        entrada = cls.objects.filter(terma=terma, nombre=nombre, fecha=fecha).first()
+        if entrada:
+            return entrada
+        
+        # Si no existe, buscar el template y crear la instancia
+        template = cls.get_entrada_template(terma, nombre)
+        if template:
+            return template.crear_instancia_para_fecha(fecha)
+        
+        return None

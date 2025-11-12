@@ -261,10 +261,10 @@ class ValidarEntradaQRView(View):
                             
                             # Intentar obtener detalles específicos de la compra
                             detalles = compra.detalles.select_related(
-                                'horario_disponible__entrada_tipo'
+                                'entrada_tipo'
                             ).prefetch_related(
                                 'servicios',
-                                'horario_disponible__entrada_tipo__servicios'
+                                'entrada_tipo__servicios'
                             ).first()
                             
                             if not detalles:
@@ -272,16 +272,16 @@ class ValidarEntradaQRView(View):
                                 raise Exception("No se encontraron detalles de la compra")
                                 
                             logger.info(f"Detalles encontrados para compra {compra.id}")
-                            logger.info(f"Tipo de entrada: {detalles.horario_disponible.entrada_tipo.nombre}")
-                            logger.info(f"Servicios incluidos: {[s.servicio for s in detalles.horario_disponible.entrada_tipo.servicios.all()]}")
+                            logger.info(f"Tipo de entrada: {detalles.entrada_tipo.nombre}")
+                            logger.info(f"Servicios incluidos: {[s.servicio for s in detalles.entrada_tipo.servicios.all()]}")
                             logger.info(f"Servicios extra: {[s.servicio for s in detalles.servicios.all()]}")
                                 
                             if detalles:
                                 # Obtener servicios incluidos del tipo de entrada
-                                servicios_incluidos = detalles.horario_disponible.entrada_tipo.servicios.all()
+                                servicios_incluidos = detalles.entrada_tipo.servicios.all()
                                 logger.info(f"[DEBUG] ID del detalle: {detalles.id}")
                                 logger.info(f"[DEBUG] ID de la compra: {compra.id}")
-                                logger.info(f"[DEBUG] ID del horario disponible: {detalles.horario_disponible.id}")
+                                logger.info(f"[DEBUG] ID del entrada_tipo: {detalles.entrada_tipo.id}")
                                 
                                 servicios_incluidos_list = [
                                     {
@@ -314,7 +314,7 @@ class ValidarEntradaQRView(View):
                                     }]
                                 
                                 # Preparar información de la entrada
-                                entrada_tipo = detalles.horario_disponible.entrada_tipo
+                                entrada_tipo = detalles.entrada_tipo
                                 
                                 # Generar texto de duración
                                 duracion_texto = ""
@@ -329,13 +329,21 @@ class ValidarEntradaQRView(View):
                                 else:
                                     duracion_texto = "Duración no especificada"
                                 
+                                # Calcular horarios basados en duracion_tipo
+                                if entrada_tipo.duracion_tipo == 'dia':
+                                    hora_inicio, hora_fin = '08:00', '20:00'
+                                elif entrada_tipo.duracion_tipo == 'noche':
+                                    hora_inicio, hora_fin = '18:00', '10:00'
+                                else:  # dia_completo
+                                    hora_inicio, hora_fin = '08:00', '08:00'
+                                
                                 entrada_info = {
                                     'tipo': entrada_tipo.nombre,
                                     'duracion': duracion_texto,
                                     'duracion_horas': entrada_tipo.duracion_horas,
                                     'duracion_tipo': entrada_tipo.duracion_tipo,
-                                    'hora_inicio': detalles.horario_disponible.hora_inicio.strftime('%H:%M') if detalles.horario_disponible.hora_inicio else '00:00',
-                                    'hora_fin': detalles.horario_disponible.hora_fin.strftime('%H:%M') if detalles.horario_disponible.hora_fin else '23:59',
+                                    'hora_inicio': hora_inicio,
+                                    'hora_fin': hora_fin,
                                     'cantidad_entradas': compra.cantidad,
                                     'servicios_incluidos': servicios_incluidos_list,
                                 }

@@ -6,14 +6,24 @@ psycopg2-binary==2.9.10
 
 # Environment variables management
 python-decouple==3.8
+python-dotenv==1.0.1
 
 # Django dependencies (automatically installed with Django)
 asgiref==3.9.1
 sqlparse==0.5.3
 tzdata==2025.2
 
- 
-# Mercado Pago integration
+# Payment Integration
 mercadopago==2.1.0
-# Environment variables management
-python-dotenv==1.0.1
+
+# QR Code Generation
+qrcode==7.4.2
+
+# Cryptography for encryption (Fernet)
+cryptography==41.0.8
+
+# PDF Generation
+reportlab==4.0.7
+
+# Image processing (required by qrcode and reportlab)
+Pillow==10.1.0

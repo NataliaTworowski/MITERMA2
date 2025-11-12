@@ -1401,8 +1401,8 @@ def admin_general_terma_estadisticas(request, terma_id):
             fecha = hoy - timedelta(days=i)
             try:
                 ventas_dia = DetalleCompra.objects.filter(
-                    horario_disponible__terma=terma,
-                    horario_disponible__fecha=fecha,
+                    entrada_tipo__terma=terma,
+                    entrada_tipo__fecha=fecha,
                     compra__estado_pago='pagado'
                 ).aggregate(
                     total_visitantes=Sum('cantidad')

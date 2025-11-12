@@ -39,7 +39,7 @@ def pago(request, terma_id=None):
                     terma_id=terma_id,
                     fecha_visita=fecha_visita_obj,
                     estado_pago__in=['pagado', 'pendiente'],  # Incluir pendientes también
-                    detalles__horario_disponible__entrada_tipo_id=entrada_id,
+                    detalles__entrada_tipo_id=entrada_id,
                     cantidad=int(cantidad),
                     fecha_compra__gt=tiempo_limite
                 ).first()
@@ -107,7 +107,7 @@ def pago(request, terma_id=None):
             terma_id=datos['terma_id'],
             fecha_visita=fecha_visita_obj,
             estado_pago__in=['pendiente', 'pagado'],
-            detalles__horario_disponible__entrada_tipo_id=entrada_id,
+            detalles__entrada_tipo_id=entrada_id,
             cantidad=int(datos.get('cantidad_entradas', 1)),
             fecha_compra__gt=tiempo_limite  # Solo últimos 15 minutos
         ).first()
@@ -126,7 +126,7 @@ def pago(request, terma_id=None):
             terma_id=datos['terma_id'],
             fecha_visita=fecha_visita_obj,
             estado_pago='pendiente',
-            detalles__horario_disponible__entrada_tipo_id=entrada_id,
+            detalles__entrada_tipo_id=entrada_id,
             cantidad=int(datos.get('cantidad_entradas', 1))
         ).first()
         
@@ -250,7 +250,7 @@ def pago(request, terma_id=None):
             return render(request, 'ventas/pago.html', datos)
             
             # Validar que la entrada exista
-        from entradas.models import HorarioDisponible, EntradaTipo
+        from entradas.models import EntradaTipo
         try:
             # Primero validar que sea un ID válido
             entrada_id = str(datos.get('entrada_id')).strip()
@@ -290,7 +290,7 @@ def pago(request, terma_id=None):
         if not locals().get('compra'):  # Solo crear si no hay compra existente
             try:
                 from ventas.models import Compra, MetodoPago, DetalleCompra
-                from entradas.models import HorarioDisponible
+                from entradas.models import EntradaTipo
                 from termas.models import ServicioTerma
                 import uuid
 
@@ -299,30 +299,31 @@ def pago(request, terma_id=None):
                 # Generar un ID único para esta compra ANTES de crear la preferencia
                 mercado_pago_id = f"{access_token[:10]}-{uuid.uuid4()}"
 
-                # Validar y obtener o crear el horario disponible
+                # Validar y obtener o crear la entrada para la fecha específica
                 if not datos.get('entrada_id') or not datos.get('fecha'):
                     raise ValueError("No se especificó el ID de la entrada o la fecha")
 
                 try:
-                    entrada_tipo = EntradaTipo.objects.get(id=datos['entrada_id'])
+                    entrada_template = EntradaTipo.objects.get(id=datos['entrada_id'])
                     fecha_visita = datetime.strptime(datos['fecha'], '%Y-%m-%d').date()
                     
-                    # Intentar obtener un horario existente o crear uno nuevo
-                    horario = HorarioDisponible.objects.filter(
-                        entrada_tipo=entrada_tipo,
+                    # Obtener o crear la entrada específica para esta fecha
+                    entrada_tipo = EntradaTipo.get_entrada_para_fecha(
+                        terma=entrada_template.terma,
+                        nombre=entrada_template.nombre,
                         fecha=fecha_visita
-                    ).first()
+                    )
 
-                    if not horario:
-                        # Crear nuevo horario disponible
-                        horario = entrada_tipo.create_horario_disponible(fecha_visita)
+                    if not entrada_tipo:
+                        raise ValueError("No se pudo crear la entrada para la fecha especificada")
 
                     # Verificar disponibilidad
-                    if horario.cupos_disponibles < int(datos['cantidad_entradas']):
-                        raise ValueError(f"Solo quedan {horario.cupos_disponibles} cupos disponibles para esta fecha")
+                    cantidad_solicitada = int(datos['cantidad_entradas'])
+                    if not entrada_tipo.tiene_cupos_suficientes(cantidad_solicitada):
+                        raise ValueError(f"Solo quedan {entrada_tipo.cupos_disponibles or 0} cupos disponibles para esta fecha")
 
                 except Exception as e:
-                    raise ValueError(f"Error al obtener o crear el horario disponible: {str(e)}")
+                    raise ValueError(f"Error al obtener o crear la entrada para la fecha: {str(e)}")
                 
                 # Calcular precio con extras si hay
                 try:
@@ -350,12 +351,15 @@ def pago(request, terma_id=None):
                 print(f"\n[DEBUG] Creando detalle de compra...")
                 detalle = DetalleCompra.objects.create(
                     compra=compra,
-                    horario_disponible=horario,
+                    entrada_tipo=entrada_tipo,
                     cantidad=cantidad,
                     precio_unitario=precio_unitario,
                     subtotal=subtotal
                 )
                 print(f"[DEBUG] Detalle creado: ID={detalle.id}")
+                
+                # Reducir cupos disponibles
+                entrada_tipo.reducir_cupos(cantidad)
                 
                 print(f"[NUEVA COMPRA] Compra creada: id={compra.id}, mercado_pago_id={compra.mercado_pago_id}")
 
@@ -717,9 +721,8 @@ def pago_exitoso(request):
                     # Buscar la compra por el external_reference con todas sus relaciones
                     compra = Compra.objects.select_related('terma').prefetch_related(
                         'detalles',
-                        'detalles__horario_disponible',
-                        'detalles__horario_disponible__entrada_tipo',
-                        'detalles__horario_disponible__entrada_tipo__terma'
+                        'detalles__entrada_tipo',
+                        'detalles__entrada_tipo__terma'
                     ).filter(
                         mercado_pago_id=str(external_reference),
                         estado_pago="pendiente"

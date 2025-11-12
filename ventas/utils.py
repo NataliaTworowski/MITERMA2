@@ -158,7 +158,7 @@ def generar_pdf_entrada(compra):
         c.setFont("Helvetica-Bold", 12)
         c.drawString(70, y_position, "Tipo de Entrada:")
         c.setFont("Helvetica", 12)
-        c.drawString(250, y_position, f"{detalles.horario_disponible.entrada_tipo.nombre}")
+        c.drawString(250, y_position, f"{detalles.entrada_tipo.nombre}")
         y_position -= 25
         
         # Mostrar cantidad de entradas
@@ -169,7 +169,7 @@ def generar_pdf_entrada(compra):
         y_position -= 25
         
         # Servicios incluidos
-        servicios_incluidos = detalles.horario_disponible.entrada_tipo.servicios.all()
+        servicios_incluidos = detalles.entrada_tipo.servicios.all()
         if servicios_incluidos.exists():
             c.setFont("Helvetica-Bold", 12)
             c.drawString(70, y_position, "Servicios Incluidos:")
