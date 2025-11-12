@@ -23,12 +23,14 @@
 </head>
 <body class="flex flex-col min-h-screen font-sans bg-white termas-page">
     <!-- Navbar -->
-    {% if usuario %}
+    {% if user.is_authenticated %}
         <div class="fixed top-0 left-0 right-0 z-50">
             {% include 'partials/navbar_usuario2.html' with active_page='termas' %}
         </div>
     {% else %}
-        {% include 'partials/navbar.html' with navbar_mode='termas_only' %}
+        <div class="fixed top-0 left-0 right-0 z-50">
+            {% include 'partials/navbar.html' with navbar_mode='termas_only' %}
+        </div>
     {% endif %}
 
     <!-- Modales -->
@@ -41,6 +43,271 @@
         <p class="text-xl text-gray-600 max-w-3xl mx-auto mb-8 text-center">
             Explora una selección de las termas más destacadas de Chile
         </p>
+
+        <!-- Formulario de búsqueda -->
+        <div class="bg-green-100 rounded-xl p-6 mb-8 shadow-sm">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Busca tu Próxima Escapada Termal</h2>
+            
+            <form action="{% url 'core:mostrar_termas' %}" method="GET" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <!-- Comuna -->
+                    <div class="space-y-2">
+                        <label for="comuna" class="block text-sm font-medium text-gray-700">
+                            Comuna
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                            <select name="comuna" 
+                                    id="comuna"
+                                    class="block w-full pl-10 pr-8 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-300 text-gray-900 appearance-none">
+                                <option value="">Todas las comunas</option>
+                                <option value="Arica" {% if request.GET.comuna == 'Arica' %}selected{% endif %}>Arica</option>
+                                <option value="Camarones" {% if request.GET.comuna == 'Camarones' %}selected{% endif %}>Camarones</option>
+                                <option value="Putre" {% if request.GET.comuna == 'Putre' %}selected{% endif %}>Putre</option>
+                                <option value="General Lagos" {% if request.GET.comuna == 'General Lagos' %}selected{% endif %}>General Lagos</option>
+                                <option value="Alto Hospicio" {% if request.GET.comuna == 'Alto Hospicio' %}selected{% endif %}>Alto Hospicio</option>
+                                <option value="Iquique" {% if request.GET.comuna == 'Iquique' %}selected{% endif %}>Iquique</option>
+                                <option value="Camiña" {% if request.GET.comuna == 'Camiña' %}selected{% endif %}>Camiña</option>
+                                <option value="Colchane" {% if request.GET.comuna == 'Colchane' %}selected{% endif %}>Colchane</option>
+                                <option value="Huara" {% if request.GET.comuna == 'Huara' %}selected{% endif %}>Huara</option>
+                                <option value="Pica" {% if request.GET.comuna == 'Pica' %}selected{% endif %}>Pica</option>
+                                <option value="Pozo Almonte" {% if request.GET.comuna == 'Pozo Almonte' %}selected{% endif %}>Pozo Almonte</option>
+                                <option value="Antofagasta" {% if request.GET.comuna == 'Antofagasta' %}selected{% endif %}>Antofagasta</option>
+                                <option value="Mejillones" {% if request.GET.comuna == 'Mejillones' %}selected{% endif %}>Mejillones</option>
+                                <option value="Sierra Gorda" {% if request.GET.comuna == 'Sierra Gorda' %}selected{% endif %}>Sierra Gorda</option>
+                                <option value="Taltal" {% if request.GET.comuna == 'Taltal' %}selected{% endif %}>Taltal</option>
+                                <option value="Calama" {% if request.GET.comuna == 'Calama' %}selected{% endif %}>Calama</option>
+                                <option value="Ollagüe" {% if request.GET.comuna == 'Ollagüe' %}selected{% endif %}>Ollagüe</option>
+                                <option value="San Pedro de Atacama" {% if request.GET.comuna == 'San Pedro de Atacama' %}selected{% endif %}>San Pedro de Atacama</option>
+                                <option value="María Elena" {% if request.GET.comuna == 'María Elena' %}selected{% endif %}>María Elena</option>
+                                <option value="Tocopilla" {% if request.GET.comuna == 'Tocopilla' %}selected{% endif %}>Tocopilla</option>
+                                <option value="Caldera" {% if request.GET.comuna == 'Caldera' %}selected{% endif %}>Caldera</option>
+                                <option value="Chañaral" {% if request.GET.comuna == 'Chañaral' %}selected{% endif %}>Chañaral</option>
+                                <option value="Copiapó" {% if request.GET.comuna == 'Copiapó' %}selected{% endif %}>Copiapó</option>
+                                <option value="Diego de Almagro" {% if request.GET.comuna == 'Diego de Almagro' %}selected{% endif %}>Diego de Almagro</option>
+                                <option value="Freirina" {% if request.GET.comuna == 'Freirina' %}selected{% endif %}>Freirina</option>
+                                <option value="Huasco" {% if request.GET.comuna == 'Huasco' %}selected{% endif %}>Huasco</option>
+                                <option value="Tierra Amarilla" {% if request.GET.comuna == 'Tierra Amarilla' %}selected{% endif %}>Tierra Amarilla</option>
+                                <option value="Vallenar" {% if request.GET.comuna == 'Vallenar' %}selected{% endif %}>Vallenar</option>
+                                <option value="Alto del Carmen" {% if request.GET.comuna == 'Alto del Carmen' %}selected{% endif %}>Alto del Carmen</option>
+                                <option value="Andacollo" {% if request.GET.comuna == 'Andacollo' %}selected{% endif %}>Andacollo</option>
+                                <option value="Canela" {% if request.GET.comuna == 'Canela' %}selected{% endif %}>Canela</option>
+                                <option value="Combarbalá" {% if request.GET.comuna == 'Combarbalá' %}selected{% endif %}>Combarbalá</option>
+                                <option value="Coquimbo" {% if request.GET.comuna == 'Coquimbo' %}selected{% endif %}>Coquimbo</option>
+                                <option value="Illapel" {% if request.GET.comuna == 'Illapel' %}selected{% endif %}>Illapel</option>
+                                <option value="La Higuera" {% if request.GET.comuna == 'La Higuera' %}selected{% endif %}>La Higuera</option>
+                                <option value="La Serena" {% if request.GET.comuna == 'La Serena' %}selected{% endif %}>La Serena</option>
+                                <option value="Los Vilos" {% if request.GET.comuna == 'Los Vilos' %}selected{% endif %}>Los Vilos</option>
+                                <option value="Monte Patria" {% if request.GET.comuna == 'Monte Patria' %}selected{% endif %}>Monte Patria</option>
+                                <option value="Ovalle" {% if request.GET.comuna == 'Ovalle' %}selected{% endif %}>Ovalle</option>
+                                <option value="Paiguano" {% if request.GET.comuna == 'Paiguano' %}selected{% endif %}>Paiguano</option>
+                                <option value="Punitaqui" {% if request.GET.comuna == 'Punitaqui' %}selected{% endif %}>Punitaqui</option>
+                                <option value="Río Hurtado" {% if request.GET.comuna == 'Río Hurtado' %}selected{% endif %}>Río Hurtado</option>
+                                <option value="Salamanca" {% if request.GET.comuna == 'Salamanca' %}selected{% endif %}>Salamanca</option>
+                                <option value="Vicuña" {% if request.GET.comuna == 'Vicuña' %}selected{% endif %}>Vicuña</option>
+                                <option value="Pucón" {% if request.GET.comuna == 'Pucón' %}selected{% endif %}>Pucón</option>
+                                <option value="Villarrica" {% if request.GET.comuna == 'Villarrica' %}selected{% endif %}>Villarrica</option>
+                                <option value="Temuco" {% if request.GET.comuna == 'Temuco' %}selected{% endif %}>Temuco</option>
+                                <option value="Puerto Montt" {% if request.GET.comuna == 'Puerto Montt' %}selected{% endif %}>Puerto Montt</option>
+                                <option value="Puerto Varas" {% if request.GET.comuna == 'Puerto Varas' %}selected{% endif %}>Puerto Varas</option>
+                                <option value="Osorno" {% if request.GET.comuna == 'Osorno' %}selected{% endif %}>Osorno</option>
+                                <option value="Valdivia" {% if request.GET.comuna == 'Valdivia' %}selected{% endif %}>Valdivia</option>
+                                <option value="Coihaique" {% if request.GET.comuna == 'Coihaique' %}selected{% endif %}>Coihaique</option>
+                                <option value="Punta Arenas" {% if request.GET.comuna == 'Punta Arenas' %}selected{% endif %}>Punta Arenas</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Región -->
+                    <div class="space-y-2">
+                        <label for="region" class="block text-sm font-medium text-gray-700">
+                            Región
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                            <select name="region" 
+                                    id="region"
+                                    class="block w-full pl-10 pr-8 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-300 text-gray-900 appearance-none">
+                                <option value="">Todas las regiones</option>
+                                <option value="Región de Arica y Parinacota" {% if request.GET.region == 'Región de Arica y Parinacota' %}selected{% endif %}>Región de Arica y Parinacota</option>
+                                <option value="Región de Tarapacá" {% if request.GET.region == 'Región de Tarapacá' %}selected{% endif %}>Región de Tarapacá</option>
+                                <option value="Región de Antofagasta" {% if request.GET.region == 'Región de Antofagasta' %}selected{% endif %}>Región de Antofagasta</option>
+                                <option value="Región de Atacama" {% if request.GET.region == 'Región de Atacama' %}selected{% endif %}>Región de Atacama</option>
+                                <option value="Región de Coquimbo" {% if request.GET.region == 'Región de Coquimbo' %}selected{% endif %}>Región de Coquimbo</option>
+                                <option value="Región de Valparaíso" {% if request.GET.region == 'Región de Valparaíso' %}selected{% endif %}>Región de Valparaíso</option>
+                                <option value="Región Metropolitana" {% if request.GET.region == 'Región Metropolitana' %}selected{% endif %}>Región Metropolitana</option>
+                                <option value="Región de O'Higgins" {% if request.GET.region == "Región de O'Higgins" %}selected{% endif %}>Región de O'Higgins</option>
+                                <option value="Región del Maule" {% if request.GET.region == 'Región del Maule' %}selected{% endif %}>Región del Maule</option>
+                                <option value="Región de Ñuble" {% if request.GET.region == 'Región de Ñuble' %}selected{% endif %}>Región de Ñuble</option>
+                                <option value="Región del Biobío" {% if request.GET.region == 'Región del Biobío' %}selected{% endif %}>Región del Biobío</option>
+                                <option value="Región de La Araucanía" {% if request.GET.region == 'Región de La Araucanía' %}selected{% endif %}>Región de La Araucanía</option>
+                                <option value="Región de Los Ríos" {% if request.GET.region == 'Región de Los Ríos' %}selected{% endif %}>Región de Los Ríos</option>
+                                <option value="Región de Los Lagos" {% if request.GET.region == 'Región de Los Lagos' %}selected{% endif %}>Región de Los Lagos</option>
+                                <option value="Región de Aysén" {% if request.GET.region == 'Región de Aysén' %}selected{% endif %}>Región de Aysén</option>
+                                <option value="Región de Magallanes" {% if request.GET.region == 'Región de Magallanes' %}selected{% endif %}>Región de Magallanes</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Calificación -->
+                    <div class="space-y-2">
+                        <label for="calificacion" class="block text-sm font-medium text-gray-700">
+                            Calificación
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                </svg>
+                            </div>
+                            <select name="calificacion" 
+                                    id="calificacion"
+                                    class="block w-full pl-10 pr-8 py-3 bg-white border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all duration-300 text-gray-900 appearance-none">
+                                <option value="">Cualquier calificación</option>
+                                <option value="5" {% if request.GET.calificacion == '5' %}selected{% endif %}>5 estrellas</option>
+                                <option value="4" {% if request.GET.calificacion == '4' %}selected{% endif %}>4+ estrellas</option>
+                                <option value="3" {% if request.GET.calificacion == '3' %}selected{% endif %}>3+ estrellas</option>
+                                <option value="2" {% if request.GET.calificacion == '2' %}selected{% endif %}>2+ estrellas</option>
+                                <option value="1" {% if request.GET.calificacion == '1' %}selected{% endif %}>1+ estrellas</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                <svg class="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botón de búsqueda -->
+                    <div class="space-y-2">
+                        <label class="block text-sm font-medium text-transparent">
+                            Buscar
+                        </label>
+                        <button type="submit" 
+                                class="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
+                            <span class="flex items-center justify-center">
+                                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
+                                </svg>
+                                Buscar
+                            </span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Filtros de precio -->
+                <div class="pt-4 border-t border-gray-200">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="precio_min" class="block text-sm font-medium text-gray-700 mb-2">
+                                <svg class="w-4 h-4 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.51-1.31c-.562-.649-1.413-1.076-2.353-1.253V5z" clip-rule="evenodd"/>
+                                </svg>
+                                Precio mínimo
+                            </label>
+                            <input type="number" 
+                                   name="precio_min" 
+                                   id="precio_min"
+                                   placeholder="Ej: 1000"
+                                   value="{{ request.GET.precio_min }}"
+                                   min="0"
+                                   step="100"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white text-gray-900">
+                        </div>
+                        
+                        <div>
+                            <label for="precio_max" class="block text-sm font-medium text-gray-700 mb-2">
+                                <svg class="w-4 h-4 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.51-1.31c-.562-.649-1.413-1.076-2.353-1.253V5z" clip-rule="evenodd"/>
+                                </svg>
+                                Precio máximo
+                            </label>
+                            <input type="number" 
+                                   name="precio_max" 
+                                   id="precio_max"
+                                   placeholder="Ej: 15000"
+                                   value="{{ request.GET.precio_max }}"
+                                   min="0"
+                                   step="100"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white text-gray-900">
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Indicador de resultados de búsqueda -->
+        {% if request.GET.comuna or request.GET.region or request.GET.calificacion or request.GET.precio_min or request.GET.precio_max %}
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex items-center mb-2 sm:mb-0">
+                        <svg class="w-5 h-5 text-blue-600 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
+                        </svg>
+                        <span class="text-blue-800 font-medium">
+                            Mostrando resultados filtrados ({{ termas|length }} terma{{ termas|length|pluralize }})
+                        </span>
+                    </div>
+                    <a href="{% url 'core:mostrar_termas' %}" 
+                       class="inline-flex items-center px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                        Limpiar filtros
+                    </a>
+                </div>
+                
+                <!-- Mostrar filtros activos -->
+                <div class="mt-2 flex flex-wrap gap-2">
+                    {% if request.GET.comuna %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
+                            Comuna: {{ request.GET.comuna }}
+                        </span>
+                    {% endif %}
+                    {% if request.GET.region %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
+                            {{ request.GET.region }}
+                        </span>
+                    {% endif %}
+                    {% if request.GET.calificacion %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
+                            {{ request.GET.calificacion }}+ estrellas
+                        </span>
+                    {% endif %}
+                    {% if request.GET.precio_min %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
+                            Min: ${{ request.GET.precio_min }}
+                        </span>
+                    {% endif %}
+                    {% if request.GET.precio_max %}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
+                            Max: ${{ request.GET.precio_max }}
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+
         <!--termas que se van a mostrar -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {% for terma in termas %}
@@ -132,35 +399,8 @@
             {% endfor %}
         </div>
     </main>
-
     <!-- Footer -->
-    <footer class="bg-[#0c1a2a] text-white w-full mt-12">
-        <div class="max-w-7xl mx-auto px-6 py-10 grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div>
-                <h2 class="text-xl font-bold mb-2 flex items-center gap-2">
-                    <span>🧖‍♂️</span> MiTerma
-                </h2>
-                <p class="mb-4 text-gray-300">La plataforma líder en Chile para descubrir y reservar experiencias termales únicas. Conectamos a viajeros con las mejores termas del país.</p>
-                <div class="flex gap-3 mb-4">
-                    <a href="#" class="bg-blue-600 rounded-full p-2"><i class="fab fa-facebook-f"></i></a>
-                    <a href="#" class="bg-pink-500 rounded-full p-2"><i class="fab fa-instagram"></i></a>
-                    <a href="#" class="bg-black rounded-full p-2"><i class="fab fa-x-twitter"></i></a>
-                </div>
-            </div>
-            <div>
-                <h2 class="text-xl font-bold mb-2">Contacto</h2>
-                <ul class="space-y-2">
-                    <li><span class="inline-block w-6">✉️</span> mitermaoficial@gmail.com</li>
-                    <li><span class="inline-block w-6">📞</span> +56 9 58070480</li>
-                    <li><span class="inline-block w-6">📍</span> Temuco, Chile</li>
-                </ul>
-            </div>
-        </div>
-        <div class="border-t border-gray-800 text-center py-4 text-gray-400 text-sm">
-            © 2025 MiTerma. Todos los derechos reservados.<br>
-            Desarrollado por Natalia Tworowski - Benjamin Pelizari - Jorge Jiménez
-        </div>
-    </footer>
+    {% include 'partials/footer.html' %}
     <!-- Scripts -->
     <script src="{% static 'js/navbar.js' %}"></script>
     <script src="{% static 'js/mostrar_termas.js' %}"></script>

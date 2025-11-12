@@ -5,12 +5,72 @@ from django.http import JsonResponse
 
 def mostrar_termas(request):
     # Obtener solo termas que tienen calificaciones
-    termas_todas = Terma.objects.all()
-    termas = []
+    termas_query = Terma.objects.all()
     
-    for terma in termas_todas:
-        if terma.total_calificaciones() > 0:
-            termas.append(terma)
+    # Aplicar filtros basados en los parámetros GET
+    comuna_filtro = request.GET.get('comuna')
+    region_filtro = request.GET.get('region')
+    calificacion_filtro = request.GET.get('calificacion')
+    precio_min = request.GET.get('precio_min')
+    precio_max = request.GET.get('precio_max')
+    
+    # Filtro por comuna
+    if comuna_filtro:
+        termas_query = termas_query.filter(comuna__nombre=comuna_filtro)
+    
+    # Filtro por región
+    if region_filtro:
+        termas_query = termas_query.filter(comuna__region__nombre=region_filtro)
+    
+    # Filtro por calificación mínima
+    if calificacion_filtro:
+        try:
+            calificacion_min = float(calificacion_filtro)
+            # Filtrar termas que tengan calificación promedio >= calificacion_min
+            # Solo incluir termas que tengan calificaciones
+            termas_query = termas_query.filter(
+                calificacion_promedio__gte=calificacion_min,
+                calificacion_promedio__isnull=False
+            )
+        except (ValueError, TypeError):
+            pass
+    
+    # Filtro por precio mínimo
+    if precio_min:
+        try:
+            precio_min_val = float(precio_min)
+            # Filtrar termas que tengan algún tipo de entrada con precio >= precio_min
+            termas_query = termas_query.filter(entradatipo__precio__gte=precio_min_val).distinct()
+        except (ValueError, TypeError):
+            pass
+    
+    # Filtro por precio máximo
+    if precio_max:
+        try:
+            precio_max_val = float(precio_max)
+            # Filtrar termas que tengan algún tipo de entrada con precio <= precio_max
+            termas_query = termas_query.filter(entradatipo__precio__lte=precio_max_val).distinct()
+        except (ValueError, TypeError):
+            pass
+    
+    # Obtener termas finales
+    termas_todas = termas_query.prefetch_related(
+        'entradatipo_set',
+        'imagenes',  
+        'calificacion_set',
+        'comuna__region'
+    ).distinct()
+    
+    # Si no hay filtros, mostrar todas las termas
+    # Si hay filtros, mostrar los resultados filtrados
+    hay_filtros = any([comuna_filtro, region_filtro, calificacion_filtro, precio_min, precio_max])
+    
+    if not hay_filtros:
+        # Mostrar todas las termas cuando no hay filtros
+        termas = list(termas_todas)
+    else:
+        # Mostrar todas las termas filtradas
+        termas = list(termas_todas)
     
     context = {
         'usuario': request.user,

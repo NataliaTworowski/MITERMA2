@@ -308,54 +308,50 @@ def inicio_cliente(request):
         if comuna:
             termas_qs = termas_qs.filter(comuna__id=comuna)
         
-        # Obtener termas con calificaciones para mostrar solo las que tienen reseñas
-        termas_qs = Terma.objects.filter(estado_suscripcion="activa")
-        # Filtrar solo termas que tienen al menos una calificación
-        termas_con_calificaciones = []
-        for terma in termas_qs:
-            if terma.total_calificaciones() > 0:
-                termas_con_calificaciones.append(terma)
+        # Obtener termas activas con entradas definidas
+        termas_qs = Terma.objects.filter(estado_suscripcion="activa").prefetch_related('entradatipo_set')
         
         if busqueda:
             from django.db.models import Q
             termas_qs = termas_qs.filter(
                 Q(nombre_terma__icontains=busqueda) | Q(descripcion_terma__icontains=busqueda)
             )
-            # Volver a filtrar solo las que tienen calificaciones después de la búsqueda
-            termas_con_calificaciones = []
-            for terma in termas_qs:
-                if terma.total_calificaciones() > 0:
-                    termas_con_calificaciones.append(terma)
-        
         if region:
             termas_qs = termas_qs.filter(comuna__region__id=region)
-            termas_con_calificaciones = []
-            for terma in termas_qs:
-                if terma.total_calificaciones() > 0:
-                    termas_con_calificaciones.append(terma)
-        
         if comuna:
             termas_qs = termas_qs.filter(comuna__id=comuna)
-            termas_con_calificaciones = []
-            for terma in termas_qs:
-                if terma.total_calificaciones() > 0:
-                    termas_con_calificaciones.append(terma)
         
-        orden = request.GET.get('orden', 'populares')
+        # Filtrar solo termas que tienen entradas definidas
+        termas_con_entradas = []
+        for terma in termas_qs:
+            if terma.entradatipo_set.filter(estado=True).exists():
+                termas_con_entradas.append(terma)
+        
+        orden = request.GET.get('orden', 'recientes')
         if orden == 'populares':
             # Ordenar por promedio de calificación
-            termas_con_calificaciones.sort(key=lambda t: t.promedio_calificacion() or 0, reverse=True)
-            termas_destacadas = termas_con_calificaciones[:4]
+            termas_con_entradas.sort(key=lambda t: t.calificacion_promedio or 0, reverse=True)
         elif orden == 'recientes':
             # Ordenar por fecha de suscripción
-            termas_con_calificaciones.sort(key=lambda t: t.fecha_suscripcion if t.fecha_suscripcion else date.min, reverse=True)
-            termas_destacadas = termas_con_calificaciones[:4]
+            termas_con_entradas.sort(key=lambda t: t.fecha_suscripcion if t.fecha_suscripcion else date.min, reverse=True)
         elif orden == 'precio':
             # Ordenar por precio mínimo
-            termas_con_calificaciones.sort(key=lambda t: t.precio_minimo() if t.precio_minimo() is not None else float('inf'))
-            termas_destacadas = termas_con_calificaciones[:4]
-        else:
-            termas_destacadas = termas_con_calificaciones[:4]
+            termas_con_entradas.sort(key=lambda t: t.precio_minimo() if t.precio_minimo() is not None else float('inf'))
+        
+        # Tomar solo 4 termas para "Termas de la plataforma"
+        termas_destacadas = termas_con_entradas[:4]
+        
+        # Termas con plan premium para el carrusel
+        termas_premium = Terma.objects.filter(
+            estado_suscripcion="activa",
+            plan_actual__nombre="premium"
+        ).select_related('comuna__region', 'plan_actual').prefetch_related('imagenes')[:12]  # 12 para 3 slides de 4
+        
+        # Termas populares (calificación >= 4.0) 
+        termas_populares = Terma.objects.filter(
+            estado_suscripcion="activa",
+            calificacion_promedio__gte=4.0
+        ).select_related('comuna__region').prefetch_related('imagenes').order_by('-calificacion_promedio')[:4]
         
         context = {
             'title': 'Inicio - MiTerma',
@@ -367,6 +363,8 @@ def inicio_cliente(request):
             'busqueda': busqueda,
             'orden': orden,
             'termas_destacadas': termas_destacadas,
+            'termas_premium': termas_premium,
+            'termas_populares': termas_populares,
             'total_resultados': termas_qs.count() if (busqueda or region or comuna) else None,
         }
         return render(request, 'clientes/Inicio_cliente.html', context)
