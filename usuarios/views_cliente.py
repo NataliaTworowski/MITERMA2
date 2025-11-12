@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.contrib import messages
+from django.contrib.auth.hashers import check_password
 from ventas.models import Compra, CodigoQR
 from django.db.models import Prefetch
 from ventas.utils import generar_datos_qr, generar_qr
@@ -13,6 +14,120 @@ from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 
 @cliente_required
+def perfil_cliente(request):
+    """Vista para mostrar el perfil del cliente."""
+    # SIEMPRE obtener datos frescos desde la BD para evitar cache
+    from django.contrib.auth import get_user_model
+    User = get_user_model()
+    usuario = User.objects.get(id=request.user.id)
+    
+    context = {
+        'title': 'Mi Perfil - MiTerma',
+        'usuario': usuario,
+    }
+    return render(request, 'clientes/perfil_cliente.html', context)
+
+@cliente_required
+@require_POST
+def actualizar_perfil(request):
+    """Vista para actualizar la información personal del cliente."""
+    usuario = request.user
+    
+    try:
+        # Verificar que es el formulario correcto
+        form_type = request.POST.get('form_type')
+        if form_type != 'perfil':
+            print(f"DEBUG - Tipo de formulario inválido: {form_type}")
+            messages.error(request, 'Tipo de formulario inválido.')
+            return redirect('usuarios:perfil_cliente')
+        
+        # Obtener datos del formulario
+        nombre = request.POST.get('nombre', '').strip()
+        apellido = request.POST.get('apellido', '').strip()
+        telefono = request.POST.get('telefono', '').strip()
+        
+        print(f"DEBUG - Actualizando perfil: nombre='{nombre}', apellido='{apellido}', telefono='{telefono}'")
+        
+        # Validaciones
+        if not nombre or not apellido:
+            messages.error(request, 'El nombre y apellido son obligatorios.')
+            return redirect('usuarios:perfil_cliente')
+        
+        # Validar teléfono si se proporciona
+        if telefono and not telefono.replace('+', '').replace(' ', '').replace('-', '').isdigit():
+            messages.error(request, 'El número de teléfono debe contener solo números, espacios, guiones y el símbolo +.')
+            return redirect('usuarios:perfil_cliente')
+        
+        # Actualizar datos en la base de datos
+        usuario.nombre = nombre
+        usuario.apellido = apellido
+        usuario.telefono = telefono if telefono else None
+        usuario.save(update_fields=['nombre', 'apellido', 'telefono'])
+        
+        print(f"DEBUG - Perfil actualizado exitosamente para usuario {usuario.id}")
+        print(f"DEBUG - Valores guardados: nombre='{usuario.nombre}', apellido='{usuario.apellido}', telefono='{usuario.telefono}'")
+        messages.success(request, 'Tu información personal ha sido actualizada correctamente.')
+        
+        # Los datos frescos se obtendrán en la vista perfil_cliente() que ahora
+        # siempre consulta la BD directamente
+        
+    except Exception as e:
+        print(f"DEBUG - Error al actualizar perfil: {str(e)}")
+        import traceback
+        print(f"DEBUG - Traceback: {traceback.format_exc()}")
+        messages.error(request, f'Error al actualizar la información: {str(e)}')
+    
+    return redirect('usuarios:perfil_cliente')
+
+@cliente_required
+@require_POST
+def cambiar_contrasena(request):
+    """Vista para cambiar la contraseña del cliente."""
+    usuario = request.user
+    
+    try:
+        # Obtener datos del formulario
+        current_password = request.POST.get('current_password')
+        new_password = request.POST.get('new_password')
+        confirm_password = request.POST.get('confirm_password')
+        
+        # Validaciones
+        if not current_password or not new_password or not confirm_password:
+            messages.error(request, 'Todos los campos de contraseña son obligatorios.')
+            return redirect('usuarios:perfil_cliente')
+        
+        # Verificar contraseña actual
+        if not check_password(current_password, usuario.password):
+            messages.error(request, 'La contraseña actual es incorrecta.')
+            return redirect('usuarios:perfil_cliente')
+        
+        # Verificar que las nuevas contraseñas coincidan
+        if new_password != confirm_password:
+            messages.error(request, 'Las nuevas contraseñas no coinciden.')
+            return redirect('usuarios:perfil_cliente')
+        
+        # Validar longitud mínima
+        if len(new_password) < 8:
+            messages.error(request, 'La nueva contraseña debe tener al menos 8 caracteres.')
+            return redirect('usuarios:perfil_cliente')
+        
+        # Cambiar la contraseña
+        usuario.set_password(new_password)
+        usuario.save()
+        
+        messages.success(request, 'Tu contraseña ha sido cambiada correctamente. Por favor, inicia sesión nuevamente.')
+        
+        # Redirigir al login para que inicie sesión con la nueva contraseña
+        from django.contrib.auth import logout
+        logout(request)
+        return redirect('usuarios:login')
+        
+    except Exception as e:
+        messages.error(request, f'Error al cambiar la contraseña: {str(e)}')
+    
+    return redirect('usuarios:perfil_cliente')
+
+@cliente_required
 def mostrar_entradas(request):
     """Vista para mostrar las entradas del cliente - Migrada a Django Auth."""
     # El decorador ya verificó que el usuario está autenticado y es cliente
@@ -23,7 +138,7 @@ def mostrar_entradas(request):
         estado_pago='pagado',
         visible=True
     ).order_by('-fecha_compra').select_related(
-        'terma'
+        'terma', 'codigoqr'  # Incluir la relación con CodigoQR
     ).prefetch_related('detalles', 'detalles__horario_disponible', 'detalles__servicios')
     
     context = {

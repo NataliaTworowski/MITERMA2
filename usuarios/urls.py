@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 from . import views_cliente
+from . import views_trabajador
 from . import api
 
 app_name = 'usuarios'
@@ -18,12 +19,24 @@ urlpatterns = [
     path('mis_entradas/', views_cliente.mostrar_entradas, name='mis_entradas'),
     path('get_qr/<int:compra_id>/', views_cliente.get_qr_code, name='get_qr_code'),
     path('ocultar_compra/<int:compra_id>/', views_cliente.ocultar_compra, name='ocultar_compra'),
+    path('perfil/', views_cliente.perfil_cliente, name='perfil_cliente'),
+    path('actualizar_perfil/', views_cliente.actualizar_perfil, name='actualizar_perfil'),
+    path('cambiar_contrasena/', views_cliente.cambiar_contrasena, name='cambiar_contrasena'),
     path('favoritos/', views_cliente.favoritos, name='favoritos'),
     path('toggle_favorito/<int:terma_id>/', views_cliente.toggle_favorito, name='toggle_favorito'),
     path('verificar_favorito/<int:terma_id>/', views_cliente.verificar_favorito, name='verificar_favorito'),
     path('billetera/', views.billetera, name='billetera'),
     path('vincular-mercadopago/', views.vincular_mercadopago, name='vincular_mercadopago'),
     path('mercadopago-callback/', views.mercadopago_callback, name='mercadopago_callback'),
+    
+    # URLs para trabajadores/operadores
+    path('trabajador/', views_trabajador.inicio_trabajador, name='inicio_trabajador'),
+    path('escanear-qr/', views_trabajador.escanear_qr, name='escanear_qr'),
+    path('buscar-entrada/', views_trabajador.buscar_entrada, name='buscar_entrada'),
+    path('registro-entradas/', views_trabajador.registro_entradas_escaneadas, name='registro_entradas_escaneadas'),
+    path('perfil-trabajador/', views_trabajador.perfil_trabajador, name='perfil_trabajador'),
+    path('actualizar-perfil-trabajador/', views_trabajador.actualizar_perfil_trabajador, name='actualizar_perfil_trabajador'),
+    path('cambiar-contrasena-trabajador/', views_trabajador.cambiar_contrasena_trabajador, name='cambiar_contrasena_trabajador'),
     
     # URLs para gestión de termas asociadas (Admin General)
     path('admin/termas-asociadas/', views.admin_general_termas_asociadas, name='admin_general_termas_asociadas'),

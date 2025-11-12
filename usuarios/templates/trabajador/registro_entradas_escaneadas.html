@@ -1,0 +1,336 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>{{ title }}</title>
+    {% include 'partials/head.html' %}
+    <style>
+        /* Estilos adicionales */
+        .stat-card {
+            transition: transform 0.2s ease-in-out;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+        .sidebar-main {
+            margin-left: 256px;
+        }
+        @media (max-width: 1024px) {
+            .sidebar-main {
+                margin-left: 0;
+                padding-left: 1rem;
+            }
+        }
+        .entrada-activa {
+            background-color: #ecfdf5;
+            border-left: 4px solid #10b981;
+        }
+        .entrada-terminada {
+            background-color: #fef2f2;
+            border-left: 4px solid #ef4444;
+        }
+        .tiempo-restante {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    {% csrf_token %}
+    
+    <!-- Navbar y Sidebar -->
+    {% include 'partials/navbar_trabajador.html' %}
+
+    <!-- Contenido Principal -->
+    <main class="sidebar-main min-h-screen py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <!-- Header -->
+            <div class="flex items-center justify-between mb-8">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Registro de Entradas Escaneadas</h1>
+                    <p class="text-gray-600 mt-2">{{ terma.nombre_terma }}</p>
+                </div>
+                <a href="{% url 'usuarios:inicio_trabajador' %}" 
+                   class="px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors">
+                    <i class="fas fa-arrow-left mr-2"></i>Volver al Dashboard
+                </a>
+            </div>
+
+            <!-- Filtros -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">Filtros</h2>
+                
+                <form method="GET" class="flex flex-col lg:flex-row gap-4">
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Fecha Desde</label>
+                        <input type="date" 
+                               name="fecha_desde" 
+                               value="{{ fecha_desde|date:'Y-m-d' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Fecha Hasta</label>
+                        <input type="date" 
+                               name="fecha_hasta" 
+                               value="{{ fecha_hasta|date:'Y-m-d' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                    </div>
+                    <div class="flex items-end">
+                        <button type="submit" 
+                                class="px-6 py-2 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors">
+                            <i class="fas fa-filter mr-2"></i>Filtrar
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Estadísticas del Período -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 stat-card">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Total Entradas</p>
+                            <p class="text-3xl font-bold text-blue-600 mt-1">{{ estadisticas.total_entradas }}</p>
+                        </div>
+                        <div class="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-ticket-alt text-blue-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 stat-card">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Entradas Activas</p>
+                            <p class="text-3xl font-bold text-green-600 mt-1">{{ estadisticas.entradas_activas }}</p>
+                        </div>
+                        <div class="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-clock text-green-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 stat-card">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Entradas Finalizadas</p>
+                            <p class="text-3xl font-bold text-red-600 mt-1">{{ estadisticas.entradas_finalizadas }}</p>
+                        </div>
+                        <div class="w-12 h-12 bg-red-50 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-check-circle text-red-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 stat-card">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Promedio/Día</p>
+                            <p class="text-3xl font-bold text-purple-600 mt-1">
+                                {% if estadisticas.registros_por_dia %}
+                                    {{ estadisticas.total_entradas|floatformat:1 }}
+                                {% else %}
+                                    0
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="w-12 h-12 bg-purple-50 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-chart-line text-purple-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de Registros -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-semibold text-gray-800">Entradas Escaneadas</h2>
+                    <div class="flex items-center space-x-4">
+                        <div class="flex items-center">
+                            <div class="w-4 h-4 bg-green-100 border-l-4 border-green-500 mr-2"></div>
+                            <span class="text-sm text-gray-600">Activa</span>
+                        </div>
+                        <div class="flex items-center">
+                            <div class="w-4 h-4 bg-red-100 border-l-4 border-red-500 mr-2"></div>
+                            <span class="text-sm text-gray-600">Terminada</span>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if registros %}
+                    <div class="space-y-4">
+                        {% for registro in registros %}
+                            <div class="p-4 rounded-lg border {% if registro.entrada_activa %}entrada-activa{% else %}entrada-terminada{% endif %} cursor-pointer hover:shadow-md transition-shadow"
+                                 onclick="toggleDetalle('detalle-{{ registro.registro.id }}')">
+                                
+                                <!-- Información Principal -->
+                                <div class="flex items-center justify-between">
+                                    <div class="flex-1">
+                                        <div class="flex items-center space-x-4">
+                                            <div class="flex-shrink-0">
+                                                <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                                                    <i class="fas fa-user text-gray-500"></i>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <h3 class="font-semibold text-gray-900">
+                                                    {{ registro.cliente.nombre }} {{ registro.cliente.apellido }}
+                                                </h3>
+                                                <p class="text-sm text-gray-600">{{ registro.cliente.email }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="text-right">
+                                        <p class="text-sm font-medium text-gray-900">
+                                            {{ registro.registro.fecha_uso|date:"d/m/Y H:i" }}
+                                        </p>
+                                        <p class="text-xs text-gray-500">
+                                            {{ registro.tipo_entrada }}
+                                        </p>
+                                    </div>
+                                    
+                                    <div class="text-right ml-6">
+                                        {% if registro.entrada_activa %}
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                <i class="fas fa-circle text-green-400 mr-1" style="font-size: 6px;"></i>
+                                                Activa
+                                            </span>
+                                            {% if registro.tiempo_restante_str %}
+                                                <p class="text-xs text-green-600 mt-1 tiempo-restante">
+                                                    Quedan {{ registro.tiempo_restante_str }}
+                                                </p>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                                <i class="fas fa-circle text-red-400 mr-1" style="font-size: 6px;"></i>
+                                                Terminada
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="ml-4">
+                                        <i class="fas fa-chevron-down text-gray-400 transform transition-transform duration-200" 
+                                           id="icon-{{ registro.registro.id }}"></i>
+                                    </div>
+                                </div>
+
+                                <!-- Información Detallada (Oculta por defecto) -->
+                                <div id="detalle-{{ registro.registro.id }}" class="hidden mt-4 pt-4 border-t border-gray-200">
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div>
+                                            <h4 class="text-sm font-medium text-gray-700 mb-2">Información de Compra</h4>
+                                            <div class="space-y-1">
+                                                <p class="text-sm text-gray-600">
+                                                    <span class="font-medium">Fecha de compra:</span> 
+                                                    {{ registro.fecha_compra|date:"d/m/Y H:i" }}
+                                                </p>
+                                                <p class="text-sm text-gray-600">
+                                                    <span class="font-medium">Fecha de visita:</span> 
+                                                    {{ registro.fecha_visita|date:"d/m/Y" }}
+                                                </p>
+                                                <p class="text-sm text-gray-600">
+                                                    <span class="font-medium">ID Compra:</span> 
+                                                    #{{ registro.registro.compra.id }}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        
+                                        <div>
+                                            <h4 class="text-sm font-medium text-gray-700 mb-2">Detalles de Entrada</h4>
+                                            <div class="space-y-1">
+                                                <p class="text-sm text-gray-600">
+                                                    <span class="font-medium">Tipo:</span> 
+                                                    {{ registro.tipo_entrada }}
+                                                </p>
+                                                <p class="text-sm text-gray-600">
+                                                    <span class="font-medium">Duración:</span> 
+                                                    {{ registro.duracion_horas }} horas
+                                                </p>
+                                                <p class="text-sm text-gray-600">
+                                                    <span class="font-medium">Escaneado:</span> 
+                                                    {{ registro.registro.fecha_uso|date:"d/m/Y H:i:s" }}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        
+                                        <div>
+                                            <h4 class="text-sm font-medium text-gray-700 mb-2">Estado Actual</h4>
+                                            <div class="space-y-1">
+                                                {% if registro.entrada_activa %}
+                                                    <p class="text-sm text-green-600">
+                                                        <i class="fas fa-check-circle mr-1"></i>
+                                                        Entrada activa
+                                                    </p>
+                                                    {% if registro.tiempo_finalizacion %}
+                                                        <p class="text-sm text-gray-600">
+                                                            <span class="font-medium">Finaliza:</span> 
+                                                            {{ registro.tiempo_finalizacion|date:"H:i" }}
+                                                        </p>
+                                                    {% endif %}
+                                                {% else %}
+                                                    <p class="text-sm text-red-600">
+                                                        <i class="fas fa-times-circle mr-1"></i>
+                                                        Entrada finalizada
+                                                    </p>
+                                                    {% if registro.tiempo_finalizacion %}
+                                                        <p class="text-sm text-gray-600">
+                                                            <span class="font-medium">Finalizó:</span> 
+                                                            {{ registro.tiempo_finalizacion|date:"H:i" }}
+                                                        </p>
+                                                    {% endif %}
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Paginación (si es necesaria en el futuro) -->
+                    <div class="mt-6 flex justify-center">
+                        <p class="text-sm text-gray-500">
+                            Mostrando {{ registros|length }} registro{{ registros|length|pluralize:"s" }}
+                        </p>
+                    </div>
+
+                {% else %}
+                    <div class="text-center py-12">
+                        <div class="w-24 h-24 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-search text-gray-400 text-3xl"></i>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">No hay registros</h3>
+                        <p class="text-gray-500">No se encontraron entradas escaneadas en el período seleccionado.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function toggleDetalle(detalleId) {
+            const detalle = document.getElementById(detalleId);
+            const icon = document.getElementById('icon-' + detalleId.split('-')[1]);
+            
+            if (detalle.classList.contains('hidden')) {
+                detalle.classList.remove('hidden');
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                detalle.classList.add('hidden');
+                icon.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        // Auto-actualizar tiempo restante cada minuto para entradas activas
+        function actualizarTiempos() {
+            const tiemposRestantes = document.querySelectorAll('.tiempo-restante');
+            // Aquí podrías implementar actualización en tiempo real si es necesario
+        }
+
+        // Actualizar cada minuto
+        setInterval(actualizarTiempos, 60000);
+    </script>
+</body>
+</html>

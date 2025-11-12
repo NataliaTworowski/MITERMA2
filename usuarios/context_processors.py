@@ -14,14 +14,21 @@ def navbar_context(request):
     try:
         # Usar Django Auth para obtener usuario
         if request.user.is_authenticated:
-            context['usuario'] = request.user
+            # SIEMPRE obtener datos frescos desde la BD para evitar cache
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+            try:
+                usuario_fresco = User.objects.get(id=request.user.id)
+                context['usuario'] = usuario_fresco
+            except User.DoesNotExist:
+                context['usuario'] = request.user
             
             # Agregar contexto específico por rol
-            if hasattr(request.user, 'rol') and request.user.rol:
-                context['usuario_rol'] = request.user.rol.nombre
+            if hasattr(context['usuario'], 'rol') and context['usuario'].rol:
+                context['usuario_rol'] = context['usuario'].rol.nombre
                 
                 # Context específico para admin general
-                if request.user.rol.nombre == 'administrador_general':
+                if context['usuario'].rol.nombre == 'administrador_general':
                     try:
                         solicitudes_count = SolicitudTerma.objects.filter(estado='pendiente').count()
                         context['solicitudes_count'] = solicitudes_count
@@ -36,6 +43,18 @@ def navbar_context(request):
                         context['tiene_terma'] = True
                     else:
                         context['tiene_terma'] = False
+                
+                # Context para trabajador
+                elif request.user.rol.nombre == 'trabajador':
+                    context['es_trabajador'] = True
+                    # Obtener terma del trabajador
+                    if hasattr(request.user, 'terma') and request.user.terma:
+                        context['terma'] = request.user.terma
+                    else:
+                        # Fallback a terma activa si no tiene asignada
+                        from termas.models import Terma
+                        terma_activa = Terma.objects.filter(estado_suscripcion='activa').first()
+                        context['terma'] = terma_activa
                 
                 # Context para cliente
                 elif request.user.rol.nombre == 'cliente':

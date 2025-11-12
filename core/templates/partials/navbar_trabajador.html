@@ -1,0 +1,84 @@
+{% load static %}
+<!-- Sidebar vertical único -->
+<div class="fixed top-0 left-0 w-64 h-full bg-white border-r border-gray-200 z-40 shadow-lg">
+    <!-- Header del sidebar -->
+    <div class="p-6 border-b border-gray-200">
+        <div class="flex items-center gap-3 mb-4">
+            <img src="{% static 'img/logo.png' %}" alt="Termas Logo" class="w-10 h-10">
+            <div>
+                <h1 class="text-lg font-bold text-gray-800">Dashboard</h1>
+                <p class="text-xs text-gray-500">{{ terma.nombre_terma|default:"Terma" }}</p>
+            </div>
+        </div>
+        
+        <!-- Info del usuario -->
+        <div class="bg-gray-50 rounded-lg p-3">
+            <div class="flex items-center gap-3">
+                <div class="text-blue-600">
+                    <i class="fas fa-user-circle text-2xl"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="text-sm font-semibold text-gray-800">{{ request.user.nombre|default:"Usuario" }} {{ request.user.apellido|default:"Sistema" }}</p>
+                    <p class="text-xs text-gray-500">{{ request.user.rol.nombre|capfirst|default:"Operador" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Menú de navegación -->
+    <div class="p-4">
+        <nav class="space-y-2">
+            <a href="{% url 'usuarios:inicio_trabajador' %}" 
+               class="flex items-center gap-3 px-3 py-3 text-sm font-medium rounded-lg bg-cyan-50 text-cyan-600 border border-cyan-200">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                Dashboard
+            </a>
+            
+            <a href="#" onclick="mostrarEscaner()" 
+               class="flex items-center gap-3 px-3 py-3 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h1M6 16H5m9-9h.01M9 9h.01M15 9h.01M9 15h.01m6 0h.01M4 4h4v4H4V4zm12 0h4v4h-4V4zM4 16h4v4H4v-4zm12 0h4v4h-4v-4z" />
+                </svg>
+                Escanear Entrada
+            </a>
+
+            <a href="{% url 'usuarios:registro_entradas_escaneadas' %}" 
+               class="flex items-center gap-3 px-3 py-3 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                </svg>
+                Registro de Entradas
+            </a>
+            
+            <a href="{% url 'usuarios:perfil_trabajador' %}" 
+               class="flex items-center gap-3 px-3 py-3 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                Mi Perfil
+            </a>
+        </nav>
+    </div>
+    
+    <!-- Botón cerrar sesión en la parte inferior -->
+    <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200">
+        <form action="{% url 'usuarios:logout' %}" method="POST" class="w-full">
+            {% csrf_token %}
+            <button type="submit" class="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors duration-200 border border-red-200">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                Cerrar Sesión
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+function mostrarEscaner() {
+    // Abrir modal de escáner QR
+    document.getElementById('qr-scanner-modal').classList.remove('hidden');
+}
+</script>

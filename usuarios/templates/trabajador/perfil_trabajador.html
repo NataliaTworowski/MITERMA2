@@ -1,0 +1,348 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>{{ title }}</title>
+    {% include 'partials/head.html' %}
+</head>
+<body class="bg-gray-50">
+    {% csrf_token %}
+    
+    <!-- Navbar y Sidebar -->
+    {% include 'partials/navbar_trabajador.html' %}
+
+    <!-- Contenido Principal -->
+    <main class="ml-64 lg:ml-64 xl:ml-64 min-h-screen py-8">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <!-- Header -->
+            <div class="flex items-center justify-between mb-8">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Mi Perfil</h1>
+                    <p class="text-gray-600 mt-2">Gestiona tu información personal y configuración de cuenta</p>
+                </div>
+            </div>
+
+            <!-- Mensajes -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="mb-6 p-4 rounded-lg {% if message.tags == 'success' %}bg-green-100 border border-green-200 text-green-800{% elif message.tags == 'error' %}bg-red-100 border border-red-200 text-red-800{% else %}bg-blue-100 border border-blue-200 text-blue-800{% endif %}">
+                        <div class="flex items-center">
+                            {% if message.tags == 'success' %}
+                                <i class="fas fa-check-circle mr-3"></i>
+                            {% elif message.tags == 'error' %}
+                                <i class="fas fa-exclamation-triangle mr-3"></i>
+                            {% else %}
+                                <i class="fas fa-info-circle mr-3"></i>
+                            {% endif %}
+                            {{ message }}
+                        </div>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                <!-- Información del Perfil -->
+                <div class="lg:col-span-1">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 transition-transform duration-200 hover:-translate-y-0.5">
+                        <div class="text-center">
+                            <div class="mb-4">
+                                <i class="fas fa-user-circle text-6xl text-blue-600 mb-2"></i>
+                            </div>
+                            <h2 class="text-xl font-semibold text-gray-900">
+                                {% if usuario.nombre and usuario.apellido %}
+                                    {{ usuario.nombre }} {{ usuario.apellido }}
+                                {% elif request.user.nombre and request.user.apellido %}
+                                    {{ request.user.nombre }} {{ request.user.apellido }}
+                                {% else %}
+                                    Trabajador
+                                {% endif %}
+                            </h2>
+                            <p class="text-gray-600 mt-1">
+                                {% if usuario.rol.nombre %}
+                                    {{ usuario.rol.nombre|title }}
+                                {% elif request.user.rol.nombre %}
+                                    {{ request.user.rol.nombre|title }}
+                                {% else %}
+                                    Trabajador
+                                {% endif %}
+                            </p>
+                            <p class="text-sm text-gray-500 mt-2">
+                                {% if usuario.email %}{{ usuario.email }}{% else %}{{ request.user.email }}{% endif %}
+                            </p>
+                        </div>
+                        
+                        <div class="mt-6 pt-6 border-t border-gray-200">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4">Información de la Terma</h3>
+                            {% if terma %}
+                                <div class="space-y-3">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-sm text-gray-600">Terma asignada:</span>
+                                        <span class="text-sm font-medium text-gray-900">{{ terma.nombre_terma }}</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-sm text-gray-600">Ubicación:</span>
+                                        <span class="text-sm text-gray-700">{{ terma.direccion_terma }}</span>
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-sm text-gray-600">Estado:</span>
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            <i class="fas fa-circle text-green-400 mr-1" style="font-size: 6px;"></i>
+                                            Activa
+                                        </span>
+                                    </div>
+                                </div>
+                            {% else %}
+                                <p class="text-sm text-gray-500">No hay terma asignada</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Formularios -->
+                <div class="lg:col-span-2 space-y-8">
+                    
+                    <!-- Actualizar Información Personal -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                        <div class="bg-gray-50 rounded-lg p-4 border-l-4 border-blue-500 mb-6">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">
+                                <i class="fas fa-user-edit text-blue-600 mr-2"></i>
+                                Información Personal
+                            </h3>
+                            <p class="text-sm text-gray-600">Actualiza tu nombre y número de contacto</p>
+                        </div>
+                        
+                        <form method="POST" action="{% url 'usuarios:actualizar_perfil_trabajador' %}">
+                            {% csrf_token %}
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <i class="fas fa-user text-gray-400 mr-1"></i>
+                                        Nombre *
+                                    </label>
+                                    <input type="text" 
+                                           name="nombre" 
+                                           value="{% if usuario.nombre %}{{ usuario.nombre }}{% else %}{{ request.user.nombre }}{% endif %}"
+                                           required
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <i class="fas fa-user text-gray-400 mr-1"></i>
+                                        Apellido *
+                                    </label>
+                                    <input type="text" 
+                                           name="apellido" 
+                                           value="{% if usuario.apellido %}{{ usuario.apellido }}{% else %}{{ request.user.apellido }}{% endif %}"
+                                           required
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                </div>
+                                
+                                <div class="md:col-span-2">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <i class="fas fa-mobile-alt text-gray-400 mr-1"></i>
+                                        Número de Teléfono
+                                    </label>
+                                    <input type="tel" 
+                                           name="telefono" 
+                                           value="{% if usuario.telefono %}{{ usuario.telefono }}{% elif request.user.telefono %}{{ request.user.telefono }}{% endif %}"
+                                           placeholder="Ejemplo: +56 9 1234 5678"
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <p class="text-xs text-gray-500 mt-1">Incluye el código de país si es necesario</p>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-6 flex justify-end">
+                                <button type="submit" 
+                                        class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                    <i class="fas fa-save mr-2"></i>
+                                    Actualizar Información
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Cambiar Contraseña -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                        <div class="bg-gray-50 rounded-lg p-4 border-l-4 border-red-500 mb-6">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-2">
+                                <i class="fas fa-key text-red-600 mr-2"></i>
+                                Cambiar Contraseña
+                            </h3>
+                            <p class="text-sm text-gray-600">Actualiza tu contraseña para mantener tu cuenta segura</p>
+                        </div>
+                        
+                        <form method="POST" action="{% url 'usuarios:cambiar_contrasena_trabajador' %}" id="cambiar-contrasena-form">
+                            {% csrf_token %}
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <i class="fas fa-lock text-gray-400 mr-1"></i>
+                                        Contraseña Actual *
+                                    </label>
+                                    <div class="relative">
+                                        <input type="password" 
+                                               name="contrasena_actual" 
+                                               id="contrasena_actual"
+                                               required
+                                               class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                                        <button type="button" 
+                                                onclick="togglePassword('contrasena_actual')"
+                                                class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
+                                            <i class="fas fa-eye" id="eye-contrasena_actual"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <i class="fas fa-lock text-gray-400 mr-1"></i>
+                                        Nueva Contraseña *
+                                    </label>
+                                    <div class="relative">
+                                        <input type="password" 
+                                               name="nueva_contrasena" 
+                                               id="nueva_contrasena"
+                                               required
+                                               minlength="6"
+                                               class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                                        <button type="button" 
+                                                onclick="togglePassword('nueva_contrasena')"
+                                                class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
+                                            <i class="fas fa-eye" id="eye-nueva_contrasena"></i>
+                                        </button>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-1">Mínimo 6 caracteres</p>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        <i class="fas fa-lock text-gray-400 mr-1"></i>
+                                        Confirmar Nueva Contraseña *
+                                    </label>
+                                    <div class="relative">
+                                        <input type="password" 
+                                               name="confirmar_contrasena" 
+                                               id="confirmar_contrasena"
+                                               required
+                                               minlength="6"
+                                               class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                                        <button type="button" 
+                                                onclick="togglePassword('confirmar_contrasena')"
+                                                class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600">
+                                            <i class="fas fa-eye" id="eye-confirmar_contrasena"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-6 flex justify-end">
+                                <button type="submit" 
+                                        class="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                                    <i class="fas fa-key mr-2"></i>
+                                    Cambiar Contraseña
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Información Adicional -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                            <i class="fas fa-info-circle text-blue-600 mr-2"></i>
+                            Información de la Cuenta
+                        </h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-gray-50 rounded-lg p-4">
+                                <h4 class="text-sm font-medium text-gray-700 mb-2">Email de la cuenta</h4>
+                                <p class="text-sm text-gray-900">
+                                    {% if usuario.email %}{{ usuario.email }}{% else %}{{ request.user.email }}{% endif %}
+                                </p>
+                                <p class="text-xs text-gray-500 mt-1">No se puede modificar el email desde aquí</p>
+                            </div>
+                            
+                            <div class="bg-gray-50 rounded-lg p-4">
+                                <h4 class="text-sm font-medium text-gray-700 mb-2">Último acceso</h4>
+                                <p class="text-sm text-gray-900">
+                                    {% if usuario.last_login %}
+                                        {{ usuario.last_login|date:"d/m/Y H:i" }}
+                                    {% elif request.user.last_login %}
+                                        {{ request.user.last_login|date:"d/m/Y H:i" }}
+                                    {% else %}
+                                        Primer acceso
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Función para mostrar/ocultar contraseñas
+        function togglePassword(fieldId) {
+            const field = document.getElementById(fieldId);
+            const eyeIcon = document.getElementById('eye-' + fieldId);
+            
+            if (field.type === 'password') {
+                field.type = 'text';
+                eyeIcon.classList.remove('fa-eye');
+                eyeIcon.classList.add('fa-eye-slash');
+            } else {
+                field.type = 'password';
+                eyeIcon.classList.remove('fa-eye-slash');
+                eyeIcon.classList.add('fa-eye');
+            }
+        }
+
+        // Validación de confirmación de contraseña
+        document.getElementById('cambiar-contrasena-form').addEventListener('submit', function(e) {
+            const nuevaContrasena = document.getElementById('nueva_contrasena').value;
+            const confirmarContrasena = document.getElementById('confirmar_contrasena').value;
+            
+            if (nuevaContrasena !== confirmarContrasena) {
+                e.preventDefault();
+                alert('Las contraseñas no coinciden');
+                return false;
+            }
+            
+            if (nuevaContrasena.length < 6) {
+                e.preventDefault();
+                alert('La contraseña debe tener al menos 6 caracteres');
+                return false;
+            }
+        });
+
+        // Auto-ocultar mensajes después de 5 segundos
+        setTimeout(function() {
+            const messages = document.querySelectorAll('.bg-green-100, .bg-red-100, .bg-blue-100');
+            messages.forEach(function(message) {
+                message.style.transition = 'opacity 0.5s';
+                message.style.opacity = '0';
+                setTimeout(function() {
+                    message.remove();
+                }, 500);
+            });
+        }, 5000);
+
+        // Forzar actualización después de actualización exitosa del perfil
+        const successMessage = document.querySelector('.bg-green-100');
+        if (successMessage && successMessage.textContent.includes('Perfil actualizado') && !sessionStorage.getItem('profileUpdated')) {
+            sessionStorage.setItem('profileUpdated', 'true');
+            setTimeout(function() {
+                window.location.reload();
+            }, 1000);
+        }
+        
+        // Limpiar flag de actualización si no hay mensaje de éxito
+        if (!successMessage) {
+            sessionStorage.removeItem('profileUpdated');
+        }
+    </script>
+</body>
+</html>

@@ -48,7 +48,7 @@
                 <input type="hidden" name="terma_id" value="{{ terma_id }}">
                 <div class="mb-6">
                     {% if mercadopago_url %}
-                    <a href="{{ mercadopago_url }}" target="_blank" class="w-full block bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg text-xl transition shadow">&#128179; Pagar con Mercado Pago</a>
+                    <a href="{{ mercadopago_url }}" class="w-full block bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg text-xl transition shadow">&#128179; Pagar con Mercado Pago</a>
                     {% elif mercadopago_error %}
                     <span class="text-red-600 font-bold">{{ mercadopago_error }}</span>
                     {% else %}

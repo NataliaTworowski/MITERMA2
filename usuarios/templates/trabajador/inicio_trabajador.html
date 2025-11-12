@@ -1,0 +1,498 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>{{ title }}</title>
+    {% include 'partials/head.html' %}
+    <style>
+        /* Estilos adicionales para el dashboard */
+        .stat-card {
+            transition: transform 0.2s ease-in-out;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+        .sidebar-main {
+            margin-left: 256px; /* Ancho del sidebar actualizado */
+        }
+        @media (max-width: 1024px) {
+            .sidebar-main {
+                margin-left: 0;
+                padding-left: 1rem;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    {% csrf_token %}
+    <!-- Navbar y Sidebar -->
+    {% include 'partials/navbar_trabajador.html' %}
+
+    <!-- Contenido principal -->
+    <main class="sidebar-main py-6 px-6">
+        <!-- Header con información de la terma -->
+        <div class="mb-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">Dashboard - {{ terma.nombre_terma|default:"Sistema de Control" }}</h1>
+                    <p class="text-gray-600 mt-1">Resumen de la actividad de hoy</p>
+                    {% if terma.direccion_terma %}
+                    <p class="text-sm text-gray-500 mt-1">📍 {{ terma.direccion_terma }}</p>
+                    {% endif %}
+                </div>
+                <div class="text-right">
+                    <p class="text-sm text-gray-600">{{ "now"|date:"l, d \\d\\e F \\d\\e Y" }}</p>
+                    <p class="text-lg font-semibold text-cyan-600">{{ "now"|time:"H:i" }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="max-w-7xl mx-auto">
+            <!-- Cards de estadísticas -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <!-- Entradas Escaneadas Hoy -->
+                <div class="stat-card bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Entradas Escaneadas Hoy</p>
+                            <p class="text-3xl font-bold text-gray-900 mt-1">{{ estadisticas.entradas_hoy }}</p>
+                        </div>
+                        <div class="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visitantes Actuales -->
+                <div class="stat-card bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Visitantes Actuales</p>
+                            <p class="text-3xl font-bold text-gray-900 mt-1">{{ estadisticas.visitantes_actuales }}</p>
+                        </div>
+                        <div class="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Total Escaneado del Mes -->
+                <div class="stat-card bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Total Escaneado del Mes</p>
+                            <p class="text-3xl font-bold text-gray-900 mt-1">{{ estadisticas.total_mes|floatformat:0 }}</p>
+                        </div>
+                        <div class="w-12 h-12 bg-cyan-50 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-cyan-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Entradas Inválidas Hoy -->
+                <div class="stat-card bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Entradas Inválidas Hoy</p>
+                            <p class="text-3xl font-bold text-red-600 mt-1">{{ estadisticas.entradas_invalidas_hoy }}</p>
+                        </div>
+                        <div class="w-12 h-12 bg-red-50 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Acciones Rápidas -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
+                <h2 class="text-xl font-semibold text-gray-800 mb-6">Acciones Rápidas</h2>
+                
+                <div class="flex flex-col lg:flex-row gap-4">
+                    <!-- Buscador -->
+                    <div class="flex-1">
+                        <div class="relative">
+                            <input 
+                                type="text" 
+                                id="search-input"
+                                placeholder="Buscar por DNI, email o código de entrada"
+                                class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
+                            >
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Botón Escanear QR -->
+                    <button 
+                        onclick="mostrarEscaner()"
+                        class="px-6 py-3 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors duration-200 flex items-center gap-2 whitespace-nowrap"
+                    >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h1M6 16H5m9-9h.01M9 9h.01M15 9h.01M9 15h.01m6 0h.01M4 4h4v4H4V4zm12 0h4v4h-4V4zM4 16h4v4H4v-4zm12 0h4v4h-4v-4z" />
+                        </svg>
+                        Escanear QR
+                    </button>
+                </div>
+
+                <!-- Resultados de búsqueda -->
+                <div id="search-results" class="hidden mt-4">
+                    <div class="border border-gray-200 rounded-lg overflow-hidden">
+                        <div id="results-content"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Últimos Registros -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-6">Últimos Registros</h2>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead>
+                            <tr class="border-b border-gray-200">
+                                <th class="text-left py-3 px-4 text-sm font-medium text-gray-600 uppercase tracking-wide">Fecha</th>
+                                <th class="text-left py-3 px-4 text-sm font-medium text-gray-600 uppercase tracking-wide">Hora</th>
+                                <th class="text-left py-3 px-4 text-sm font-medium text-gray-600 uppercase tracking-wide">Nombre Cliente</th>
+                                <th class="text-left py-3 px-4 text-sm font-medium text-gray-600 uppercase tracking-wide">Tipo de Entrada</th>
+                                <th class="text-left py-3 px-4 text-sm font-medium text-gray-600 uppercase tracking-wide">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            {% for registro in ultimos_registros %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="py-3 px-4 text-sm text-gray-900">
+                                    {{ registro.fecha_uso|date:"d/m/Y" }}
+                                </td>
+                                <td class="py-3 px-4 text-sm text-gray-900">
+                                    {{ registro.fecha_uso|time:"H:i" }}
+                                </td>
+                                <td class="py-3 px-4 text-sm text-gray-900">
+                                    {{ registro.compra.usuario.nombre }} {{ registro.compra.usuario.apellido|slice:":1" }}.{% for i in "12345" %}*{% endfor %}
+                                </td>
+                                <td class="py-3 px-4 text-sm text-gray-600">
+                                    {% if registro.compra.detalles.first %}
+                                        {{ registro.compra.detalles.first.tipo_entrada|default:"Entrada General" }}
+                                    {% else %}
+                                        Entrada General
+                                    {% endif %}
+                                </td>
+                                <td class="py-3 px-4">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        Válida
+                                    </span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="py-8 px-4 text-center text-gray-500">
+                                    No hay registros recientes
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal para escáner QR -->
+    <div id="qr-scanner-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-800">Escanear Código QR</h3>
+                <button onclick="cerrarEscaner()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="text-center">
+                <!-- Video para la cámara -->
+                <div class="relative mb-4">
+                    <video id="video" class="w-full max-w-xs mx-auto rounded-lg bg-gray-100" autoplay playsinline></video>
+                    <canvas id="canvas" class="hidden"></canvas>
+                </div>
+                
+                <p class="text-gray-600 mb-4">Posiciona el código QR frente a la cámara</p>
+                <div id="scan-status" class="text-sm text-gray-500 mb-4">Iniciando cámara...</div>
+                
+                <div class="mt-6 flex gap-3">
+                    <button 
+                        onclick="cerrarEscaner()"
+                        class="flex-1 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                    >
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para mostrar resultados -->
+    <div id="result-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <div id="result-content"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script>
+        let stream = null;
+        let video = null;
+        let canvas = null;
+        let context = null;
+        let scanning = false;
+        // Función para buscar entradas
+        let searchTimeout;
+        document.getElementById('search-input').addEventListener('input', function(e) {
+            clearTimeout(searchTimeout);
+            const query = e.target.value.trim();
+            
+            if (query.length < 3) {
+                document.getElementById('search-results').classList.add('hidden');
+                return;
+            }
+            
+            searchTimeout = setTimeout(() => {
+                buscarEntradas(query);
+            }, 500);
+        });
+
+        async function buscarEntradas(query) {
+            try {
+                const response = await fetch(`/usuarios/buscar-entrada/?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    mostrarResultadosBusqueda(data.resultados);
+                } else {
+                    console.error('Error en la búsqueda:', data.error);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        function mostrarResultadosBusqueda(resultados) {
+            const container = document.getElementById('results-content');
+            const searchResults = document.getElementById('search-results');
+            
+            if (resultados.length === 0) {
+                container.innerHTML = '<p class="p-4 text-gray-500 text-center">No se encontraron resultados</p>';
+            } else {
+                let html = '';
+                resultados.forEach(resultado => {
+                    const estado = resultado.usado ? 'Usado' : 'Disponible';
+                    const estadoClass = resultado.usado ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800';
+                    
+                    html += `
+                        <div class="p-4 border-b border-gray-200 last:border-b-0">
+                            <div class="flex items-center justify-between">
+                                <div class="flex-1">
+                                    <p class="font-medium text-gray-900">${resultado.cliente}</p>
+                                    <p class="text-sm text-gray-600">${resultado.email}</p>
+                                    <p class="text-sm text-gray-500">Compra: ${resultado.fecha_compra}</p>
+                                    ${resultado.fecha_uso ? `<p class="text-sm text-gray-500">Usado: ${resultado.fecha_uso}</p>` : ''}
+                                </div>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${estadoClass}">
+                                    ${estado}
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            }
+            
+            searchResults.classList.remove('hidden');
+        }
+
+        // Funciones del escáner QR
+        async function mostrarEscaner() {
+            document.getElementById('qr-scanner-modal').classList.remove('hidden');
+            await iniciarCamara();
+        }
+
+        async function iniciarCamara() {
+            try {
+                video = document.getElementById('video');
+                canvas = document.getElementById('canvas');
+                context = canvas.getContext('2d');
+                
+                // Solicitar acceso a la cámara
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment' } // Preferir cámara trasera en móviles
+                });
+                
+                video.srcObject = stream;
+                video.play();
+                
+                document.getElementById('scan-status').textContent = 'Buscando código QR...';
+                scanning = true;
+                
+                video.addEventListener('loadedmetadata', () => {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    escanearFrame();
+                });
+                
+            } catch (error) {
+                console.error('Error al acceder a la cámara:', error);
+                document.getElementById('scan-status').textContent = 'Error: No se puede acceder a la cámara';
+            }
+        }
+
+        function escanearFrame() {
+            if (!scanning || !video || video.readyState !== video.HAVE_ENOUGH_DATA) {
+                if (scanning) {
+                    requestAnimationFrame(escanearFrame);
+                }
+                return;
+            }
+
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0);
+            
+            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+            const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
+            
+            if (qrCode) {
+                document.getElementById('scan-status').textContent = 'Código QR detectado, procesando...';
+                scanning = false;
+                procesarQR(qrCode.data);
+            } else {
+                requestAnimationFrame(escanearFrame);
+            }
+        }
+
+        function cerrarEscaner() {
+            scanning = false;
+            
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            
+            if (video) {
+                video.srcObject = null;
+            }
+            
+            document.getElementById('qr-scanner-modal').classList.add('hidden');
+            document.getElementById('scan-status').textContent = 'Iniciando cámara...';
+        }
+
+        async function procesarQR(qrData) {
+            if (!qrData) {
+                document.getElementById('scan-status').textContent = 'Error: Código QR no válido';
+                setTimeout(() => {
+                    scanning = true;
+                    escanearFrame();
+                }, 2000);
+                return;
+            }
+
+            try {
+                const response = await fetch('/usuarios/escanear-qr/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({ qr_data: qrData })
+                });
+
+                const data = await response.json();
+                cerrarEscaner();
+                mostrarResultadoEscaneo(data);
+
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('scan-status').textContent = 'Error al procesar el código QR';
+                setTimeout(() => {
+                    scanning = true;
+                    escanearFrame();
+                }, 2000);
+            }
+        }
+
+        function mostrarResultadoEscaneo(data) {
+            const modal = document.getElementById('result-modal');
+            const content = document.getElementById('result-content');
+            
+            if (data.success) {
+                content.innerHTML = `
+                    <div class="text-center">
+                        <div class="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
+                            <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-semibold text-green-800 mb-2">¡Entrada Válida!</h3>
+                        <div class="text-left bg-gray-50 rounded-lg p-4 mb-4">
+                            <p><strong>Cliente:</strong> ${data.cliente.nombre}</p>
+                            <p><strong>Email:</strong> ${data.cliente.email}</p>
+                            <p><strong>Fecha de compra:</strong> ${data.cliente.fecha_compra}</p>
+                            <p><strong>Terma:</strong> ${data.cliente.terma}</p>
+                        </div>
+                        <button onclick="cerrarResultado()" class="w-full px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600">
+                            Aceptar
+                        </button>
+                    </div>
+                `;
+            } else {
+                let iconClass = 'bg-red-100';
+                let textClass = 'text-red-800';
+                let iconColor = 'text-red-600';
+                
+                if (data.expirado) {
+                    iconClass = 'bg-yellow-100';
+                    textClass = 'text-yellow-800';
+                    iconColor = 'text-yellow-600';
+                }
+                
+                content.innerHTML = `
+                    <div class="text-center">
+                        <div class="w-16 h-16 mx-auto mb-4 ${iconClass} rounded-full flex items-center justify-center">
+                            <svg class="w-8 h-8 ${iconColor}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-semibold ${textClass} mb-2">Entrada No Válida</h3>
+                        <p class="text-gray-600 mb-4">${data.error}</p>
+                        <button onclick="cerrarResultado()" class="w-full px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600">
+                            Cerrar
+                        </button>
+                    </div>
+                `;
+            }
+            
+            modal.classList.remove('hidden');
+            
+            // Recargar estadísticas si fue exitoso
+            if (data.success) {
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            }
+        }
+
+        function cerrarResultado() {
+            document.getElementById('result-modal').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>

@@ -175,7 +175,8 @@ def _redirect_by_role(user, request=None):
     role_redirects = {
         'administrador_terma': 'usuarios:adm_termas',
         'administrador_general': 'usuarios:admin_general', 
-        'trabajador': 'usuarios:empleado',
+        'trabajador': 'usuarios:inicio_trabajador',
+        'operador': 'usuarios:inicio_trabajador',
         'cliente': 'usuarios:inicio',
         'admin': 'usuarios:dashboard_admin',
         'admin_terma': 'usuarios:dashboard_admin_terma'
@@ -197,6 +198,10 @@ def _redirect_by_role(user, request=None):
     if rol_nombre == 'cliente' and redirect_url != 'usuarios:inicio':
         print(f"   🚨 ERROR CRÍTICO: Cliente debería ir a inicio!")
         logger.error(f"[SESSION: {session_id}] ERROR CRÍTICO: Cliente redirigido a URL incorrecta!")
+        
+    if rol_nombre in ['trabajador', 'operador'] and redirect_url != 'usuarios:inicio_trabajador':
+        print(f"   🚨 ERROR CRÍTICO: Trabajador/Operador debería ir a inicio_trabajador!")
+        logger.error(f"[SESSION: {session_id}] ERROR CRÍTICO: Trabajador/Operador redirigido a URL incorrecta!")
     
     try:
         # Verificar que la URL existe
@@ -243,21 +248,42 @@ def logout_usuario(request):
 @login_required
 def inicio(request):
     """
-    Vista de inicio para usuarios clientes usando Django Auth.
+    Vista de inicio que redirige según el rol del usuario.
     """
     try:
         usuario = request.user
         
-        # Verificar que el usuario tenga rol de cliente
+        # Verificar que el usuario tenga rol asignado
         if not hasattr(usuario, 'rol') or not usuario.rol:
             logger.error(f"Usuario {usuario.email} sin rol asignado")
             messages.error(request, 'Tu cuenta no tiene un rol asignado. Contacta al administrador.')
             return redirect('core:home')
         
-        if usuario.rol.nombre != 'cliente':
-            logger.error(f"Usuario {usuario.email} con rol {usuario.rol.nombre} intentó acceder a vista de cliente")
-            messages.error(request, 'No tienes permisos para acceder a esta página.')
+        # Redirigir según el rol del usuario
+        if usuario.rol.nombre == 'cliente':
+            return inicio_cliente(request)
+        elif usuario.rol.nombre in ['operador', 'trabajador']:
+            return redirect('usuarios:inicio_trabajador')
+        elif usuario.rol.nombre == 'administrador_general':
+            return redirect('usuarios:admin_general')
+        elif usuario.rol.nombre in ['admin_terma', 'administrador_terma']:
+            return redirect('usuarios:adm_termas')
+        else:
+            logger.error(f"Rol no reconocido para usuario {usuario.email}: {usuario.rol.nombre}")
+            messages.error(request, 'Tu rol no está configurado correctamente. Contacta al administrador.')
             return redirect('core:home')
+            
+    except Exception as e:
+        logger.error(f"Error en vista de inicio: {str(e)}")
+        messages.error(request, 'Error al acceder. Intenta nuevamente.')
+        return redirect('core:home')
+
+def inicio_cliente(request):
+    """
+    Vista de inicio específica para usuarios clientes.
+    """
+    try:
+        usuario = request.user
         
         logger.info(f"Usuario cliente autenticado correctamente: {usuario.email}")
         

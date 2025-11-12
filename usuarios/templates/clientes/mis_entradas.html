@@ -118,17 +118,65 @@
                                 </div>
                             </div>
 
-                            <div class="border-t border-gray-200 mt-4 pt-4 flex justify-between items-center">
-                                <div>
-                                    <span class="text-lg font-semibold">Total pagado:</span>
-                                    <span class="text-lg font-bold text-blue-600">${{ compra.total|intcomma }} CLP</span>
+                            <div class="border-t border-gray-200 mt-4 pt-4">
+                                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+                                    <div>
+                                        <span class="text-lg font-semibold">Total pagado:</span>
+                                        <span class="text-lg font-bold text-blue-600">${{ compra.total|intcomma }} CLP</span>
+                                    </div>
+                                    {% if compra.estado_pago == 'pagado' %}
+                                        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                                            <!-- Estado del QR -->
+                                            {% if compra.codigoqr %}
+                                                {% if compra.codigoqr.usado %}
+                                                    <div class="flex flex-col sm:flex-row sm:items-center gap-2">
+                                                        <span class="inline-flex items-center px-3 py-1 rounded-full bg-green-100 text-green-800 text-sm font-medium">
+                                                            <i class="fas fa-check-circle mr-1"></i>
+                                                            Entrada utilizada
+                                                        </span>
+                                                        {% if compra.codigoqr.fecha_uso %}
+                                                            <span class="text-xs text-gray-500">{{ compra.codigoqr.fecha_uso|date:"d/m/Y H:i" }}</span>
+                                                        {% endif %}
+                                                    </div>
+                                                {% else %}
+                                                    {% now "Y-m-d" as today %}
+                                                    {% if compra.fecha_visita|date:"Y-m-d" < today %}
+                                                        <span class="inline-flex items-center px-3 py-1 rounded-full bg-red-100 text-red-800 text-sm font-medium">
+                                                            <i class="fas fa-times-circle mr-1"></i>
+                                                            Caducada
+                                                        </span>
+                                                    {% else %}
+                                                        <span class="inline-flex items-center px-3 py-1 rounded-full bg-yellow-100 text-yellow-800 text-sm font-medium">
+                                                            <i class="fas fa-clock mr-1"></i>
+                                                            Sin utilizar
+                                                        </span>
+                                                    {% endif %}
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="inline-flex items-center px-3 py-1 rounded-full bg-gray-100 text-gray-600 text-sm font-medium">
+                                                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                                                    Sin código QR
+                                                </span>
+                                            {% endif %}
+                                            
+                                            <!-- Botón Ver QR -->
+                                            {% now "Y-m-d" as today %}
+                                            {% if compra.codigoqr and not compra.codigoqr.usado and compra.fecha_visita|date:"Y-m-d" < today %}
+                                                <!-- Entrada caducada - botón deshabilitado -->
+                                                <button disabled class="inline-flex items-center px-4 py-2 bg-gray-400 text-gray-200 rounded cursor-not-allowed">
+                                                    <i class="fas fa-qr-code mr-2"></i>
+                                                    Código QR caducado
+                                                </button>
+                                            {% else %}
+                                                <!-- Entrada válida o ya utilizada - botón normal -->
+                                                <button onclick="showQRModal('{{ compra.id }}')" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+                                                    <i class="fas fa-qr-code mr-2"></i>
+                                                    Ver código QR
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
                                 </div>
-                                {% if compra.estado_pago == 'pagado' %}
-                                    <button onclick="showQRModal('{{ compra.id }}')" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
-                                        <i class="fas fa-qr-code mr-2"></i>
-                                        Ver código QR
-                                    </button>
-                                {% endif %}
                             </div>
                         </div>
                     {% endfor %}

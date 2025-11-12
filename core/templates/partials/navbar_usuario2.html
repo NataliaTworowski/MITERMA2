@@ -42,7 +42,7 @@
             </button>
             <!-- Menú desplegable -->
             <div id="profile-menu" class="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg py-2 z-50 hidden">
-                <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Ajustes</a>
+                <a href="{% url 'usuarios:perfil_cliente' %}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Mi Perfil</a>
                 <form action="{% url 'usuarios:logout' %}" method="POST">
                     {% csrf_token %}
                     <button type="submit" class="w-full text-left px-4 py-2 text-red-500 hover:bg-red-50">Cerrar sesión</button>
