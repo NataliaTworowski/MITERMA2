@@ -1348,7 +1348,8 @@ def crear_trabajador(request):
                     terma=terma,
                     password=make_password(password_temporal),
                     is_active=True,
-                    estado=True
+                    estado=True,
+                    tiene_password_temporal=True
                 )
                 logger.info(f"=== USUARIO CREADO: {nuevo_usuario.email} ===")
             except Exception as e:

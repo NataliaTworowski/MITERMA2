@@ -95,6 +95,7 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     estado = models.BooleanField(default=True, help_text="Indica si el usuario está activo")
     is_staff = models.BooleanField(default=False, help_text="Permite acceso al admin de Django")
     is_active = models.BooleanField(default=True, help_text="Usuario activo en el sistema")
+    tiene_password_temporal = models.BooleanField(default=False, help_text="Indica si el usuario tiene una contraseña temporal que debe cambiar")
     
     # Relaciones
     rol = models.ForeignKey(Rol, on_delete=models.CASCADE, null=True, blank=True)
@@ -135,6 +136,14 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         Hashea y guarda la contraseña usando el sistema de Django.
         """
         self.password = make_password(raw_password)
+    
+    def cambiar_password_temporal(self, new_password):
+        """
+        Cambia la contraseña temporal por una nueva y marca que ya no es temporal.
+        """
+        self.set_password(new_password)
+        self.tiene_password_temporal = False
+        self.save()
     
     def check_password(self, raw_password):
         """

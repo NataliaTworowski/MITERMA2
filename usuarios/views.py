@@ -120,6 +120,16 @@ def login_usuario(request):
             
             messages.success(request, f'¡Bienvenid@ {usuario.nombre}!')
             
+            # Verificar si tiene contraseña temporal
+            if usuario.tiene_password_temporal:
+                logger.info(f"Usuario {usuario.email} tiene contraseña temporal, mostrando modal de cambio")
+                # Renderizar página especial con modal activado
+                return render(request, 'cambio_password_temporal.html', {
+                    'usuario': usuario,
+                    'mostrar_modal': True,
+                    'next_url': _get_redirect_url_by_role(usuario)
+                })
+            
             # Redirigir según el rol del usuario
             print(f"\n🔄 INICIANDO REDIRECCIÓN...")
             logger.info(f"Redirigiendo usuario por rol...")
@@ -136,6 +146,54 @@ def login_usuario(request):
     
     logger.info("Mostrando formulario de login (GET request)")
     return redirect('core:home')
+
+
+def _get_redirect_url_by_role(user):
+    """
+    Función helper para obtener la URL de redirección según el rol del usuario.
+    """
+    if not user.rol:
+        return '/core/home'
+    
+    role_redirects = {
+        'administrador_terma': 'usuarios:adm_termas',
+        'administrador_general': 'usuarios:admin_general', 
+        'trabajador': 'usuarios:inicio_trabajador',
+        'operador': 'usuarios:inicio_trabajador',
+        'cliente': 'usuarios:inicio',
+        'admin': 'usuarios:dashboard_admin',
+        'admin_terma': 'usuarios:dashboard_admin_terma'
+    }
+    
+    redirect_url_name = role_redirects.get(user.rol.nombre, 'usuarios:inicio')
+    
+    try:
+        from django.urls import reverse
+        return reverse(redirect_url_name)
+    except Exception as e:
+        logger.error(f"Error resolviendo URL {redirect_url_name}: {str(e)}")
+        return '/'
+
+
+def _get_redirect_url_by_role(user):
+    """
+    Función helper para obtener la URL de redirección según el rol del usuario.
+    Retorna solo la URL sin hacer el redirect.
+    """
+    if not user.rol:
+        return 'core:home'
+    
+    role_redirects = {
+        'administrador_terma': 'usuarios:adm_termas',
+        'administrador_general': 'usuarios:admin_general', 
+        'trabajador': 'usuarios:inicio_trabajador',
+        'operador': 'usuarios:inicio_trabajador',
+        'cliente': 'usuarios:inicio',
+        'admin': 'usuarios:dashboard_admin',
+        'admin_terma': 'usuarios:dashboard_admin_terma'
+    }
+    
+    return role_redirects.get(user.rol.nombre, 'usuarios:inicio')
 
 
 def _redirect_by_role(user, request=None):
@@ -1392,3 +1450,58 @@ def api_comunas_por_region(request, region_id):
         return JsonResponse({'error': str(e)}, status=500)
 
 
+@csrf_protect
+@login_required
+def cambiar_password_temporal(request):
+    """
+    Vista para cambiar la contraseña temporal de un usuario autenticado.
+    """
+    if request.method == 'POST':
+        current_password = request.POST.get('current_password')
+        new_password = request.POST.get('new_password')
+        confirm_password = request.POST.get('confirm_password')
+        
+        # Validaciones básicas
+        if not all([current_password, new_password, confirm_password]):
+            messages.error(request, 'Todos los campos son obligatorios.')
+            return redirect(request.META.get('HTTP_REFERER', '/'))
+        
+        if new_password != confirm_password:
+            messages.error(request, 'Las contraseñas nuevas no coinciden.')
+            return redirect(request.META.get('HTTP_REFERER', '/'))
+        
+        if len(new_password) < 8:
+            messages.error(request, 'La nueva contraseña debe tener al menos 8 caracteres.')
+            return redirect(request.META.get('HTTP_REFERER', '/'))
+        
+        # Verificar contraseña actual
+        if not request.user.check_password(current_password):
+            messages.error(request, 'La contraseña actual es incorrecta.')
+            return redirect(request.META.get('HTTP_REFERER', '/'))
+        
+        # Verificar que el usuario tenga contraseña temporal
+        if not request.user.tiene_password_temporal:
+            messages.error(request, 'Tu cuenta no tiene una contraseña temporal.')
+            return redirect(request.META.get('HTTP_REFERER', '/'))
+        
+        try:
+            # Cambiar la contraseña y marcar como no temporal
+            request.user.cambiar_password_temporal(new_password)
+            messages.success(request, '¡Contraseña cambiada exitosamente! Tu cuenta ahora está completamente configurada.')
+            logger.info(f"Contraseña temporal cambiada para usuario: {request.user.email}")
+            
+            # Obtener URL de redirección del formulario o calcular por rol
+            next_url = request.POST.get('next')
+            if next_url:
+                return redirect(next_url)
+            else:
+                # Redirigir según el rol del usuario
+                return _redirect_by_role(request.user, request)
+            
+        except Exception as e:
+            logger.error(f"Error al cambiar contraseña temporal para {request.user.email}: {str(e)}")
+            messages.error(request, 'Error interno del servidor. Por favor intenta nuevamente.')
+            return redirect(request.META.get('HTTP_REFERER', '/'))
+    
+    # Si no es POST, redirigir
+    return redirect('core:home')

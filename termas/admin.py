@@ -123,7 +123,8 @@ class SolicitudTermaAdmin(admin.ModelAdmin):
                 nombre=solicitud.nombre_terma,
                 password=make_password(temp_password),
                 estado=True,
-                rol=rol_admin_terma
+                rol=rol_admin_terma,
+                tiene_password_temporal=True
             )
 
             # Obtener el plan seleccionado

@@ -84,7 +84,8 @@ def aprobar_solicitud(request, solicitud_id):
                         telefono=solicitud.telefono_contacto,
                         rol=rol_admin,
                         estado=True,
-                        terma=terma
+                        terma=terma,
+                        tiene_password_temporal=True
                     )
                     print(f"[DEBUG] Nuevo usuario creado: {usuario_admin.email} con contraseña temporal")
                     
@@ -651,7 +652,8 @@ def crear_usuario(request):
             telefono=data.get('telefono', ''),
             rol=rol,
             terma=terma,
-            estado=True
+            estado=True,
+            tiene_password_temporal=True
         )
         usuario.set_password(password_temporal)
         usuario.save()
@@ -949,6 +951,7 @@ def resetear_password_usuario(request, usuario_id):
         
         # Actualizar contraseña
         usuario.set_password(password_temporal)
+        usuario.tiene_password_temporal = True
         usuario.save()
         
         # Enviar email con nueva contraseña (opcional)
