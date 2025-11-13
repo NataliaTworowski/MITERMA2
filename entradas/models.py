@@ -5,6 +5,7 @@ from usuarios.models import Usuario
 class EntradaTipo(models.Model):
     DURACION_CHOICES = [
         ('dia', 'Por el día'),
+        ('medio_dia', 'Medio día'),
         ('noche', 'Por la noche'),
         ('dia_completo', 'Día completo'),
     ]

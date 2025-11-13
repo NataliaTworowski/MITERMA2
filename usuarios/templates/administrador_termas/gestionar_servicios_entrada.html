@@ -1,5 +1,5 @@
 {% load static %}
-{% load humanize %}
+{% load precio_filters %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -24,7 +24,7 @@
                 <h3 class="text-lg font-semibold text-blue-800 mb-2">{{ entrada.nombre }}</h3>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-blue-700">
                     <div>
-                        <span class="font-medium">Precio:</span> ${{ entrada.precio|intcomma }}
+                        <span class="font-medium">Precio:</span> ${{ entrada.precio|formato_precio }}
                     </div>
                     <div>
                         <span class="font-medium">Duración:</span> {{ entrada.duracion_horas }} horas
@@ -60,7 +60,7 @@
                                             <p class="text-sm text-gray-500 mt-1">{{ servicio.descripcion }}</p>
                                         {% endif %}
                                         {% if servicio.precio %}
-                                            <p class="text-sm text-green-600 mt-1 font-medium">Precio adicional: {{ servicio.precio }}</p>
+                                            <p class="text-sm text-green-600 mt-1 font-medium">Precio adicional: ${{ servicio.precio|formato_precio }}</p>
                                         {% endif %}
                                     </div>
                                 </div>

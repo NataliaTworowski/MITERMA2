@@ -1,4 +1,5 @@
 {% load static %}
+{% load precio_filters %}
 {% load humanize %}
 <!DOCTYPE html>
 <html lang="es">
@@ -157,7 +158,7 @@
                                                 <div>
                                                     <span class="text-sm text-gray-500">Desde</span>
                                                     <p class="text-lg font-bold text-gray-900">
-                                                        ${% if terma.precio_minimo %}{{ terma.precio_minimo|floatformat:0 }}{% else %}--{% endif %}
+                                                        ${% if terma.precio_minimo %}{{ terma.precio_minimo|formato_precio }}{% else %}--{% endif %}
                                                     </p>
                                                 </div>
                                                 <a href="{% url 'termas:vista_terma' terma.id %}" class="bg-[#0F202A] text-white px-4 py-2 rounded-lg hover:bg-[#1a2f3a] transition-colors text-sm">
@@ -232,7 +233,7 @@
                                         <div>
                                             <span class="text-sm text-gray-500">Desde</span>
                                             <p class="text-lg font-bold text-gray-900">
-                                                ${% if terma.precio_minimo %}{{ terma.precio_minimo|floatformat:0 }}{% else %}--{% endif %}
+                                                ${% if terma.precio_minimo %}{{ terma.precio_minimo|formato_precio }}{% else %}--{% endif %}
                                             </p>
                                         </div>
                                         <a href="{% url 'termas:vista_terma' terma.id %}" class="bg-[#0F202A] text-white px-4 py-2 rounded-lg hover:bg-[#1a2f3a] transition-colors text-sm">
@@ -292,7 +293,7 @@
                                     <div class="flex justify-between items-center">
                                         <div>
                                             <span class="text-sm text-gray-500">Desde</span>
-                                            <p class="text-lg font-bold text-gray-900">${% if terma.precio_minimo %}{{ terma.precio_minimo|floatformat:0 }}{% else %}--{% endif %}</p>
+                                            <p class="text-lg font-bold text-gray-900">{% if terma.precio_minimo %}${{ terma.precio_minimo|formato_precio }}{% else %}--{% endif %}</p>
                                         </div>
                                         <a href="{% url 'termas:vista_terma' terma.id %}" class="bg-[#0F202A] text-white px-4 py-2 rounded-lg hover:bg-[#1a2f3a] transition-colors text-sm">
                                             Ver más

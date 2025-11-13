@@ -27,6 +27,7 @@ urlpatterns = [
     # Nuevas rutas
     path('analisis_terma/', views.analisis_terma, name='analisis_terma'),
     path('editar_terma/', views.editar_terma, name='editar_terma'),
+    path('nuevo_servicio/', views.nuevo_servicio, name='nuevo_servicio'),
     path('agregar_servicio/', views.agregar_servicio, name='agregar_servicio'),
     path('editar_servicio/<int:servicio_id>/', views.editar_servicio, name='editar_servicio'),
     path('quitar_servicio/<int:servicio_id>/', views.quitar_servicio, name='quitar_servicio'),

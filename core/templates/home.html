@@ -1,4 +1,5 @@
 {% load static %}
+{% load precio_filters %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -308,7 +309,7 @@
                                 {% for entrada in terma.get_tipos_entrada|slice:":3" %}
                                     <div class="flex justify-between items-center text-sm">
                                         <span class="text-gray-600">{{ entrada.nombre }}</span>
-                                        <span class="font-semibold text-gray-800">${{ entrada.precio|floatformat:0 }}</span>
+                                        <span class="font-semibold text-gray-800">${{ entrada.precio|formato_precio }}</span>
                                     </div>
                                 {% endfor %}
                                 {% if terma.get_tipos_entrada.count > 3 %}
@@ -324,7 +325,7 @@
                     <div class="flex justify-between items-center pt-3 border-t border-gray-100">
                         <div class="text-orange-500 font-bold text-lg">
                             {% if terma.precio_minimo %}
-                                Desde ${{ terma.precio_minimo|floatformat:0 }}
+                                Desde ${{ terma.precio_minimo|formato_precio }}
                             {% else %}
                                 Consultar precio
                             {% endif %}

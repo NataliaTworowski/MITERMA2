@@ -1,4 +1,5 @@
 {% load static %}
+{% load precio_filters %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -157,7 +158,7 @@
                      data-nombre="{{ entrada.nombre }}" data-precio="{{ entrada.precio }}" data-id="{{ entrada.id }}" data-duracion="{{ entrada.duracion_horas }}">
                     <div class="flex justify-between items-start mb-4">
                         <span class="text-xl font-bold text-emerald-800">{{ entrada.nombre }}</span>
-                        <span class="text-2xl font-bold text-orange-500">${{ entrada.precio|floatformat:0 }}</span>
+                        <span class="text-2xl font-bold text-orange-500">${{ entrada.precio|formato_precio }}</span>
                     </div>
                     <div class="text-gray-600 mb-3 flex items-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -202,7 +203,7 @@
                             <div class="flex-1">
                                 <h4 class="text-lg font-bold text-gray-800">{{ servicio.servicio }}</h4>
                                 <p class="text-gray-600 text-sm mb-2">{{ servicio.descripcion }}</p>
-                                <span class="text-orange-500 font-bold text-lg">+${{ servicio.precio|floatformat:0 }} CLP</span>
+                                <span class="text-orange-500 font-bold text-lg">+${{ servicio.precio|formato_precio }} CLP</span>
                             </div>
                             <div class="flex flex-col items-center gap-2">
                                 <span class="text-xs text-gray-500">Cantidad</span>

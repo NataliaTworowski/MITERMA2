@@ -447,16 +447,16 @@ def analisis_terma(request):
             'terma': terma,
             'fechas_json': json.dumps(fechas),
             'ventas_por_dia_json': json.dumps(ventas_por_dia),
-            'ingresos_por_dia_json': json.dumps(ingresos_por_dia),  # Ingresos por día
-            'entradas_vendidas_por_dia_json': json.dumps(entradas_vendidas_por_dia),  # Entradas vendidas por día
-            'total_ventas': total_ventas_cantidad,  # Número de transacciones del rango
-            'total_entradas_vendidas': total_entradas_vendidas,  # Total entradas vendidas del rango
-            'total_ingresos_rango': round(total_ingresos, 2),  # Dinero del rango seleccionado
-            'total_ingresos_mes': round(float(ingresos_mes_actual), 2),  # Dinero del mes actual
-            'total_ventas_mes': ventas_mes_actual,  # Ventas del mes actual
-            'promedio_ventas': round(promedio_ventas_cantidad, 1),  # Promedio de transacciones por día
-            'promedio_entradas': round(promedio_entradas_diario, 1),  # Promedio de entradas por día
-            'promedio_ingresos': round(promedio_ingresos_diario, 2),  # Promedio de ingresos por día
+            'ingresos_por_dia_json': json.dumps(ingresos_por_dia),  
+            'entradas_vendidas_por_dia_json': json.dumps(entradas_vendidas_por_dia),  
+            'total_ventas': total_ventas_cantidad,  
+            'total_entradas_vendidas': total_entradas_vendidas, 
+            'total_ingresos_rango': round(total_ingresos, 2),  
+            'total_ingresos_mes': round(float(ingresos_mes_actual), 2),  
+            'total_ventas_mes': ventas_mes_actual,  
+            'promedio_ventas': round(promedio_ventas_cantidad, 1), 
+            'promedio_entradas': round(promedio_entradas_diario, 1),  
+            'promedio_ingresos': round(promedio_ingresos_diario, 2),  
             'mejor_dia': mejor_dia,
             'rango': rango,
             'tipos_labels_json': json.dumps(tipos_labels),
@@ -482,7 +482,6 @@ def analisis_terma(request):
 def editar_terma(request):
     """Vista para editar la información de la terma - Migrada a Django Auth."""
     try:
-        # El decorador ya verificó que el usuario está autenticado y es admin_terma
         usuario = request.user
         terma = usuario.terma
         if request.method == 'POST':
@@ -513,10 +512,25 @@ def editar_terma(request):
         return redirect('core:home')
 
 @admin_terma_required
+def nuevo_servicio(request):
+    """Vista para mostrar el formulario de nuevo servicio."""
+    try:
+        usuario = request.user
+        terma = usuario.terma
+        context = {
+            'title': 'Agregar Nuevo Servicio - MiTerma',
+            'usuario': usuario,
+            'terma': terma,
+        }
+        return render(request, 'administrador_termas/nuevo_servicio.html', context)
+    except Usuario.DoesNotExist:
+        messages.error(request, 'Sesión inválida.')
+        return redirect('core:home')
+
+@admin_terma_required
 def agregar_servicio(request):
     """Vista para agregar un nuevo servicio a la terma - Migrada a Django Auth."""
     if request.method == 'POST':
-        # El decorador ya verificó que el usuario está autenticado y es admin_terma
         usuario = request.user
         terma = usuario.terma
         
@@ -541,7 +555,6 @@ def agregar_servicio(request):
 def quitar_servicio(request, servicio_id):
     """Vista para quitar un servicio de la terma - Migrada a Django Auth."""
     if request.method == 'POST':
-        # El decorador ya verificó que el usuario está autenticado y es admin_terma
         usuario = request.user
         terma = usuario.terma
         
@@ -557,7 +570,6 @@ def quitar_servicio(request, servicio_id):
 @admin_terma_required
 def editar_servicio(request, servicio_id):
     """Vista para editar un servicio de la terma - Migrada a Django Auth."""
-    # El decorador ya verificó que el usuario está autenticado y es admin_terma
     usuario = request.user
     terma = usuario.terma
     
@@ -573,13 +585,17 @@ def editar_servicio(request, servicio_id):
         messages.success(request, 'Servicio editado correctamente.')
         logger.info(f"Usuario {usuario.nombre} (ID: {usuario.id}) editó servicio {servicio_anterior} en terma {terma.nombre_terma}")
         return redirect('termas:editar_terma')
-    messages.error(request, 'Método no permitido.')
-    return redirect('termas:editar_terma')
+    context = {
+        'title': 'Editar Servicio - MiTerma',
+        'usuario': usuario,
+        'terma': terma,
+        'servicio': servicio,
+    }
+    return render(request, 'administrador_termas/nuevo_servicio.html', context)
 
 @admin_terma_required
 def precios_terma(request): 
     """Vista para mostrar precios de la terma - Migrada a Django Auth."""
-    # El decorador ya verificó que el usuario está autenticado y es admin_terma
     usuario = request.user
     terma = usuario.terma
     
@@ -615,7 +631,6 @@ def editar_entrada(request, entrada_id):
         
         if precio_str:
             try:
-                # Limpiar formato chileno (puntos y comas)
                 precio_limpio = re.sub(r'[^\d]', '', precio_str)
                 if precio_limpio:
                     entrada.precio = Decimal(precio_limpio)

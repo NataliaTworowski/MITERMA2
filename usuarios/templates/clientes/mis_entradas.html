@@ -1,5 +1,5 @@
 {% load static %}
-{% load humanize %}
+{% load precio_filters %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -85,7 +85,7 @@
                                                                         x{{ extra.cantidad }}
                                                                     {% endif %}
                                                                     {% if extra.precio_unitario %}
-                                                                        <span class="text-gray-500">${{ extra.precio_unitario|intcomma }} CLP{% if extra.cantidad > 1 %} c/u{% endif %}</span>
+                                                                        <span class="text-gray-500">${{ extra.precio_unitario|formato_precio }} CLP{% if extra.cantidad > 1 %} c/u{% endif %}</span>
                                                                     {% endif %}
                                                                 </li>
                                                             {% endfor %}
@@ -102,7 +102,7 @@
                                                                     <li>
                                                                         {{ servicio.servicio }}
                                                                         {% if servicio.precio %}
-                                                                            <span class="text-gray-500">${{ servicio.precio|intcomma }} CLP</span>
+                                                                            <span class="text-gray-500">${{ servicio.precio|formato_precio }} CLP</span>
                                                                         {% endif %}
                                                                     </li>
                                                                 {% endfor %}
@@ -122,7 +122,7 @@
                                 <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                                     <div>
                                         <span class="text-lg font-semibold">Total pagado:</span>
-                                        <span class="text-lg font-bold text-blue-600">${{ compra.total|intcomma }} CLP</span>
+                                        <span class="text-lg font-bold text-blue-600">${{ compra.total|formato_precio }} CLP</span>
                                     </div>
                                     {% if compra.estado_pago == 'pagado' %}
                                         <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
