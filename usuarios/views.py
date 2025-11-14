@@ -1505,3 +1505,200 @@ def cambiar_password_temporal(request):
     
     # Si no es POST, redirigir
     return redirect('core:home')
+
+@admin_terma_required
+def historial_entradas(request):
+    """
+    Vista para mostrar el historial de entradas vendidas por el administrador de termas
+    """
+    # Verificar autenticación usando función helper
+    if not is_user_authenticated(request):
+        messages.error(request, 'Debes iniciar sesión para acceder.')
+        return redirect('core:home')
+    
+    try:
+        # Obtener usuario usando función helper
+        usuario = get_current_user(request)
+        
+        if not usuario:
+            messages.error(request, 'Usuario no encontrado.')
+            return redirect('core:home')
+        
+        # Verificar que el usuario tenga una terma asociada
+        if not usuario.terma:
+            messages.error(request, 'No tienes una terma asociada para acceder al historial de entradas.')
+            return redirect('usuarios:adm_termas')
+        
+        terma = usuario.terma
+        
+        # Importar modelos necesarios
+        from ventas.models import Compra, DetalleCompra, RegistroEscaneo, CodigoQR
+        from entradas.models import EntradaTipo
+        from django.db.models import Count, Sum, Q
+        from django.utils import timezone
+        from datetime import date, timedelta
+        from collections import defaultdict
+        
+        # Obtener parámetros de filtro
+        fecha_filtro = request.GET.get('fecha')
+        if fecha_filtro:
+            fecha_filtro = date.fromisoformat(fecha_filtro)
+        else:
+            fecha_filtro = date.today()
+        
+        # Obtener entradas vendidas para la fecha específica
+        entradas_vendidas = DetalleCompra.objects.filter(
+            compra__terma=terma,
+            compra__fecha_visita=fecha_filtro,
+            compra__estado_pago='pagado'
+        ).select_related(
+            'compra__usuario', 'entrada_tipo', 'compra'
+        ).prefetch_related(
+            'servicios',
+            'servicios_extra__servicio', 
+            'entrada_tipo__servicios'
+        )
+        
+
+        # Calcular resumen por tipo de entrada mostrando:
+        # - total sin descuento (solo entradas base)
+        # - total pagado (con extras y descuentos)
+        # - total neto para la terma (descontando comisión)
+        from ventas.models import DistribucionPago
+        resumen_dict = {}
+        for detalle in entradas_vendidas:
+            tipo_nombre = detalle.entrada_tipo.nombre
+            duracion = detalle.entrada_tipo.duracion_tipo
+            compra_id = detalle.compra.id
+            if (tipo_nombre, duracion) not in resumen_dict:
+                resumen_dict[(tipo_nombre, duracion)] = {
+                    'entrada_tipo__nombre': tipo_nombre,
+                    'entrada_tipo__duracion_tipo': duracion,
+                    'total_vendidas': 0,
+                    'compras_ids': set(),
+                    'total_sin_descuento': 0,
+                    'total_pagado': 0,
+                    'total_neto_terma': 0,
+                }
+            resumen_dict[(tipo_nombre, duracion)]['total_vendidas'] += detalle.cantidad
+            resumen_dict[(tipo_nombre, duracion)]['compras_ids'].add(compra_id)
+            resumen_dict[(tipo_nombre, duracion)]['total_sin_descuento'] += float(detalle.subtotal)
+
+        for key, data in resumen_dict.items():
+            compras = Compra.objects.filter(id__in=data['compras_ids'])
+            total_pagado = sum([float(c.total) for c in compras])
+            data['total_pagado'] = total_pagado
+            # Sumar el neto para la terma (descontando comisión)
+            distribuciones = DistribucionPago.objects.filter(compra_id__in=data['compras_ids'])
+            total_neto = sum([float(d.monto_para_terma) for d in distribuciones])
+            data['total_neto_terma'] = total_neto
+            del data['compras_ids']
+
+        resumen_entradas = list(resumen_dict.values())
+        
+        # Obtener códigos QR escaneados para esta fecha solo por trabajadores de la misma terma
+        escaneos_hoy = RegistroEscaneo.objects.filter(
+            codigo_qr__compra__terma=terma,
+            fecha_escaneo__date=fecha_filtro,
+            exitoso=True,
+            usuario_scanner__terma=terma  # Solo escaneos de trabajadores de esta terma
+        ).select_related(
+            'codigo_qr__compra__usuario', 
+            'usuario_scanner',
+            'codigo_qr__compra'
+        ).order_by('-fecha_escaneo')
+        
+        # Agrupar escaneos por empleado
+        escaneos_por_empleado = defaultdict(list)
+        for escaneo in escaneos_hoy:
+            empleado = escaneo.usuario_scanner
+            if empleado:
+                escaneos_por_empleado[empleado].append(escaneo)
+        
+        # Obtener estadísticas del día
+        total_entradas_vendidas = sum(item['total_vendidas'] for item in resumen_entradas)
+        total_entradas_escaneadas = escaneos_hoy.count()
+        
+        # Obtener historial de escaneos de la última semana solo de trabajadores de esta terma
+        fecha_inicio_semana = fecha_filtro - timedelta(days=7)
+        historial_semana = RegistroEscaneo.objects.filter(
+            codigo_qr__compra__terma=terma,
+            fecha_escaneo__date__gte=fecha_inicio_semana,
+            fecha_escaneo__date__lte=fecha_filtro,
+            exitoso=True,
+            usuario_scanner__terma=terma  # Solo escaneos de trabajadores de esta terma
+        ).values('fecha_escaneo__date').annotate(
+            total_escaneos=Count('id')
+        ).order_by('fecha_escaneo__date')
+        
+        # Obtener información detallada de cada entrada vendida
+        entradas_detalle = []
+        for detalle in entradas_vendidas:
+            compra = detalle.compra
+            codigo_qr = CodigoQR.objects.filter(compra=compra).first()
+            escaneo = None
+            
+            if codigo_qr:
+                escaneo = RegistroEscaneo.objects.filter(
+                    codigo_qr=codigo_qr,
+                    fecha_escaneo__date=fecha_filtro,
+                    exitoso=True,
+                    usuario_scanner__terma=terma  # Solo escaneos de trabajadores de esta terma
+                ).first()
+            
+            # Obtener servicios incluidos
+            servicios_incluidos = list(detalle.entrada_tipo.servicios.all().values_list('servicio', flat=True))
+            servicios_incluidos_str = ', '.join(servicios_incluidos) if servicios_incluidos else 'Sin servicios incluidos'
+            
+            # Obtener servicios extras
+            servicios_extras = []
+            
+            # Servicios extras del modelo intermedio
+            for extra in detalle.servicios_extra.all():
+                servicios_extras.append(f"{extra.servicio.servicio} (x{extra.cantidad})")
+            
+            # Servicios extras directos
+            for servicio in detalle.servicios.all():
+                servicios_extras.append(servicio.servicio)
+            
+            servicios_extras_str = ', '.join(servicios_extras) if servicios_extras else 'Sin servicios extras'
+            
+            entradas_detalle.append({
+                'detalle': detalle,
+                'compra': compra,
+                'codigo_qr': codigo_qr,
+                'escaneo': escaneo,
+                'estado_escaneo': 'Escaneada' if escaneo else 'Pendiente',
+                'servicios_incluidos': servicios_incluidos_str,
+                'servicios_extras': servicios_extras_str
+            })
+        
+        # Datos para gráficos
+        datos_grafico = {
+            'labels': [item['entrada_tipo__nombre'] for item in resumen_entradas],
+            'vendidas': [item['total_vendidas'] for item in resumen_entradas],
+            'precios': [float(item['total_pagado']) for item in resumen_entradas]
+        }
+        
+        context = {
+            'title': f'Historial de Entradas - {fecha_filtro.strftime("%d/%m/%Y")}',
+            'usuario': usuario,
+            'terma': terma,
+            'fecha_filtro': fecha_filtro,
+            'fecha_filtro_str': fecha_filtro.strftime('%Y-%m-%d'),
+            'resumen_entradas': resumen_entradas,
+            'entradas_detalle': entradas_detalle,
+            'escaneos_hoy': escaneos_hoy,
+            'escaneos_por_empleado': dict(escaneos_por_empleado),
+            'total_entradas_vendidas': total_entradas_vendidas,
+            'total_entradas_escaneadas': total_entradas_escaneadas,
+            'porcentaje_escaneadas': round((total_entradas_escaneadas / total_entradas_vendidas * 100) if total_entradas_vendidas > 0 else 0, 1),
+            'historial_semana': historial_semana,
+            'datos_grafico': datos_grafico,
+        }
+        
+        return render(request, 'administrador_termas/historial_entradas.html', context)
+        
+    except Exception as e:
+        messages.error(request, f'Error al cargar el historial de entradas: {str(e)}')
+        return redirect('usuarios:adm_termas')

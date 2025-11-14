@@ -27,6 +27,7 @@ urlpatterns = [
     path('toggle_favorito/<int:terma_id>/', views_cliente.toggle_favorito, name='toggle_favorito'),
     path('verificar_favorito/<int:terma_id>/', views_cliente.verificar_favorito, name='verificar_favorito'),
     path('billetera/', views.billetera, name='billetera'),
+    path('historial-entradas/', views.historial_entradas, name='historial_entradas'),
     path('vincular-mercadopago/', views.vincular_mercadopago, name='vincular_mercadopago'),
     path('mercadopago-callback/', views.mercadopago_callback, name='mercadopago_callback'),
     

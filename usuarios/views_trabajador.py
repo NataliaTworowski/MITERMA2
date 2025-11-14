@@ -142,12 +142,27 @@ def escanear_qr(request):
         try:
             codigo_qr = CodigoQR.objects.select_related(
                 'compra', 
-                'compra__usuario'
+                'compra__usuario',
+                'compra__terma'
             ).get(codigo=qr_data)
         except CodigoQR.DoesNotExist:
             return JsonResponse({
                 'success': False,
                 'error': 'Código QR no encontrado'
+            })
+        
+        # Verificar que el trabajador pertenezca a la misma terma que la entrada
+        if not request.user.terma:
+            return JsonResponse({
+                'success': False,
+                'error': 'No tienes una terma asignada para validar entradas'
+            })
+        
+        if codigo_qr.compra.terma != request.user.terma:
+            return JsonResponse({
+                'success': False,
+                'error': f'Esta entrada pertenece a {codigo_qr.compra.terma.nombre_terma}, no puedes validarla desde {request.user.terma.nombre_terma}',
+                'terma_incorrecta': True
             })
         
         # Verificar si ya fue usado
@@ -206,20 +221,29 @@ def buscar_entrada(request):
             'error': 'Parámetro de búsqueda requerido'
         })
     
-    # Buscar en múltiples campos
+    # Verificar que el trabajador tenga terma asignada
+    if not request.user.terma:
+        return JsonResponse({
+            'success': False,
+            'error': 'No tienes una terma asignada para buscar entradas'
+        })
+    
+    # Buscar en múltiples campos solo en la terma del trabajador
     resultados = []
     
     # Buscar por email
     if '@' in query:
         compras = Compra.objects.filter(
             usuario__email__icontains=query,
-            estado_pago='pagado'
+            estado_pago='pagado',
+            terma=request.user.terma
         ).select_related('usuario', 'terma', 'codigoqr')[:10]
     else:
         # Buscar por nombre o código QR
         compras = Compra.objects.filter(
             usuario__nombre__icontains=query,
-            estado_pago='pagado'
+            estado_pago='pagado',
+            terma=request.user.terma
         ).select_related('usuario', 'terma', 'codigoqr')[:10]
     
     for compra in compras:

@@ -182,6 +182,23 @@ class ValidarEntradaQRView(View):
                             'error': 'Código QR no encontrado',
                             'detail': 'No se encontró el registro del código QR'
                         }, status=404)
+
+                    # Verificar que el trabajador pertenezca a la misma terma que la entrada
+                    if not user.terma:
+                        logger.error(f"Usuario {user.email} no tiene terma asignada")
+                        return JsonResponse({
+                            'valid': False,
+                            'error': 'Sin terma asignada',
+                            'detail': 'No tienes una terma asignada para validar entradas'
+                        }, status=403)
+                    
+                    if compra.terma != user.terma:
+                        logger.warning(f"Intento de validar entrada de terma incorrecta - Usuario: {user.email} (terma: {user.terma.nombre_terma}), Entrada: compra {compra.id} (terma: {compra.terma.nombre_terma})")
+                        return JsonResponse({
+                            'valid': False,
+                            'error': 'Terma incorrecta',
+                            'detail': f'Esta entrada pertenece a {compra.terma.nombre_terma}, no puedes validarla desde {user.terma.nombre_terma}'
+                        }, status=403)
                     
                 except Exception as e:
                     logger.error(f"Error inesperado al procesar compra: {str(e)}")

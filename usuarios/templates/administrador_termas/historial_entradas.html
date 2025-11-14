@@ -1,0 +1,425 @@
+{% load static %}
+{% load precio_filters %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <title>{{ title }}</title>
+    {% include 'partials/head.html' %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="flex min-h-screen bg-gray-100 font-sans">
+    {% include 'partials/navbar_adm_termas.html' %}
+
+    <main class="flex-1 md:ml-8 pl-4 pr-2 py-2">
+        <!-- Notificaciones -->
+        {% if messages %}
+        <div class="max-w-7xl mx-auto px-6 py-4" id="notificaciones-django">
+            {% for message in messages %}
+                <div class="mb-3 px-4 py-3 rounded-lg shadow text-sm font-medium
+                    {% if message.tags == 'success' %}bg-green-100 text-green-800 border border-green-300
+                    {% elif message.tags == 'error' %}bg-red-100 text-red-800 border border-red-300
+                    {% elif message.tags == 'warning' %}bg-yellow-100 text-yellow-800 border border-yellow-300
+                    {% else %}bg-blue-100 text-blue-800 border border-blue-300{% endif %}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-8">
+            <div class="max-w-7xl mx-auto px-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-3xl font-bold mb-2">Historial de Entradas</h1>
+                        <p class="text-blue-100">{{ terma.nombre_terma }} - {{ fecha_filtro|date:"d/m/Y" }}</p>
+                    </div>
+                    <!-- Selector de fecha -->
+                    <div class="bg-white/20 rounded-lg p-4">
+                        <form method="get" class="flex items-center space-x-3">
+                            <label for="fecha" class="text-sm font-medium text-white">Fecha:</label>
+                            <input type="date" 
+                                   id="fecha" 
+                                   name="fecha" 
+                                   value="{{ fecha_filtro_str }}"
+                                   class="px-3 py-2 rounded-lg text-gray-800 focus:ring-2 focus:ring-blue-300"
+                                   onchange="this.form.submit()">
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estadísticas principales -->
+        <div class="max-w-7xl mx-auto px-6 py-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <!-- Entradas Vendidas -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a1 1 0 001 1h1a1 1 0 001-1V7a2 2 0 00-2-2H5zM5 14a2 2 0 00-2 2v3a1 1 0 001 1h1a1 1 0 001-1v-3a2 2 0 00-2-2H5zM13 5a2 2 0 00-2 2v3a1 1 0 001 1h1a1 1 0 001-1V7a2 2 0 00-2-2h-2zM13 14a2 2 0 00-2 2v3a1 1 0 001 1h1a1 1 0 001-1v-3a2 2 0 00-2-2h-2z"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Entradas Vendidas</p>
+                            <p class="text-2xl font-bold text-gray-900">{{ total_entradas_vendidas }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Entradas Escaneadas -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Entradas Escaneadas</p>
+                            <p class="text-2xl font-bold text-gray-900">{{ total_entradas_escaneadas }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Porcentaje de Uso -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Porcentaje de Uso</p>
+                            <p class="text-2xl font-bold text-gray-900">{{ porcentaje_escaneadas }}%</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Resumen por tipo de entrada -->
+            <div class="bg-white rounded-xl shadow-lg mb-8">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-xl font-bold text-gray-900">Resumen por Tipo de Entrada</h2>
+                </div>
+                <div class="p-6">
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full">
+                            <thead>
+                                <tr class="bg-gray-50">
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo de Entrada</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duración</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cantidad Vendida</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total pagado</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total neto para terma</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                {% for item in resumen_entradas %}
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                        {{ item.entrada_tipo__nombre }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {{ item.entrada_tipo__duracion_tipo|capfirst }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        {{ item.total_vendidas }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                                        ${{ item.total_pagado|formato_precio }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">
+                                        ${{ item.total_neto_terma|formato_precio }}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="px-6 py-4 text-center text-gray-500">
+                                        No hay entradas vendidas para esta fecha
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Escaneos por empleado -->
+            {% if escaneos_por_empleado %}
+            <div class="bg-white rounded-xl shadow-lg mb-8">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-xl font-bold text-gray-900">Escaneos por Empleado</h2>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {% for empleado, escaneos in escaneos_por_empleado.items %}
+                        <div class="bg-gray-50 rounded-lg p-4">
+                            <div class="flex items-center mb-3">
+                                <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+                                    <span class="text-white font-bold text-sm">{{ empleado.nombre.0 }}{{ empleado.apellido.0 }}</span>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm font-medium text-gray-900">{{ empleado.nombre }} {{ empleado.apellido }}</p>
+                                    <p class="text-xs text-gray-500">{{ escaneos|length }} escaneos</p>
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                {% for escaneo in escaneos|slice:":3" %}
+                                <div class="text-xs text-gray-600 bg-white p-2 rounded">
+                                    <span class="font-medium">{{ escaneo.fecha_escaneo|time:"H:i" }}</span> - 
+                                    {{ escaneo.codigo_qr.compra.usuario.nombre }}
+                                </div>
+                                {% endfor %}
+                                {% if escaneos|length > 3 %}
+                                <p class="text-xs text-gray-500">Y {{ escaneos|length|add:"-3" }} más...</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Detalle de entradas -->
+            <div class="bg-white rounded-xl shadow-lg">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-xl font-bold text-gray-900">Detalle de Entradas Vendidas</h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo de Entrada</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cantidad</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Precio</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Escaneado por</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hora Escaneo</th>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Detalle</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for entrada in entradas_detalle %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">
+                                        {{ entrada.compra.usuario.nombre }} {{ entrada.compra.usuario.apellido }}
+                                    </div>
+                                    <div class="text-sm text-gray-500">{{ entrada.compra.usuario.email }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {{ entrada.detalle.entrada_tipo.nombre }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {{ entrada.detalle.cantidad }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    ${{ entrada.compra.total|formato_precio }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    {% if entrada.escaneo %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            Escaneada
+                                        </span>
+                                    {% else %}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                            Pendiente
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {% if entrada.escaneo %}
+                                        {{ entrada.escaneo.usuario_scanner.nombre }} {{ entrada.escaneo.usuario_scanner.apellido }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {% if entrada.escaneo %}
+                                        {{ entrada.escaneo.fecha_escaneo|time:"H:i" }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-center">
+                                    <button class="text-blue-600 hover:text-blue-800 transition-colors duration-200 btn-detalle"
+                                            data-cliente="{{ entrada.compra.usuario.nombre }} {{ entrada.compra.usuario.apellido }}"
+                                            data-email="{{ entrada.compra.usuario.email }}"
+                                            data-tipo="{{ entrada.detalle.entrada_tipo.nombre }}"
+                                            data-cantidad="{{ entrada.detalle.cantidad }}"
+                                            data-precio="{{ entrada.detalle.subtotal|formato_precio }}"
+                                            data-fecha-compra="{{ entrada.compra.fecha_compra|date:"d/m/Y H:i" }}"
+                                            data-fecha-escaneo="{% if entrada.escaneo %}{{ entrada.escaneo.fecha_escaneo|date:"d/m/Y H:i" }}{% else %}No escaneada{% endif %}"
+                                            data-escaneado-por="{% if entrada.escaneo %}{{ entrada.escaneo.usuario_scanner.nombre }} {{ entrada.escaneo.usuario_scanner.apellido }}{% else %}-{% endif %}"
+                                            data-servicios="{{ entrada.servicios_incluidos }}"
+                                            data-servicios-extras="{{ entrada.servicios_extras }}"
+                                            data-preciototalcompra="{{ entrada.compra.total|formato_precio }}">
+                                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"></path>
+                                            <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"></path>
+                                        </svg>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="px-6 py-4 text-center text-gray-500">
+                                    No hay entradas vendidas para esta fecha
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal para detalle de entrada -->
+    <div id="modalDetalleEntrada" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-semibold text-gray-900">Detalle de Entrada</h3>
+                        <button onclick="cerrarModalDetalle()" class="text-gray-400 hover:text-gray-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="p-6">
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="text-sm font-medium text-gray-500">Cliente</h4>
+                            <p id="modalCliente" class="text-sm font-medium text-gray-900"></p>
+                            <p id="modalEmail" class="text-sm text-gray-500"></p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-500">Tipo de Entrada</h4>
+                                <p id="modalTipoEntrada" class="text-sm text-gray-900"></p>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-500">Cantidad</h4>
+                                <p id="modalCantidad" class="text-sm text-gray-900"></p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-500">Precio Total</h4>
+                                <p id="modalPrecio" class="text-sm font-medium text-gray-900"></p>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-500">Fecha de Compra</h4>
+                                <p id="modalFechaCompra" class="text-sm text-gray-900"></p>
+                            </div>
+                        </div>
+                        <div class="border-t pt-4">
+                            <h4 class="text-sm font-medium text-gray-500 mb-2">Información de Escaneo</h4>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <h5 class="text-xs font-medium text-gray-400">Fecha y Hora</h5>
+                                    <p id="modalFechaEscaneo" class="text-sm text-gray-900"></p>
+                                </div>
+                                <div>
+                                    <h5 class="text-xs font-medium text-gray-400">Escaneado por</h5>
+                                    <p id="modalEscaneadoPor" class="text-sm text-gray-900"></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="border-t pt-4">
+                            <h4 class="text-sm font-medium text-gray-500 mb-3">Servicios Incluidos</h4>
+                            <div class="bg-gray-50 rounded-lg p-3">
+                                <p id="modalServiciosIncluidos" class="text-sm text-gray-700"></p>
+                            </div>
+                        </div>
+                        <div class="border-t pt-4">
+                            <h4 class="text-sm font-medium text-gray-500 mb-3">Servicios Extras</h4>
+                            <div class="bg-blue-50 rounded-lg p-3">
+                                <p id="modalServiciosExtras" class="text-sm text-gray-700"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="px-6 py-4 border-t border-gray-200">
+                    <button onclick="cerrarModalDetalle()" class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script para ocultar notificaciones automáticamente y modal -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const notificaciones = document.getElementById('notificaciones-django');
+            if (notificaciones) {
+                setTimeout(() => {
+                    notificaciones.style.transition = 'opacity 0.7s';
+                    notificaciones.style.opacity = '0';
+                    setTimeout(() => {
+                        notificaciones.style.display = 'none';
+                    }, 700);
+                }, 3500);
+            }
+
+            // Event listeners para botones de detalle
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('.btn-detalle')) {
+                    const btn = e.target.closest('.btn-detalle');
+                    mostrarDetalleEntrada(
+                        btn.dataset.cliente,
+                        btn.dataset.tipo,
+                        btn.dataset.cantidad,
+                        btn.dataset.precio,
+                        btn.dataset.fechaEscaneo,
+                        btn.dataset.escaneadoPor,
+                        btn.dataset.fechaCompra,
+                        btn.dataset.email,
+                        btn.dataset.servicios,
+                        btn.dataset.serviciosExtras,
+                        btn.dataset.preciototalcompra
+                    );
+                }
+            });
+        });
+
+        function mostrarDetalleEntrada(cliente, tipoEntrada, cantidad, precio, fechaEscaneo, escaneadoPor, fechaCompra, email, servicios, serviciosExtras, precioTotalCompra) {
+            document.getElementById('modalCliente').textContent = cliente;
+            document.getElementById('modalEmail').textContent = email;
+            document.getElementById('modalTipoEntrada').textContent = tipoEntrada;
+            document.getElementById('modalCantidad').textContent = cantidad;
+            // Mostrar el precio total de la compra
+            document.getElementById('modalPrecio').textContent = '$' + precioTotalCompra;
+            document.getElementById('modalFechaCompra').textContent = fechaCompra;
+            document.getElementById('modalFechaEscaneo').textContent = fechaEscaneo;
+            document.getElementById('modalEscaneadoPor').textContent = escaneadoPor;
+            document.getElementById('modalServiciosIncluidos').textContent = servicios;
+            document.getElementById('modalServiciosExtras').textContent = serviciosExtras;
+            
+            document.getElementById('modalDetalleEntrada').classList.remove('hidden');
+        }
+
+        function cerrarModalDetalle() {
+            document.getElementById('modalDetalleEntrada').classList.add('hidden');
+        }
+
+        // Cerrar modal con ESC
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                cerrarModalDetalle();
+            }
+        });
+    </script>
+</body>
+</html>
