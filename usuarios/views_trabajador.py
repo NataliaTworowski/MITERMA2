@@ -62,43 +62,56 @@ def inicio_trabajador(request):
     if terma:
         print(f"DEBUG TRABAJADOR - Calculando estadísticas para terma: {terma.nombre_terma}")
         
-        # Entradas escaneadas hoy (códigos QR usados)
-        qr_hoy = CodigoQR.objects.filter(
-            compra__terma=terma,
-            fecha_uso__date=hoy,
-            usado=True
+        # Entradas escaneadas hoy (usar RegistroEscaneo para mayor precisión y evitar problemas de zona horaria)
+        from ventas.models import RegistroEscaneo
+        tz = timezone.get_current_timezone()
+        inicio_dia = timezone.localtime(timezone.now(), tz).replace(hour=0, minute=0, second=0, microsecond=0)
+        fin_dia = inicio_dia + timedelta(days=1)
+        registros_hoy = RegistroEscaneo.objects.filter(
+            codigo_qr__compra__terma=terma,
+            usuario_scanner__terma=terma,  # Solo escaneos de trabajadores de esta terma
+            fecha_escaneo__gte=inicio_dia,
+            fecha_escaneo__lt=fin_dia,
+            exitoso=True
         )
-        entradas_hoy = qr_hoy.count()
-        print(f"DEBUG TRABAJADOR - QRs escaneados hoy: {entradas_hoy}")
+        entradas_hoy = registros_hoy.count()
+        print(f"DEBUG TRABAJADOR - Escaneos registrados hoy: {entradas_hoy}")
+        # Debug: mostrar algunos registros de hoy
+        for registro in registros_hoy[:3]:
+            print(f"  - Escaneo: {registro.codigo_qr.compra.usuario.email} a las {registro.fecha_escaneo} por {registro.usuario_scanner.email}")
         
-        # Debug: mostrar algunos QRs de hoy
-        for qr in qr_hoy[:3]:
-            print(f"  - QR usado: {qr.compra.usuario.email} a las {qr.fecha_uso}")
+        # Visitantes actuales: sumar la cantidad de cada entrada escaneada hoy
+        visitantes_actuales = 0
+        for registro in registros_hoy:
+            compra = registro.codigo_qr.compra
+            visitantes_actuales += getattr(compra, 'cantidad', 1)
         
-        # Visitantes actuales (estimación basada en entradas del día)
-        visitantes_actuales = entradas_hoy
-        
-        # Total escaneado del mes
-        qr_mes = CodigoQR.objects.filter(
-            compra__terma=terma,
-            fecha_uso__gte=inicio_mes,
-            usado=True
+        # Total escaneado del mes (usar RegistroEscaneo)
+        registros_mes = RegistroEscaneo.objects.filter(
+            codigo_qr__compra__terma=terma,
+            usuario_scanner__terma=terma,  # Solo escaneos de trabajadores de esta terma
+            fecha_escaneo__gte=inicio_mes,
+            exitoso=True
         )
-        total_mes = qr_mes.count()
-        print(f"DEBUG TRABAJADOR - QRs escaneados este mes: {total_mes}")
+        total_mes = registros_mes.count()
+        print(f"DEBUG TRABAJADOR - Escaneos registrados este mes: {total_mes}")
         
         # Entradas inválidas hoy (por ahora simulamos con 0)
         entradas_invalidas_hoy = 0
         
-        # Últimos registros (últimos 10 códigos QR escaneados)
-        ultimos_registros = CodigoQR.objects.filter(
-            compra__terma=terma,
-            usado=True,
-            fecha_uso__isnull=False
+        # Últimos registros (últimos 10 registros de escaneo)
+        ultimos_registros = RegistroEscaneo.objects.filter(
+            codigo_qr__compra__terma=terma,
+            usuario_scanner__terma=terma,  # Solo escaneos de trabajadores de esta terma
+            exitoso=True,
+            fecha_escaneo__isnull=False
         ).select_related(
-            'compra', 
-            'compra__usuario'
-        ).order_by('-fecha_uso')[:10]
+            'codigo_qr__compra', 
+            'codigo_qr__compra__usuario',
+            'usuario_scanner'
+        ).prefetch_related(
+            'codigo_qr__compra__detalles'
+        ).order_by('-fecha_escaneo')[:10]
         
         print(f"DEBUG TRABAJADOR - Últimos registros encontrados: {ultimos_registros.count()}")
     else:
@@ -183,10 +196,26 @@ def escanear_qr(request):
                 'expirado': True
             })
         
-        # Marcar como usado
+        # Marcar como usado y crear registro de escaneo
+        from ventas.models import RegistroEscaneo
+        
         codigo_qr.usado = True
         codigo_qr.fecha_uso = timezone.now()
         codigo_qr.save()
+        
+        # Crear registro del escaneo
+        try:
+            registro = RegistroEscaneo.objects.create(
+                codigo_qr=codigo_qr,
+                usuario_scanner=request.user,
+                exitoso=True,
+                mensaje='Entrada validada correctamente',
+                ip_address=request.META.get('REMOTE_ADDR', ''),
+                dispositivo=request.META.get('HTTP_USER_AGENT', '')
+            )
+            print(f"DEBUG - Registro de escaneo creado: ID {registro.id}")
+        except Exception as e:
+            print(f"DEBUG - Error al crear registro de escaneo: {str(e)}")
         
         return JsonResponse({
             'success': True,

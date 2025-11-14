@@ -172,17 +172,17 @@
                             {% for registro in ultimos_registros %}
                             <tr class="hover:bg-gray-50">
                                 <td class="py-3 px-4 text-sm text-gray-900">
-                                    {{ registro.fecha_uso|date:"d/m/Y" }}
+                                    {{ registro.fecha_escaneo|date:"d/m/Y" }}
                                 </td>
                                 <td class="py-3 px-4 text-sm text-gray-900">
-                                    {{ registro.fecha_uso|time:"H:i" }}
+                                    {{ registro.fecha_escaneo|time:"H:i" }}
                                 </td>
                                 <td class="py-3 px-4 text-sm text-gray-900">
-                                    {{ registro.compra.usuario.nombre }} {{ registro.compra.usuario.apellido|slice:":1" }}.{% for i in "12345" %}*{% endfor %}
+                                    {{ registro.codigo_qr.compra.usuario.nombre }} {{ registro.codigo_qr.compra.usuario.apellido|slice:":1" }}.{% for i in "12345" %}*{% endfor %}
                                 </td>
                                 <td class="py-3 px-4 text-sm text-gray-600">
-                                    {% if registro.compra.detalles.first %}
-                                        {{ registro.compra.detalles.first.tipo_entrada|default:"Entrada General" }}
+                                    {% if registro.codigo_qr.compra.detalles.first %}
+                                        {{ registro.codigo_qr.compra.detalles.first.entrada_tipo.nombre|default:"Entrada General" }}
                                     {% else %}
                                         Entrada General
                                     {% endif %}

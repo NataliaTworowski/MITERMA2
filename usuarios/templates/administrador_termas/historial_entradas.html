@@ -53,8 +53,8 @@
 
         <!-- Estadísticas principales -->
         <div class="max-w-7xl mx-auto px-6 py-8">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <!-- Entradas Vendidas -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <!-- Visitantes (Cantidad de visitantes) -->
                 <div class="bg-white rounded-xl shadow-lg p-6">
                     <div class="flex items-center">
                         <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -63,13 +63,13 @@
                             </svg>
                         </div>
                         <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-600">Entradas Vendidas</p>
-                            <p class="text-2xl font-bold text-gray-900">{{ total_entradas_vendidas }}</p>
+                            <p class="text-sm font-medium text-gray-600">Visitantes</p>
+                            <p class="text-2xl font-bold text-gray-900">{{ total_visitantes }}</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- Entradas Escaneadas -->
+                <!-- Entradas Escaneadas (cantidad de entradas escaneadas) -->
                 <div class="bg-white rounded-xl shadow-lg p-6">
                     <div class="flex items-center">
                         <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -80,6 +80,21 @@
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-600">Entradas Escaneadas</p>
                             <p class="text-2xl font-bold text-gray-900">{{ total_entradas_escaneadas }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Entradas sin escanear -->
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-600">Entradas sin escanear</p>
+                            <p class="text-2xl font-bold text-gray-900">{{ entradas_sin_escanear }}</p>
                         </div>
                     </div>
                 </div>

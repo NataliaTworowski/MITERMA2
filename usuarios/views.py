@@ -1558,6 +1558,38 @@ def historial_entradas(request):
             'servicios_extra__servicio', 
             'entrada_tipo__servicios'
         )
+
+        # Calcular total de visitantes y total de cantidades escaneadas
+        total_visitantes = 0
+        total_cantidades_escaneadas = 0
+        for detalle in entradas_vendidas:
+            compra = detalle.compra
+            codigo_qr = CodigoQR.objects.filter(compra=compra).first()
+            if codigo_qr:
+                escaneo = RegistroEscaneo.objects.filter(
+                    codigo_qr=codigo_qr,
+                    fecha_escaneo__date=fecha_filtro,
+                    exitoso=True,
+                    usuario_scanner__terma=terma
+                ).exists()
+                if escaneo:
+                    total_visitantes += detalle.cantidad
+                    total_cantidades_escaneadas += detalle.cantidad
+
+        # Entradas sin escanear: pagadas, pero sin registro de escaneo exitoso
+        from ventas.models import RegistroEscaneo, CodigoQR
+        entradas_sin_escanear = 0
+        for detalle in entradas_vendidas:
+            compra = detalle.compra
+            codigo_qr = CodigoQR.objects.filter(compra=compra).first()
+            if codigo_qr:
+                escaneo = RegistroEscaneo.objects.filter(
+                    codigo_qr=codigo_qr,
+                    exitoso=True,
+                    usuario_scanner__terma=terma
+                ).exists()
+                if not escaneo:
+                    entradas_sin_escanear += detalle.cantidad
         
 
         # Calcular resumen por tipo de entrada mostrando:
@@ -1617,6 +1649,7 @@ def historial_entradas(request):
         
         # Obtener estadísticas del día
         total_entradas_vendidas = sum(item['total_vendidas'] for item in resumen_entradas)
+        # Entradas escaneadas: cantidad de escaneos únicos (no suma de visitantes)
         total_entradas_escaneadas = escaneos_hoy.count()
         
         # Obtener historial de escaneos de la última semana solo de trabajadores de esta terma
@@ -1690,9 +1723,13 @@ def historial_entradas(request):
             'entradas_detalle': entradas_detalle,
             'escaneos_hoy': escaneos_hoy,
             'escaneos_por_empleado': dict(escaneos_por_empleado),
-            'total_entradas_vendidas': total_entradas_vendidas,
+            'total_entradas_vendidas': total_entradas_vendidas,  # Para compatibilidad
+            'total_visitantes': total_visitantes,
             'total_entradas_escaneadas': total_entradas_escaneadas,
-            'porcentaje_escaneadas': round((total_entradas_escaneadas / total_entradas_vendidas * 100) if total_entradas_vendidas > 0 else 0, 1),
+            'entradas_sin_escanear': entradas_sin_escanear,
+            # Porcentaje de uso: entradas escaneadas / entradas vendidas (sin considerar visitantes)
+            # Porcentaje de uso: sumatoria de cantidades escaneadas / sumatoria de cantidades vendidas
+            'porcentaje_escaneadas': round((total_cantidades_escaneadas / total_entradas_vendidas * 100) if total_entradas_vendidas > 0 else 0, 1),
             'historial_semana': historial_semana,
             'datos_grafico': datos_grafico,
         }
