@@ -1,0 +1,355 @@
+{% load static %}
+{% load precio_filters %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reportes Premium - MiTerma</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js para gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+
+<body class="bg-gray-100 flex">
+    <!-- Sidebar -->
+    {% include 'partials/navbar_adm_termas.html' %}
+
+    <!-- Contenido principal -->
+    <div class="flex-1 ml-0 md:ml-4 min-h-screen">
+        <!-- Header -->
+        <div class="bg-white shadow-sm border-b">
+            <div class="px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">Reportes Premium</h1>
+                        <p class="text-gray-600">Dashboard avanzado con análisis detallados</p>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+                            <i class="fas fa-crown mr-1"></i>
+                            Premium
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contenido -->
+        <div class="p-6">
+            <!-- Selector de fechas -->
+            <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Período de análisis</h2>
+                <form method="get" class="flex flex-col md:flex-row gap-4 items-end">
+                    <div>
+                        <label for="fecha_inicio" class="block text-sm font-medium text-gray-700 mb-2">Fecha inicio</label>
+                        <input type="date" id="fecha_inicio" name="fecha_inicio" 
+                               value="{{ fecha_inicio|default_if_none:'' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="fecha_fin" class="block text-sm font-medium text-gray-700 mb-2">Fecha fin</label>
+                        <input type="date" id="fecha_fin" name="fecha_fin" 
+                               value="{{ fecha_fin|default_if_none:'' }}"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div class="flex gap-2">
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md font-medium transition-colors duration-200">
+                            <i class="fas fa-chart-line mr-2"></i>
+                            Generar Reporte
+                        </button>
+                        {% if reportes_data %}
+                        <a href="{% url 'usuarios:exportar_reporte_csv' %}?fecha_inicio={{ fecha_inicio }}&fecha_fin={{ fecha_fin }}" 
+                           class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md font-medium transition-colors duration-200">
+                            <i class="fas fa-download mr-2"></i>
+                            Exportar CSV
+                        </a>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
+
+            {% if reportes_data %}
+            <!-- KPIs principales -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-blue-100">
+                            <i class="fas fa-dollar-sign text-blue-600"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Ingresos totales</p>
+                            <p class="text-2xl font-bold text-gray-900">${{ reportes_data.total_ingresos|formato_precio }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-green-100">
+                            <i class="fas fa-ticket-alt text-green-600"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Entradas vendidas</p>
+                            <p class="text-2xl font-bold text-gray-900">{{ reportes_data.total_entradas }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-yellow-100">
+                            <i class="fas fa-chart-line text-yellow-600"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Promedio por venta</p>
+                            <p class="text-2xl font-bold text-gray-900">${{ reportes_data.promedio_venta|formato_precio }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-purple-100">
+                            <i class="fas fa-users text-purple-600"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Clientes únicos</p>
+                            <p class="text-2xl font-bold text-gray-900">{{ reportes_data.total_clientes }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Métricas adicionales -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+                <!-- Clientes nuevos vs recurrentes -->
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-indigo-100">
+                            <i class="fas fa-user-plus text-indigo-600"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Clientes nuevos</p>
+                            <p class="text-2xl font-bold text-gray-900">{{ reportes_data.clientes_nuevos }}</p>
+                            <p class="text-xs text-gray-400">{{ reportes_data.clientes_recurrentes }} recurrentes</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Crecimiento de ventas -->
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full {% if reportes_data.crecimiento_positivo %}bg-green-100{% else %}bg-red-100{% endif %}">
+                            <i class="fas {% if reportes_data.crecimiento_positivo %}fa-arrow-up text-green-600{% else %}fa-arrow-down text-red-600{% endif %}"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Crecimiento vs período anterior</p>
+                            <p class="text-2xl font-bold {% if reportes_data.crecimiento_positivo %}text-green-600{% else %}text-red-600{% endif %}">
+                                {% if reportes_data.crecimiento_positivo %}+{% endif %}{{ reportes_data.crecimiento_ventas|floatformat:1 }}%
+                            </p>
+                            <p class="text-xs text-gray-400">${{ reportes_data.ventas_anterior|formato_precio }} anterior</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Distribución de clientes -->
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-teal-100">
+                            <i class="fas fa-chart-pie text-teal-600"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Retención de clientes</p>
+                            <p class="text-2xl font-bold text-gray-900">{{ reportes_data.porcentaje_retencion|floatformat:0 }}%</p>
+                            <p class="text-xs text-gray-400">Clientes que repiten</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Gráficos -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <!-- Gráfico de ventas por día -->
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Ventas por día</h3>
+                    <canvas id="ventasDiariasChart" width="400" height="200"></canvas>
+                </div>
+
+                <!-- Gráfico de tipos de entrada más vendidos -->
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Tipos de entrada más vendidos</h3>
+                    <canvas id="tiposEntradaChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+
+            <!-- Tabla de ventas detalladas -->
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Detalle de ventas</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo de entrada</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cantidad</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Precio Unit.</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subtotal</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Compra</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for venta in reportes_data.ventas_detalle %}
+                                {% for detalle in venta.detalles.all %}
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ venta.fecha_compra|date:"d/m/Y H:i" }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ venta.usuario.nombre }} {{ venta.usuario.apellido }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ detalle.entrada_tipo.nombre }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ detalle.cantidad }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${{ detalle.precio_unitario|formato_precio }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${{ detalle.subtotal|formato_precio }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${{ venta.total|formato_precio }}</td>
+                                </tr>
+                                {% endfor %}
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">No hay datos para el período seleccionado</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {% else %}
+            <!-- Mensaje cuando no hay datos -->
+            <div class="bg-white rounded-lg shadow-sm p-12 text-center">
+                <div class="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                    <i class="fas fa-chart-bar text-2xl text-gray-400"></i>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">Selecciona un período para generar reportes</h3>
+                <p class="text-gray-500">Elige las fechas de inicio y fin para ver los análisis detallados de tu terma</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if reportes_data %}
+    {{ reportes_data.fechas_labels|json_script:"fechas-labels" }}
+    {{ reportes_data.ventas_por_dia|json_script:"ventas-por-dia" }}
+    {{ reportes_data.tipos_entrada_labels|json_script:"tipos-entrada-labels" }}
+    {{ reportes_data.tipos_entrada_data|json_script:"tipos-entrada-data" }}
+    <script>
+    console.log('Iniciando carga de gráficos...');
+    
+    // Gráfico de ventas diarias
+    try {
+        const fechasLabels = JSON.parse(document.getElementById('fechas-labels').textContent);
+        const ventasData = JSON.parse(document.getElementById('ventas-por-dia').textContent);
+        
+        console.log('Fechas labels:', fechasLabels);
+        console.log('Ventas data:', ventasData);
+        
+        if (fechasLabels && ventasData && fechasLabels.length > 0) {
+            const ventasDiariasCtx = document.getElementById('ventasDiariasChart').getContext('2d');
+            new Chart(ventasDiariasCtx, {
+                type: 'line',
+                data: {
+                    labels: fechasLabels,
+                    datasets: [{
+                        label: 'Ventas ($)',
+                        data: ventasData,
+                        borderColor: 'rgb(59, 130, 246)',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            console.log('Gráfico de ventas creado exitosamente');
+        }
+    } catch (error) {
+        console.error('Error en gráfico de ventas:', error);
+    }
+    
+    // Gráfico de tipos de entrada
+    try {
+        const tiposLabels = JSON.parse(document.getElementById('tipos-entrada-labels').textContent);
+        const tiposData = JSON.parse(document.getElementById('tipos-entrada-data').textContent);
+        
+        console.log('Tipos labels:', tiposLabels);
+        console.log('Tipos data:', tiposData);
+        
+        const tiposCanvas = document.getElementById('tiposEntradaChart');
+        const tiposCtx = tiposCanvas.getContext('2d');
+        
+        if (tiposLabels && tiposData && tiposLabels.length > 0 && tiposData.length > 0) {
+            new Chart(tiposCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: tiposLabels,
+                    datasets: [{
+                        data: tiposData,
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.8)',
+                            'rgba(16, 185, 129, 0.8)',
+                            'rgba(245, 158, 11, 0.8)',
+                            'rgba(239, 68, 68, 0.8)',
+                            'rgba(139, 92, 246, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+            console.log('Gráfico de tipos de entrada creado exitosamente');
+        } else {
+            // Mostrar mensaje si no hay datos
+            tiposCtx.font = '16px Arial';
+            tiposCtx.fillStyle = '#9CA3AF';
+            tiposCtx.textAlign = 'center';
+            tiposCtx.textBaseline = 'middle';
+            tiposCtx.fillText('No hay datos para mostrar', tiposCanvas.width / 2, tiposCanvas.height / 2);
+            console.log('No hay datos para tipos de entrada');
+        }
+    } catch (error) {
+        console.error('Error en gráfico de tipos de entrada:', error);
+        const tiposCanvas = document.getElementById('tiposEntradaChart');
+        const tiposCtx = tiposCanvas.getContext('2d');
+        tiposCtx.font = '16px Arial';
+        tiposCtx.fillStyle = '#EF4444';
+        tiposCtx.textAlign = 'center';
+        tiposCtx.textBaseline = 'middle';
+        tiposCtx.fillText('Error al cargar datos', tiposCanvas.width / 2, tiposCanvas.height / 2);
+    }
+    
+    console.log('Carga completada');
+    </script>
+    {% endif %}
+</body>
+</html>

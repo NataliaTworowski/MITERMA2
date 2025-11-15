@@ -82,3 +82,27 @@ def duracion_formato(value):
             return f'{horas} horas'
     except (ValueError, TypeError):
         return f'{value} horas'
+
+@register.filter
+def div(value, arg):
+    """
+    Divide dos números.
+    Ejemplo: {{ 10|div:2 }} -> 5
+    """
+    try:
+        if arg == 0:
+            return 0
+        return float(value) / float(arg)
+    except (ValueError, TypeError, ZeroDivisionError):
+        return 0
+
+@register.filter
+def mul(value, arg):
+    """
+    Multiplica dos números.
+    Ejemplo: {{ 10|mul:2 }} -> 20
+    """
+    try:
+        return float(value) * float(arg)
+    except (ValueError, TypeError):
+        return 0

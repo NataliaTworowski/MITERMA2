@@ -2,6 +2,7 @@ from django.urls import path
 from . import views
 from . import views_cliente
 from . import views_trabajador
+from . import views_reportes
 from . import api
 
 app_name = 'usuarios'
@@ -30,6 +31,10 @@ urlpatterns = [
     path('historial-entradas/', views.historial_entradas, name='historial_entradas'),
     path('vincular-mercadopago/', views.vincular_mercadopago, name='vincular_mercadopago'),
     path('mercadopago-callback/', views.mercadopago_callback, name='mercadopago_callback'),
+    
+    # URLs para reportes premium
+    path('reportes-premium/', views_reportes.reportes_premium, name='reportes_premium'),
+    path('exportar-reporte-csv/', views_reportes.exportar_reporte_csv, name='exportar_reporte_csv'),
     
     # URLs para trabajadores/operadores
     path('trabajador/', views_trabajador.inicio_trabajador, name='inicio_trabajador'),

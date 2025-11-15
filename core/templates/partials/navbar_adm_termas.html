@@ -58,6 +58,19 @@
                     <span>Análisis</span>
                 </a>
             </li>
+            
+            <!-- Botón Reportes Premium -->
+            {% if usuario and usuario.terma and usuario.terma.plan_actual and usuario.terma.plan_actual.nombre == 'premium' %}
+            <li>
+                <a href="{% url 'usuarios:reportes_premium' %}" class="flex items-center space-x-3 px-4 py-3 rounded-lg {% if request.resolver_match.url_name == 'reportes_premium' %}bg-orange-100 text-orange-700 font-bold{% else %}hover:bg-orange-50 hover:text-orange-700 transition-colors duration-200{% endif %}">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"></path>
+                    </svg>
+                    <span>Reportes</span>
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Premium</span>
+                </a>
+            </li>
+            {% endif %}
             <li>
                 <a href="{% url 'termas:calendario_termas' %}" class="flex items-center space-x-3 px-4 py-3 rounded-lg {% if request.resolver_match.url_name == 'calendario_termas' %}bg-orange-100 text-orange-700 font-bold{% else %}hover:bg-orange-50 hover:text-orange-700 transition-colors duration-200{% endif %}">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
