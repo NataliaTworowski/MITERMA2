@@ -1,15 +1,13 @@
 <!-- Modal de Registro -->
-<div id="registerModal" class="fixed inset-0 bg-gradient-to-br from-blue-500/60 via-blue-200/40 to-white/80 backdrop-blur-lg hidden z-50 flex items-center justify-center p-2 md:p-8">
-    <div class="bg-white/90 rounded-3xl shadow-2xl w-full max-w-2xl transform transition-all duration-500 scale-95 opacity-0 border border-blue-100" id="registerModalContent">
+<div id="registerModal" class="fixed inset-0 bg-black/30 backdrop-blur-sm hidden z-50 flex items-center justify-center p-2 md:p-8">
+    <div class="bg-[#f6f3ee] rounded-2xl shadow-2xl w-full max-w-2xl transform transition-all duration-500 scale-95 opacity-0" id="registerModalContent">
         <!-- Header del Modal -->
-        <div class="bg-gradient-to-r from-blue-700 via-blue-500 to-blue-400 rounded-t-3xl p-7 text-center relative shadow-lg">
-            <h2 class="text-3xl font-extrabold text-white mb-1 tracking-wide drop-shadow">Crear Cuenta</h2>
-            <p class="text-blue-100 text-base mb-1">Únete a la familia <span class="font-semibold">MiTerma</span></p>
+        <div class="rounded-t-2xl p-7 text-center relative">
+            <h2 class="text-3xl font-bold text-gray-800 mb-2">Crear Cuenta</h2>
+            <p class="text-gray-500 text-base mb-1">Únete a la familia <span class="font-semibold">MiTerma</span></p>
             <!-- Botón cerrar -->
-            <button onclick="closeRegisterModal()" class="absolute top-5 right-5 text-white hover:text-blue-200 transition-colors duration-200 bg-blue-500/40 rounded-full p-1.5 shadow-md">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                </svg>
+            <button onclick="closeRegisterModal()" class="absolute top-5 right-5 text-gray-400 hover:text-gray-700 text-xl">
+                &times;
             </button>
         </div>
         
@@ -20,9 +18,9 @@
                 <!-- Nombre y Apellido -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label for="register_nombre" class="block text-sm font-semibold text-gray-700 mb-2">
+                        <label for="register_nombre" class="block text-gray-700 font-semibold mb-2">
                             <span class="inline-flex items-center gap-2">
-                                <svg class="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                <svg class="w-5 h-5 text-[#3b7c6e]" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
                                 </svg>
                                 Nombre *
@@ -34,14 +32,14 @@
                             name="nombre" 
                             required 
                             maxlength="50"
-                            class="w-full px-4 py-3 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-300 bg-blue-50/60 focus:bg-white shadow-sm placeholder:text-blue-300" 
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-300 focus:outline-none bg-white placeholder:text-gray-400" 
                             placeholder="Tu nombre"
                         >
                     </div>
                     <div>
-                        <label for="register_apellido" class="block text-sm font-semibold text-gray-700 mb-2">
+                        <label for="register_apellido" class="block text-gray-700 font-semibold mb-2">
                             <span class="inline-flex items-center gap-2">
-                                <svg class="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                                <svg class="w-5 h-5 text-[#3b7c6e]" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
                                 </svg>
                                 Apellido *
@@ -53,16 +51,16 @@
                             name="apellido" 
                             required 
                             maxlength="50"
-                            class="w-full px-4 py-3 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-300 bg-blue-50/60 focus:bg-white shadow-sm placeholder:text-blue-300" 
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-300 focus:outline-none bg-white placeholder:text-gray-400" 
                             placeholder="Tu apellido"
                         >
                     </div>
                 </div>
                 <!-- Email -->
                 <div>
-                    <label for="register_email" class="block text-sm font-semibold text-gray-700 mb-2">
+                    <label for="register_email" class="block text-gray-700 font-semibold mb-2">
                         <span class="inline-flex items-center gap-2">
-                            <svg class="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                            <svg class="w-5 h-5 text-[#3b7c6e]" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path>
                                 <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path>
                             </svg>
@@ -76,10 +74,10 @@
                             name="email" 
                             required 
                             maxlength="100"
-                            class="w-full px-4 py-3 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-300 bg-blue-50/60 focus:bg-white shadow-sm placeholder:text-blue-300" 
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-300 focus:outline-none bg-white placeholder:text-gray-400" 
                             placeholder="tu@email.com"
                         >
-                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-blue-300">
+                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
                             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path>
                                 <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path>
@@ -89,9 +87,9 @@
                 </div>
                 <!-- Teléfono -->
                 <div>
-                    <label for="register_telefono" class="block text-sm font-semibold text-gray-700 mb-2">
+                    <label for="register_telefono" class="block text-gray-700 font-semibold mb-2">
                         <span class="inline-flex items-center gap-2">
-                            <svg class="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                            <svg class="w-5 h-5 text-[#3b7c6e]" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"></path>
                             </svg>
                             Teléfono (opcional)
@@ -102,15 +100,15 @@
                         id="register_telefono" 
                         name="telefono" 
                         maxlength="20"
-                        class="w-full px-4 py-3 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-300 bg-blue-50/60 focus:bg-white shadow-sm placeholder:text-blue-300" 
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-300 focus:outline-none bg-white placeholder:text-gray-400" 
                         placeholder="+56 9 1234 5678"
                     >
                 </div>
                 <!-- Contraseña -->
                 <div>
-                    <label for="register_password" class="block text-sm font-semibold text-gray-700 mb-2">
+                    <label for="register_password" class="block text-gray-700 font-semibold mb-2">
                         <span class="inline-flex items-center gap-2">
-                            <svg class="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                            <svg class="w-5 h-5 text-[#3b7c6e]" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
                             </svg>
                             Contraseña *
@@ -123,10 +121,10 @@
                             name="password" 
                             required 
                             minlength="8"
-                            class="w-full px-4 py-3 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-300 bg-blue-50/60 focus:bg-white pr-12 shadow-sm placeholder:text-blue-300" 
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-300 focus:outline-none bg-white pr-12 placeholder:text-gray-400" 
                             placeholder="Mínimo 8 caracteres"
                         >
-                        <button type="button" onclick="toggleRegisterPassword('register_password', 'registerEyeIcon')" class="absolute right-3 top-1/2 -translate-y-1/2 text-blue-300 hover:text-blue-500 transition-colors duration-200">
+                        <button type="button" onclick="toggleRegisterPassword('register_password', 'registerEyeIcon')" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-green-600">
                             <svg id="registerEyeIcon" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"></path>
                                 <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"></path>
@@ -137,9 +135,9 @@
                 </div>
                 <!-- Confirmar Contraseña -->
                 <div>
-                    <label for="register_password_confirm" class="block text-sm font-semibold text-gray-700 mb-2">
+                    <label for="register_password_confirm" class="block text-gray-700 font-semibold mb-2">
                         <span class="inline-flex items-center gap-2">
-                            <svg class="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                            <svg class="w-5 h-5 text-[#3b7c6e]" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
                             </svg>
                             Confirmar Contraseña *
@@ -151,10 +149,10 @@
                             id="register_password_confirm" 
                             name="password_confirm" 
                             required 
-                            class="w-full px-4 py-3 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-300 bg-blue-50/60 focus:bg-white pr-12 shadow-sm placeholder:text-blue-300" 
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-300 focus:outline-none bg-white pr-12 placeholder:text-gray-400" 
                             placeholder="Repite tu contraseña"
                         >
-                        <button type="button" onclick="toggleRegisterPassword('register_password_confirm', 'registerEyeIconConfirm')" class="absolute right-3 top-1/2 -translate-y-1/2 text-blue-300 hover:text-blue-500 transition-colors duration-200">
+                        <button type="button" onclick="toggleRegisterPassword('register_password_confirm', 'registerEyeIconConfirm')" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-green-600">
                             <svg id="registerEyeIconConfirm" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"></path>
                                 <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"></path>
@@ -165,7 +163,7 @@
                 <!-- Botón de envío -->
                 <button 
                     type="submit" 
-                    class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 rounded-xl font-bold text-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 tracking-wide flex items-center justify-center gap-2"
+                    class="w-full bg-[#3b7c6e] hover:bg-[#2e6357] text-white py-3 rounded-lg font-bold text-lg transition-all duration-300 shadow-md flex items-center justify-center gap-2"
                 >
                     <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
                         <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z"></path>
@@ -175,15 +173,15 @@
             </form>
             <!-- Divider -->
             <div class="my-7 flex items-center">
-                <div class="flex-grow border-t border-blue-200"></div>
-                <span class="px-4 text-sm text-blue-400 font-semibold">o</span>
-                <div class="flex-grow border-t border-blue-200"></div>
+                <div class="flex-grow border-t border-gray-300"></div>
+                <span class="px-4 text-sm text-gray-400 font-semibold">O</span>
+                <div class="flex-grow border-t border-gray-300"></div>
             </div>
             <!-- Login -->
             <div class="text-center">
-                <p class="text-gray-600">¿Ya tienes cuenta?</p>
-                <a href="#" onclick="closeRegisterModal(); openLoginModal();" class="text-blue-600 hover:text-blue-700 font-bold transition-colors duration-200 underline underline-offset-2">
-                    Inicia sesión aquí
+                <span class="text-gray-500">¿Ya tienes cuenta?</span>
+                <a href="#" onclick="closeRegisterModal(); openLoginModal();" class="text-green-700 hover:text-green-900 font-bold ml-1">
+                    Inicia sesión
                 </a>
             </div>
         </div>

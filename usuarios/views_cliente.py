@@ -137,8 +137,18 @@ def mostrar_entradas(request):
         usuario_id=usuario.id,
         estado_pago='pagado',
         visible=True
-    ).order_by('-fecha_compra').select_related(
-        'terma', 'codigoqr'  # Incluir la relación con CodigoQR
+    )
+
+    # Filtrado por fechas
+    fecha_inicio = request.GET.get('fecha_inicio')
+    fecha_fin = request.GET.get('fecha_fin')
+    if fecha_inicio:
+        compras = compras.filter(fecha_compra__date__gte=fecha_inicio)
+    if fecha_fin:
+        compras = compras.filter(fecha_compra__date__lte=fecha_fin)
+
+    compras = compras.order_by('-fecha_compra').select_related(
+        'terma', 'codigoqr'
     ).prefetch_related('detalles', 'detalles__entrada_tipo', 'detalles__servicios')
     
     context = {
