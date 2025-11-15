@@ -380,9 +380,17 @@ def inicio_cliente(request):
             termas_qs = termas_qs.filter(comuna__id=comuna)
         
         # Filtrar solo termas que tienen entradas definidas
+        # No filtramos por disponibilidad aquí porque las reservas son para fechas futuras
+        
         termas_con_entradas = []
         for terma in termas_qs:
-            if terma.entradatipo_set.filter(estado=True).exists():
+            # Verificar que tenga tipos de entrada activos
+            if not terma.entradatipo_set.filter(estado=True).exists():
+                continue
+                
+            # Solo verificar que la terma tenga límite configurado (si no, disponibilidad ilimitada)
+            # La verificación de disponibilidad específica se hará al seleccionar fecha de visita
+            if terma.limite_ventas_diario is None or terma.limite_ventas_diario > 0:
                 termas_con_entradas.append(terma)
         
         orden = request.GET.get('orden', 'recientes')
@@ -403,13 +411,21 @@ def inicio_cliente(request):
         termas_premium = Terma.objects.filter(
             estado_suscripcion="activa",
             plan_actual__nombre="premium"
-        ).select_related('comuna__region', 'plan_actual').prefetch_related('imagenes')[:12]  # 12 para 3 slides de 4
+        ).select_related('comuna__region', 'plan_actual').prefetch_related('imagenes')
         
-        # Termas populares (calificación >= 4.0) 
+        # Solo filtrar que tengan entradas activas
+        termas_premium = [t for t in termas_premium if t.entradatipo_set.filter(estado=True).exists()]
+        termas_premium = termas_premium[:12]  # Máximo 12 para 3 slides de 4
+        
+        # Termas populares (calificación >= 4.0)
         termas_populares = Terma.objects.filter(
             estado_suscripcion="activa",
             calificacion_promedio__gte=4.0
-        ).select_related('comuna__region').prefetch_related('imagenes').order_by('-calificacion_promedio')[:4]
+        ).select_related('comuna__region').prefetch_related('imagenes').order_by('-calificacion_promedio')
+        
+        # Solo filtrar que tengan entradas activas
+        termas_populares = [t for t in termas_populares if t.entradatipo_set.filter(estado=True).exists()]
+        termas_populares = termas_populares[:4]
         
         context = {
             'title': 'Inicio - MiTerma',
@@ -547,6 +563,7 @@ def adm_termas(request):
         if terma:
             from ventas.models import Compra
             from datetime import date
+            from ventas.disponibilidad_utils import calcular_disponibilidad_terma
             
             # Calcular métricas usando los métodos del modelo
             terma.ingresos_totales = terma.ingresos_totales()
@@ -557,6 +574,9 @@ def adm_termas(request):
             terma.calificacion_promedio = terma.calificacion_promedio or 0
             terma.total_calificaciones = terma.total_calificaciones()
             
+            # Calcular disponibilidad para hoy
+            disponibilidad_hoy = calcular_disponibilidad_terma(terma.id, date.today())
+            
             # Reservas de hoy 
             reservas_hoy = Compra.objects.filter(
                 terma=terma, 
@@ -565,6 +585,7 @@ def adm_termas(request):
             ).count()
         else:
             reservas_hoy = 0
+            disponibilidad_hoy = None
         
         context = {
             'title': f'Administrador - {terma.nombre_terma if terma else "Mi Terma"}',
@@ -582,6 +603,7 @@ def adm_termas(request):
                 'servicios_populares': terma.servicios_populares(),
                 'filtro_actual': filtro_comentarios,
                 'reservas_hoy': reservas_hoy,
+                'disponibilidad_hoy': disponibilidad_hoy,
             })
         
         # Log de acceso exitoso
@@ -594,6 +616,48 @@ def adm_termas(request):
         messages.error(request, 'Ocurrió un error al cargar el dashboard.')
         return redirect('core:home')
 
+
+@admin_terma_required
+def limpiar_compras_hoy(request):
+    """
+    Vista AJAX para limpiar las compras de hoy (útil para pruebas)
+    """
+    import json
+    from datetime import date
+    from django.views.decorators.http import require_http_methods
+    from django.views.decorators.csrf import csrf_exempt
+    
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': 'Método no permitido'})
+    
+    try:
+        usuario = request.user
+        terma = usuario.terma
+        
+        if not terma:
+            return JsonResponse({'success': False, 'message': 'No tienes una terma asignada'})
+        
+        # Eliminar compras de hoy para esta terma
+        from ventas.models import Compra
+        compras_hoy = Compra.objects.filter(
+            terma=terma,
+            fecha_visita=date.today()
+        )
+        
+        cantidad_eliminadas = compras_hoy.count()
+        compras_hoy.delete()
+        
+        logger.info(f"Compras de hoy limpiadas por {usuario.email} - Terma: {terma.nombre_terma} - Cantidad: {cantidad_eliminadas}")
+        
+        return JsonResponse({
+            'success': True, 
+            'message': f'Se eliminaron {cantidad_eliminadas} compras de hoy',
+            'cantidad': cantidad_eliminadas
+        })
+        
+    except Exception as e:
+        logger.error(f"Error limpiando compras de hoy para usuario {request.user.email}: {str(e)}")
+        return JsonResponse({'success': False, 'message': 'Error interno del servidor'})
 
 
 @admin_general_required

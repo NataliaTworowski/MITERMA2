@@ -48,6 +48,9 @@ def formato_precio(value):
         return '0'
     
     try:
+        # Manejar strings que pueden tener formato "1350.00" o "1350,00"
+        if isinstance(value, str):
+            value = value.replace(',', '.')
         numero = int(float(value))
         return f"{numero:,}".replace(',', '.')
     except (ValueError, TypeError):

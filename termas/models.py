@@ -197,18 +197,12 @@ class Terma(models.Model):
     
     def verificar_disponibilidad_diaria(self, fecha):
         """Verifica si hay disponibilidad para la fecha especificada"""
-        from ventas.models import DetalleCompra
-        from django.db.models import Sum
+        from ventas.disponibilidad_utils import calcular_disponibilidad_terma
         
-        # Obtener el total de entradas vendidas para esa fecha
-        ventas_dia = DetalleCompra.objects.filter(
-            entrada_tipo__terma=self,
-            entrada_tipo__fecha=fecha,
-            compra__estado_pago='pagado'
-        ).aggregate(total=Sum('cantidad'))['total'] or 0
+        # Usar el nuevo sistema centralizado de disponibilidad
+        disponibilidad = calcular_disponibilidad_terma(self.id, fecha)
         
-        # Verificar si hay disponibilidad
-        return ventas_dia < self.limite_ventas_diario, self.limite_ventas_diario - ventas_dia
+        return disponibilidad['puede_vender'], disponibilidad['disponibles']
 
     def calificaciones_recientes(self, limite=5):
         """Retorna las calificaciones más recientes"""

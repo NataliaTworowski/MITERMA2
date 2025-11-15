@@ -488,18 +488,62 @@ def editar_terma(request):
             descripcion = request.POST.get('descripcion_terma', '').strip()
             limite_ventas = request.POST.get('limite_ventas_diario')
             
+            print(f"[DEBUG EDITAR TERMA] Usuario: {usuario.email}")
+            print(f"[DEBUG EDITAR TERMA] Terma actual: {terma.nombre_terma}")
+            print(f"[DEBUG EDITAR TERMA] Límite actual en DB: {terma.limite_ventas_diario}")
+            print(f"[DEBUG EDITAR TERMA] Límite recibido del form: {limite_ventas}")
+            print(f"[DEBUG EDITAR TERMA] POST data: {dict(request.POST)}")
+            
             terma.descripcion_terma = descripcion
             if limite_ventas and limite_ventas.isdigit():
                 limite_ventas = int(limite_ventas)
+                print(f"[DEBUG EDITAR TERMA] Límite convertido a int: {limite_ventas}")
                 if 1 <= limite_ventas <= 1000:
                     terma.limite_ventas_diario = limite_ventas
+                    print(f"[DEBUG EDITAR TERMA] Asignando nuevo límite: {limite_ventas}")
                 else:
+                    print(f"[DEBUG EDITAR TERMA] Límite fuera de rango: {limite_ventas}")
                     messages.error(request, 'El límite de ventas debe estar entre 1 y 1000.')
                     return redirect('termas:editar_terma')
+            else:
+                print(f"[DEBUG EDITAR TERMA] Límite inválido o vacío: '{limite_ventas}'")
+            
+            print(f"[DEBUG EDITAR TERMA] Guardando terma...")
+            terma.save()
+            print(f"[DEBUG EDITAR TERMA] Límite después de guardar: {terma.limite_ventas_diario}")
             
             terma.save()
+            
+            # Limpiar cache de la terma y forzar recarga
+            from django.core.cache import cache
+            cache.delete(f'terma_{terma.id}')
+            
+            # Refrescar el objeto terma desde la base de datos
+            terma.refresh_from_db()
+            print(f"[DEBUG EDITAR TERMA] Límite después de refresh_from_db: {terma.limite_ventas_diario}")
+            
+            # También refrescar el usuario para asegurar datos actualizados
+            usuario.refresh_from_db()
+            
+            print(f"[DEBUG EDITAR TERMA] Enviando respuesta con límite: {terma.limite_ventas_diario}")
+            
             messages.success(request, 'Información de la terma actualizada correctamente.')
-            return redirect('termas:editar_terma')
+            
+            # En lugar de redirect, renderizar directamente con datos actualizados
+            context = {
+                'title': 'Editar Terma - MiTerma',
+                'usuario': usuario,
+                'terma': terma,
+                'servicios': terma.servicios.all(),
+                'actualizado': True,  # Flag para indicar que se actualizó
+                'nuevo_limite': terma.limite_ventas_diario  # Pasar el nuevo valor
+            }
+            return render(request, 'administrador_termas/editar_terma.html', context)
+        
+        # Para GET request - asegurarse de tener datos frescos
+        terma.refresh_from_db()
+        print(f"[DEBUG EDITAR TERMA GET] Cargando página con límite: {terma.limite_ventas_diario}")
+        
         context = {
             'title': 'Editar Terma - MiTerma',
             'usuario': usuario,
@@ -1050,14 +1094,6 @@ def suscripcion(request):
 
 def cambiar_suscripcion(request):
     """Vista para cambiar la suscripción de una terma existente."""
-    # Debug: verificar autenticación
-    print(f"DEBUG - Usuario autenticado: {request.user.is_authenticated}")
-    print(f"DEBUG - Sesión tiene usuario_id: {'usuario_id' in request.session}")
-    
-    if request.user.is_authenticated:
-        print(f"DEBUG - Usuario: {request.user}")
-        print(f"DEBUG - Tipo de usuario: {request.user.tipo_usuario}")
-        print(f"DEBUG - ID de usuario: {request.user.id}")
     
     # Verificar autenticación (usando el sistema de sesiones personalizado)
     if not request.user.is_authenticated and 'usuario_id' not in request.session:
@@ -1076,20 +1112,17 @@ def cambiar_suscripcion(request):
     
     # Verificar que el usuario tenga una terma asociada
     try:
-        # Obtener la primera terma activa del usuario (en caso de múltiples)
-        terma = Terma.objects.filter(administrador=usuario, estado_suscripcion='activa').first()
+        # Usar la relación directa terma del usuario primero
+        terma = usuario.terma
         if not terma:
-            # Si no hay termas activas, buscar cualquier terma del usuario
+            # Si no hay terma directa, buscar por administrador
             terma = Terma.objects.filter(administrador=usuario).first()
         
         if not terma:
-            print(f"DEBUG - No se encontró terma para el usuario {usuario.id}")
             messages.error(request, 'No tienes una terma asociada a tu cuenta.')
             return redirect('core:planes')
-        
-        print(f"DEBUG - Terma encontrada: {terma.nombre_terma}")
+            
     except Exception as e:
-        print(f"DEBUG - Error al buscar terma: {str(e)}")
         messages.error(request, 'Error al acceder a la información de tu terma.')
         return redirect('core:planes')
     

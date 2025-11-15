@@ -53,24 +53,17 @@ def mostrar_termas(request):
         except (ValueError, TypeError):
             pass
     
-    # Obtener termas finales
-    termas_todas = termas_query.prefetch_related(
+    # Obtener termas finales con disponibilidad
+    termas_raw = termas_query.prefetch_related(
         'entradatipo_set',
         'imagenes',  
         'calificacion_set',
         'comuna__region'
     ).distinct()
     
-    # Si no hay filtros, mostrar todas las termas
-    # Si hay filtros, mostrar los resultados filtrados
-    hay_filtros = any([comuna_filtro, region_filtro, calificacion_filtro, precio_min, precio_max])
-    
-    if not hay_filtros:
-        # Mostrar todas las termas cuando no hay filtros
-        termas = list(termas_todas)
-    else:
-        # Mostrar todas las termas filtradas
-        termas = list(termas_todas)
+    # Las termas se mostrarán independiente de la disponibilidad del día actual
+    # La verificación de disponibilidad se hará al seleccionar fecha de visita
+    termas = termas_raw
     
     context = {
         'usuario': request.user,
@@ -82,11 +75,13 @@ def mostrar_termas(request):
 
 def home(request):
     """Vista principal del sitio."""
+    
+    # Obtener termas destacadas
     termas_destacadas = Terma.objects.prefetch_related(
         'entradatipo_set',
         'imagenes',  
         'calificacion_set'
-    ).select_related('comuna__region').all()[:3]
+    ).select_related('comuna__region').all()[:3]  # Primeras 3 termas
     
     context = {
         'title': 'Inicio - MiTerma',

@@ -13,6 +13,7 @@ urlpatterns = [
     path('inicio/', views.inicio, name='inicio'),
     path('registro/', views.registro_usuario, name='registro'),
     path('adm_termas/', views.adm_termas, name='adm_termas'),
+    path('limpiar-compras-hoy/', views.limpiar_compras_hoy, name='limpiar_compras_hoy'),
     path('reset-password/', views.reset_password, name='reset_password'),
     path('reset-password-confirm/', views.reset_password_confirm, name='reset_password_confirm'),
     path('cambiar-password-temporal/', views.cambiar_password_temporal, name='cambiar_password_temporal'), 

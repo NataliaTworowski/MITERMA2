@@ -1,4 +1,5 @@
 {% load static %}
+{% load precio_filters %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -31,7 +32,8 @@
                 <div class="flex justify-between py-2 border-b border-gray-200"><span class="text-gray-600">Fecha de visita</span> <span class="font-semibold">{{ fecha }}</span></div>
                 {% endif %}
                 {% if precio %}
-                <div class="flex justify-between py-2 border-b border-gray-200"><span class="text-gray-600">Precio unitario</span> <span class="font-semibold">${{ precio }}</span></div>
+                <div class="flex justify-between py-2 border-b border-gray-200"><span class="text-gray-600">Precio unitario</span> <span class="font-semibold">${{ precio|formato_precio }}</span></div>
+                <!-- Debug: {{ precio }} -->
                 {% endif %}
                 {% if incluidos %}
                 <div class="flex justify-between py-2 border-b border-gray-200"><span class="text-gray-600">Servicios incluidos</span> <span class="font-semibold">{{ incluidos }}</span></div>
@@ -41,7 +43,7 @@
                 {% endif %}
             </div>
             {% if total %}
-            <div class="bg-gray-50 py-6 mb-8 rounded-xl text-2xl font-bold text-blue-700 border border-gray-200">Total: ${{ total }}</div>
+            <div class="bg-gray-50 py-6 mb-8 rounded-xl text-2xl font-bold text-blue-700 border border-gray-200">Total: ${{ total|formato_precio }}</div>
             {% endif %}
             <form method="post">
                 {% csrf_token %}

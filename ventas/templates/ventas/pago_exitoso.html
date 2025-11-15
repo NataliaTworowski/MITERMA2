@@ -1,4 +1,5 @@
 {% load static %}
+{% load precio_filters %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -63,7 +64,7 @@
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-gray-600">Monto pagado</span>
-                        <span class="font-semibold text-gray-900">${{ compra.monto_pagado|floatformat:0 }}</span>
+                        <span class="font-semibold text-gray-900">${{ compra.monto_pagado|formato_precio }}</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-gray-600">ID de pago</span>

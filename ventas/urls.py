@@ -1,12 +1,19 @@
 from django.urls import path
 from . import views
 from . import api
+from . import api_disponibilidad
 
 app_name = 'ventas'
 
 urlpatterns = [
     # API endpoints
     path('api/validar-qr/', api.ValidarEntradaQRView.as_view(), name='validar_qr'),
+    
+    # APIs de disponibilidad
+    path('api/disponibilidad/', api_disponibilidad.VerificarDisponibilidadView.as_view(), name='verificar_disponibilidad'),
+    path('api/termas-disponibles/', api_disponibilidad.TermasDisponiblesView.as_view(), name='termas_disponibles'),
+    path('api/limpiar-compras-vencidas/', api_disponibilidad.limpiar_compras_vencidas_api, name='limpiar_compras_vencidas'),
+    path('api/estadisticas-disponibilidad/', api_disponibilidad.estadisticas_disponibilidad, name='estadisticas_disponibilidad'),
     
     path('pago/<int:terma_id>/', views.pago, name='pago'),
     path('pago/success/', views.pago_exitoso, name='pago_exitoso'),

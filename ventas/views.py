@@ -271,19 +271,20 @@ def pago(request, terma_id=None):
             datos['compra_error'] = "La entrada seleccionada no es válida."
             return render(request, 'ventas/pago.html', datos)
 
-        # Verificar disponibilidad para la fecha seleccionada
-        fecha_visita = datos.get('fecha')
-        if fecha_visita:
+        # Verificar disponibilidad usando el nuevo sistema centralizado
+        fecha_visita_para_validacion = datos.get('fecha')
+        if fecha_visita_para_validacion:
             from datetime import datetime
-            fecha_visita = datetime.strptime(fecha_visita, '%Y-%m-%d').date()
-            hay_disponibilidad, cupos_restantes = terma.verificar_disponibilidad_diaria(fecha_visita)
+            from ventas.disponibilidad_utils import validar_cantidad_disponible
             
+            fecha_visita_obj = datetime.strptime(fecha_visita_para_validacion, '%Y-%m-%d').date()
             cantidad_solicitada = int(datos.get('cantidad_entradas', 1))
-            if not hay_disponibilidad:
-                datos['compra_error'] = "Lo sentimos, no hay disponibilidad para la fecha seleccionada."
-                return render(request, 'ventas/pago.html', datos)
-            elif cantidad_solicitada > cupos_restantes:
-                datos['compra_error'] = f"Solo quedan {cupos_restantes} cupos disponibles para la fecha seleccionada."
+            
+            # Usar solo nuestro sistema de validación de disponibilidad
+            validacion = validar_cantidad_disponible(terma.id, cantidad_solicitada, fecha_visita_obj)
+            
+            if not validacion['es_valida']:
+                datos['compra_error'] = validacion['mensaje']
                 return render(request, 'ventas/pago.html', datos)
 
             # CREAR LA COMPRA ANTES de generar la preferencia (solo si no existe una)
@@ -317,11 +318,6 @@ def pago(request, terma_id=None):
                     if not entrada_tipo:
                         raise ValueError("No se pudo crear la entrada para la fecha especificada")
 
-                    # Verificar disponibilidad
-                    cantidad_solicitada = int(datos['cantidad_entradas'])
-                    if not entrada_tipo.tiene_cupos_suficientes(cantidad_solicitada):
-                        raise ValueError(f"Solo quedan {entrada_tipo.cupos_disponibles or 0} cupos disponibles para esta fecha")
-
                 except Exception as e:
                     raise ValueError(f"Error al obtener o crear la entrada para la fecha: {str(e)}")
                 
@@ -333,6 +329,7 @@ def pago(request, terma_id=None):
                         raise ValueError("La cantidad debe ser mayor a 0")
                     subtotal = precio_unitario * cantidad
                 except (ValueError, TypeError) as e:
+                    raise ValueError(f"Error en los datos de precio o cantidad: {str(e)}")
                     raise ValueError(f"Error en los datos de precio o cantidad: {str(e)}")
 
                 # Crear la compra

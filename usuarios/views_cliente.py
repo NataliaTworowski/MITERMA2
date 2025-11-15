@@ -133,7 +133,7 @@ def mostrar_entradas(request):
     # El decorador ya verificó que el usuario está autenticado y es cliente
     usuario = request.user
     
-    compras = Compra.objects.filter(
+    compras_qs = Compra.objects.filter(
         usuario_id=usuario.id,
         estado_pago='pagado',
         visible=True
@@ -143,17 +143,31 @@ def mostrar_entradas(request):
     fecha_inicio = request.GET.get('fecha_inicio')
     fecha_fin = request.GET.get('fecha_fin')
     if fecha_inicio:
-        compras = compras.filter(fecha_compra__date__gte=fecha_inicio)
+        compras_qs = compras_qs.filter(fecha_compra__date__gte=fecha_inicio)
     if fecha_fin:
-        compras = compras.filter(fecha_compra__date__lte=fecha_fin)
+        compras_qs = compras_qs.filter(fecha_compra__date__lte=fecha_fin)
 
-    compras = compras.order_by('-fecha_compra').select_related(
+    compras_qs = compras_qs.order_by('-fecha_compra').select_related(
         'terma', 'codigoqr'
     ).prefetch_related('detalles', 'detalles__entrada_tipo', 'detalles__servicios')
-    
+
+    # Paginación
+    from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+    paginator = Paginator(compras_qs, 10)  # 10 compras por página
+    page = request.GET.get('page')
+    try:
+        compras = paginator.page(page)
+    except PageNotAnInteger:
+        compras = paginator.page(1)
+    except EmptyPage:
+        compras = paginator.page(paginator.num_pages)
+
     context = {
         'title': 'Mis Entradas - MiTerma',
         'compras': compras,
+        'paginator': paginator,
+        'page_obj': compras,
+        'is_paginated': compras.has_other_pages(),
     }
     return render(request, 'clientes/mis_entradas.html', context)
 
