@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error 403 - Acceso Prohibido | MiTerma</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+    <div class="max-w-md w-full mx-4">
+        <div class="bg-white rounded-2xl shadow-xl p-8 text-center">
+            <!-- Icono de error -->
+            <div class="mb-6">
+                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
+                    <svg class="h-8 w-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                    </svg>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">Error 403</h1>
+                <h2 class="text-xl text-gray-600 mb-4">Acceso Prohibido</h2>
+            </div>
+
+            <div class="mb-8">
+                <p class="text-gray-600 text-base leading-relaxed mb-4">
+                    No tienes permisos para acceder a esta página o recurso.
+                </p>
+                <p class="text-gray-600 text-sm">
+                    Si crees que esto es un error, contacta al administrador o inicia sesión con una cuenta autorizada.
+                </p>
+            </div>
+
+            <!-- Botones de acción -->
+            <div class="space-y-3">
+                <a href="/usuarios/inicio/" class="block w-full bg-blue-500 hover:bg-blue-600 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+                    Iniciar Sesión
+                </a>
+                <a href="/" class="block w-full bg-gray-200 hover:bg-gray-300 text-gray-700 py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+                    Ir al Inicio
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

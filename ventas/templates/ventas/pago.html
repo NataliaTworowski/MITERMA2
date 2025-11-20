@@ -8,8 +8,12 @@
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 text-gray-800 min-h-screen">
-    {% include 'partials/navbar_usuario2.html' %}
-    <div class="flex items-center justify-center min-h-screen p-4">
+    {% if user.is_authenticated %}
+        {% include 'partials/navbar_usuario2.html' %}
+    {% else %}
+        {% include 'partials/navbar.html' with navbar_mode='termas_only' %}
+    {% endif %}
+    <div class="flex items-center justify-center min-h-screen p-4 {% if not user.is_authenticated %}mt-20{% endif %}">
         <div class="w-full max-w-xl bg-white rounded-2xl shadow-xl p-10 text-center mx-auto my-8">
             {% if compra_error %}
             <div class="mb-4 p-4 bg-red-100 text-red-700 rounded-lg font-bold">

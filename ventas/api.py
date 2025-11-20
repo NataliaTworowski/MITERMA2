@@ -193,7 +193,7 @@ class ValidarEntradaQRView(View):
                         }, status=403)
                     
                     if compra.terma != user.terma:
-                        logger.warning(f"Intento de validar entrada de terma incorrecta - Usuario: {user.email} (terma: {user.terma.nombre_terma}), Entrada: compra {compra.id} (terma: {compra.terma.nombre_terma})")
+                        logger.warning("Intento de validar entrada de terma incorrecta")
                         return JsonResponse({
                             'valid': False,
                             'error': 'Terma incorrecta',

@@ -18,6 +18,9 @@ from django.conf import settings
 from django.core.signing import TimestampSigner
 from django.utils import timezone
 
+# Configurar logger
+logger = logging.getLogger(__name__)
+
 
 def _get_encryption_key():
     """Obtiene o genera una clave de encriptación"""
@@ -31,12 +34,10 @@ def generar_datos_qr(compra):
     """Genera los datos encriptados que contendrá el QR"""
     from .models import CodigoQR
     
-    print("Generando QR para compra:", compra.id)  # Debug
-    
     # Verificar si ya existe un código QR para esta compra
     codigo_qr_existente = CodigoQR.objects.filter(compra=compra).first()
     if codigo_qr_existente:
-        print("Código QR existente encontrado, retornando código guardado")  # Debug
+        logger.info("Código QR existente encontrado")
         return codigo_qr_existente.codigo
     
     # Datos mínimos necesarios para validación
@@ -45,19 +46,15 @@ def generar_datos_qr(compra):
         'fecha_visita': str(compra.fecha_visita),
         'terma_id': compra.terma.id
     }
-    print("Datos a encriptar:", datos)  # Debug
     
     # Crear un token firmado con timestamp
     signer = TimestampSigner()
     token = signer.sign(json.dumps(datos))
-    print("Token firmado:", token)  # Debug
     
     # Encriptar el token
     fernet = Fernet(_get_encryption_key())
-    print("Clave de encriptación:", _get_encryption_key())  # Debug
     datos_encriptados = fernet.encrypt(token.encode())
     datos_qr = datos_encriptados.decode('utf-8')
-    print("Datos encriptados:", datos_qr)  # Debug
     
     # Crear registro en la base de datos
     try:
@@ -66,9 +63,9 @@ def generar_datos_qr(compra):
             codigo=datos_qr,
             fecha_generacion=timezone.now()
         )
-        print(f"Código QR guardado en la base de datos para compra {compra.id}")  # Debug
+        logger.info(f"Código QR guardado en la base de datos para compra {compra.id}")
     except Exception as e:
-        print(f"Error al guardar código QR en la base de datos: {str(e)}")  # Debug
+        logger.error(f"Error al guardar código QR en la base de datos: {str(e)}")
         # Continuar aunque haya error al guardar, ya que el código igual se generó
     
     return datos_qr
@@ -262,12 +259,26 @@ def enviar_entrada_por_correo(compra):
     
     try:
         print(f"[EMAIL] Iniciando envío de correo para compra {compra.id}")
-        print(f"[EMAIL] Usuario: {compra.usuario.email}")
+        logger.info("[EMAIL] Enviando correo de confirmación")
         print(f"[EMAIL] FROM_EMAIL: {settings.DEFAULT_FROM_EMAIL}")
         
+        # Verificar que la compra esté pagada
+        if compra.estado_pago != 'pagado':
+            raise ValueError(f"La compra {compra.id} no está marcada como pagada")
+        
+        # Verificar que existe el código QR (debería existir ya)
+        from .models import CodigoQR
+        if not CodigoQR.objects.filter(compra=compra).exists():
+            print(f"[EMAIL] Código QR no existe, generando uno nuevo para compra {compra.id}")
+            generar_datos_qr(compra)
+        
         # Generar el PDF
-        pdf_buffer = generar_pdf_entrada(compra)
-        print("[EMAIL] PDF generado correctamente")
+        try:
+            pdf_buffer = generar_pdf_entrada(compra)
+            print("[EMAIL] PDF generado correctamente")
+        except Exception as e:
+            print(f"[EMAIL] Error al generar PDF: {str(e)}")
+            raise
         
         # Preparar el correo
         asunto = f"Tu entrada para {compra.terma.nombre_terma}"
@@ -280,7 +291,11 @@ Por favor, presenta este código QR al llegar a la terma.
 
 ¡Gracias por tu compra!"""
         
-        print(f"[EMAIL] Preparando correo para enviar a {compra.usuario.email}")
+        logger.info("[EMAIL] Preparando correo para enviar")
+        
+        # Verificar configuración de email
+        if not settings.DEFAULT_FROM_EMAIL:
+            raise ValueError("DEFAULT_FROM_EMAIL no está configurado")
         
         # Crear el correo
         email = EmailMessage(
@@ -300,9 +315,16 @@ Por favor, presenta este código QR al llegar a la terma.
         print("[EMAIL] Correo enviado exitosamente")
         
     except Exception as e:
-        print(f"[EMAIL] Error al enviar correo: {str(e)}")
-        logger.error(f"Error al enviar correo: {str(e)}", exc_info=True)
-        raise  # Re-lanzar la excepción para que se maneje en la vista
+        error_msg = f"Error al enviar correo para compra {compra.id}: {str(e)}"
+        print(f"[EMAIL] {error_msg}")
+        logger.error(error_msg, exc_info=True)
+        
+        # No re-lanzar la excepción para evitar que falle todo el proceso
+        # El código QR ya está generado y disponible en la plataforma
+        print(f"[EMAIL] El código QR está disponible en la plataforma para compra {compra.id}")
+        return False  # Indicar que falló el envío
+    
+    return True  # Indicar que fue exitoso
 
 
 # =================== SISTEMA DE DISTRIBUCIÓN DE PAGOS ===================

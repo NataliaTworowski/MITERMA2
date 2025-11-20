@@ -1,0 +1,250 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>¡Esperamos que hayas disfrutado tu visita!</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #f7fafc;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            padding: 30px 20px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .header p {
+            margin: 10px 0 0 0;
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        .content {
+            padding: 40px 30px;
+            color: #2d3748;
+        }
+        .greeting {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #4a5568;
+        }
+        .message {
+            font-size: 16px;
+            line-height: 1.8;
+            margin-bottom: 25px;
+            color: #2d3748;
+        }
+        .terma-highlight {
+            background: linear-gradient(120deg, #a8edea 0%, #fed6e3 100%);
+            padding: 20px;
+            border-radius: 10px;
+            margin: 25px 0;
+            text-align: center;
+        }
+        .terma-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+        .visit-date {
+            color: #718096;
+            font-size: 14px;
+        }
+        .feedback-section {
+            background-color: #f7fafc;
+            border-left: 4px solid #4299e1;
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .feedback-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 10px;
+        }
+        .feedback-text {
+            color: #4a5568;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-weight: bold;
+            margin: 10px 0;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        .social-section {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background-color: #edf2f7;
+            border-radius: 10px;
+        }
+        .social-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 15px;
+        }
+        .social-icons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .social-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            transition: transform 0.2s ease;
+        }
+        .social-icon:hover {
+            transform: scale(1.1);
+        }
+        .facebook { background-color: #3b5998; }
+        .instagram { background: linear-gradient(45deg, #f09433 0%,#e6683c 25%,#dc2743 50%,#cc2366 75%,#bc1888 100%); }
+        .whatsapp { background-color: #25d366; }
+        .footer {
+            background-color: #2d3748;
+            color: #a0aec0;
+            text-align: center;
+            padding: 25px 20px;
+        }
+        .footer p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        .logo {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .rating-section {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .stars {
+            font-size: 24px;
+            color: #ffd700;
+            margin: 10px 0;
+        }
+        @media (max-width: 600px) {
+            .content {
+                padding: 30px 20px;
+            }
+            .header h1 {
+                font-size: 24px;
+            }
+            .terma-name {
+                font-size: 20px;
+            }
+            .social-icons {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>¡Gracias por tu visita!</h1>
+            <p>Esperamos que hayas disfrutado tu experiencia</p>
+        </div>
+
+        <!-- Main Content -->
+        <div class="content">
+            <div class="greeting">
+                Hola {{ nombre_cliente }},
+            </div>
+
+            <div class="message">
+                Esperamos que hayas disfrutado tu estadía en nuestras termas y que la experiencia haya sido relajante y memorable.
+            </div>
+
+            <div class="terma-highlight">
+                <div class="terma-name">{{ nombre_terma }}</div>
+                <div class="visit-date">Fecha de visita: {{ fecha_visita }}</div>
+            </div>
+
+            <div class="message">
+                Tu bienestar es nuestra prioridad, y nos encanta saber que has elegido nuestras instalaciones para relajarte y disfrutar de un momento especial.
+            </div>
+
+            <!-- Feedback Section -->
+            <div class="feedback-section">
+                <div class="feedback-title">
+                    🌟 ¡Comparte tu experiencia!
+                </div>
+                <div class="feedback-text">
+                    Tu opinión es muy valiosa para nosotros. Nos ayuda a mejorar constantemente y ofrecer la mejor experiencia a nuestros visitantes.
+                </div>
+                <div class="rating-section">
+                    <div>¿Cómo calificarías tu visita?</div>
+                    <div class="stars">⭐⭐⭐⭐⭐</div>
+                </div>
+            </div>
+
+
+            <div class="message">
+                <strong>¡Esperamos verte pronto de nuevo!</strong><br>
+                El equipo de {{ nombre_terma }} te espera siempre con los brazos abiertos.
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="logo">
+                <strong>MiTerma.cl</strong>
+            </div>
+            <p>{{ nombre_terma }}</p>
+            {% if direccion_terma %}
+            <p>📍 {{ direccion_terma }}</p>
+            {% endif %}
+            {% if telefono_terma %}
+            <p>📞 {{ telefono_terma }}</p>
+            {% endif %}
+            <p> mitermaoficial@gmail.com</p>
+            <p style="margin-top: 15px; font-size: 12px; color: #718096;">
+                © {{ current_year }} MiTerma. Todos los derechos reservados.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

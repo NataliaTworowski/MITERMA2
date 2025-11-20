@@ -3,6 +3,7 @@ from . import views
 from . import views_cliente
 from . import views_trabajador
 from . import views_reportes
+from . import views_correos
 from . import api
 
 app_name = 'usuarios'
@@ -22,6 +23,7 @@ urlpatterns = [
     path('mis_entradas/', views_cliente.mostrar_entradas, name='mis_entradas'),
     path('get_qr/<int:compra_id>/', views_cliente.get_qr_code, name='get_qr_code'),
     path('ocultar_compra/<int:compra_id>/', views_cliente.ocultar_compra, name='ocultar_compra'),
+    path('reenviar_correo/<int:compra_id>/', views_correos.reenviar_correo_compra, name='reenviar_correo_compra'),
     path('perfil/', views_cliente.perfil_cliente, name='perfil_cliente'),
     path('actualizar_perfil/', views_cliente.actualizar_perfil, name='actualizar_perfil'),
     path('cambiar_contrasena/', views_cliente.cambiar_contrasena, name='cambiar_contrasena'),
@@ -54,6 +56,11 @@ urlpatterns = [
     path('admin/terma-actualizar/<int:terma_id>/', views.admin_general_terma_actualizar, name='admin_general_terma_actualizar'),
     path('admin/terma-cambiar-estado/<int:terma_id>/', views.admin_general_terma_cambiar_estado, name='admin_general_terma_cambiar_estado'),
     path('admin/terma-estadisticas/<int:terma_id>/', views.admin_general_terma_estadisticas, name='admin_general_terma_estadisticas'),
+    
+    # URLs para configuración de administrador general
+    path('admin/configuracion/', views.configuracion_admin, name='configuracion_admin'),
+    path('admin/actualizar-perfil/', views.actualizar_perfil_admin, name='actualizar_perfil_admin'),
+    path('admin/cambiar-contrasena/', views.cambiar_contrasena_admin, name='cambiar_contrasena_admin'),
     
     # API endpoints
     path('api/login/', api.LoginAPIView.as_view(), name='api_login'),

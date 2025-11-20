@@ -244,11 +244,17 @@
                                                     Código QR caducado
                                                 </button>
                                             {% else %}
-                                                <!-- Entrada válida o ya utilizada - botón normal -->
-                                                <button onclick="showQRModal('{{ compra.id }}')" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
-                                                    <i class="fas fa-qr-code mr-2"></i>
-                                                    Ver código QR
-                                                </button>
+                                                <!-- Entrada válida o ya utilizada - botones -->
+                                                <div class="flex flex-wrap gap-2">
+                                                    <button onclick="showQRModal('{{ compra.id }}')" class="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition">
+                                                        <i class="fas fa-qr-code mr-2"></i>
+                                                        Ver código QR
+                                                    </button>
+                                                    <button onclick="reenviarCorreo('{{ compra.id }}')" class="inline-flex items-center px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition text-sm">
+                                                        <i class="fas fa-envelope mr-2"></i>
+                                                        Reenviar por correo
+                                                    </button>
+                                                </div>
                                             {% endif %}
                                         </div>
                                     {% endif %}
@@ -342,6 +348,103 @@
                     alert('Hubo un error al eliminar la entrada del historial.');
                 });
             }
+        }
+
+        function reenviarCorreo(compraId) {
+            const button = event.target.closest('button');
+            const originalText = button.innerHTML;
+            
+            // Cambiar estado del botón
+            button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Enviando...';
+            button.disabled = true;
+            
+            fetch(`/usuarios/reenviar_correo/${compraId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    button.innerHTML = '<i class="fas fa-check mr-2"></i>Enviado';
+                    button.classList.remove('bg-green-600', 'hover:bg-green-700');
+                    button.classList.add('bg-green-500');
+                    
+                    // Mostrar mensaje de éxito
+                    showNotification('Correo reenviado exitosamente', 'success');
+                    
+                    // Restaurar botón después de 3 segundos
+                    setTimeout(() => {
+                        button.innerHTML = originalText;
+                        button.disabled = false;
+                        button.classList.remove('bg-green-500');
+                        button.classList.add('bg-green-600', 'hover:bg-green-700');
+                    }, 3000);
+                } else {
+                    button.innerHTML = '<i class="fas fa-times mr-2"></i>Error';
+                    button.classList.remove('bg-green-600', 'hover:bg-green-700');
+                    button.classList.add('bg-red-500');
+                    
+                    showNotification(data.message || 'Error al reenviar el correo', 'error');
+                    
+                    // Restaurar botón después de 3 segundos
+                    setTimeout(() => {
+                        button.innerHTML = originalText;
+                        button.disabled = false;
+                        button.classList.remove('bg-red-500');
+                        button.classList.add('bg-green-600', 'hover:bg-green-700');
+                    }, 3000);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                button.innerHTML = '<i class="fas fa-times mr-2"></i>Error';
+                button.classList.remove('bg-green-600', 'hover:bg-green-700');
+                button.classList.add('bg-red-500');
+                
+                showNotification('Error de conexión al reenviar correo', 'error');
+                
+                // Restaurar botón después de 3 segundos
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.disabled = false;
+                    button.classList.remove('bg-red-500');
+                    button.classList.add('bg-green-600', 'hover:bg-green-700');
+                }, 3000);
+            });
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 z-50 max-w-sm p-4 rounded-lg text-white transform transition-all duration-500 translate-x-full`;
+            
+            if (type === 'success') {
+                notification.classList.add('bg-green-500');
+                notification.innerHTML = `<div class="flex items-center"><i class="fas fa-check-circle mr-2"></i>${message}</div>`;
+            } else if (type === 'error') {
+                notification.classList.add('bg-red-500');
+                notification.innerHTML = `<div class="flex items-center"><i class="fas fa-exclamation-circle mr-2"></i>${message}</div>`;
+            } else {
+                notification.classList.add('bg-blue-500');
+                notification.innerHTML = `<div class="flex items-center"><i class="fas fa-info-circle mr-2"></i>${message}</div>`;
+            }
+            
+            document.body.appendChild(notification);
+            
+            // Animación de entrada
+            setTimeout(() => {
+                notification.classList.remove('translate-x-full');
+            }, 100);
+            
+            // Animación de salida y eliminación
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => {
+                    notification.remove();
+                }, 500);
+            }, 5000);
         }
 
         // Función para obtener el token CSRF

@@ -14,6 +14,7 @@
     <!-- Modales -->
     {% include 'partials/login_modal.html' %}
     {% include 'partials/register_modal.html' %}
+    {% include 'partials/usuario_inactivo.html' %}
 
     <!-- Mensajes -->
     {% if messages %}
@@ -430,6 +431,24 @@
     </main>
     <!-- Footer -->
     {% include 'partials/footer.html' %}
+
+    <!-- Script para detectar usuario inactivo -->
+    <script>
+        // Verificar si se debe mostrar el modal de usuario inactivo
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('usuario_inactivo') === '1') {
+                // Limpiar el parámetro de la URL sin recargar la página
+                const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+                window.history.replaceState({path: newUrl}, '', newUrl);
+                
+                // Mostrar el modal de usuario inactivo
+                setTimeout(function() {
+                    openUsuarioInactivoModal();
+                }, 100);
+            }
+        });
+    </script>
 
 </body>
 </html>

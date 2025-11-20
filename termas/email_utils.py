@@ -185,3 +185,73 @@ Equipo de {terma.nombre_terma}
     except Exception as e:
         logger.error(f"Error al enviar email de actualización a {trabajador.email}: {str(e)}")
         return False
+
+def enviar_email_entrada_finalizada(cliente, compra, registro_escaneo):
+    """
+    Envía un email al cliente cuando su entrada se finaliza,
+    solicitando comentarios sobre su experiencia.
+    """
+    try:
+        logger.info(f"Enviando email de entrada finalizada a {cliente.email}")
+        
+        subject = f"¡Esperamos que hayas disfrutado tu visita a {compra.terma.nombre_terma}!"
+        
+        # Contexto para el template
+        context = {
+            'nombre_cliente': f"{cliente.nombre} {cliente.apellido}",
+            'nombre_terma': compra.terma.nombre_terma,
+            'fecha_visita': compra.fecha_visita.strftime("%d de %B de %Y"),
+            'email_terma': compra.terma.email_contacto if hasattr(compra.terma, 'email_contacto') else "info@miterma.cl",
+            'telefono_terma': compra.terma.telefono if hasattr(compra.terma, 'telefono') else None,
+            'direccion_terma': compra.terma.comuna.nombre if hasattr(compra.terma, 'comuna') and compra.terma.comuna else None,
+            'facebook_url': compra.terma.facebook_url if hasattr(compra.terma, 'facebook_url') else None,
+            'instagram_url': compra.terma.instagram_url if hasattr(compra.terma, 'instagram_url') else None,
+            'whatsapp_numero': compra.terma.whatsapp if hasattr(compra.terma, 'whatsapp') else None,
+            'current_year': timezone.now().year,
+        }
+        
+        # Renderizar el template
+        html_message = render_to_string('emails/entrada_finalizada_email.html', context)
+        
+        # Crear mensaje de texto plano como alternativa
+        plain_message = f"""
+Hola {context['nombre_cliente']},
+
+¡Esperamos que hayas disfrutado tu estadía en {context['nombre_terma']}!
+
+Tu visita fue el {context['fecha_visita']} y esperamos que la experiencia haya sido relajante y memorable.
+
+Tu bienestar es nuestra prioridad y nos encantaría conocer tu experiencia para seguir mejorando.
+
+¿Podrías dejarnos tus comentarios? Responde a este email con tus impresiones sobre tu visita.
+
+¡Esperamos verte pronto de nuevo!
+
+El equipo de {context['nombre_terma']}
+MiTerma.cl
+
+---
+{context['nombre_terma']}
+{context['email_terma']}
+        """.strip()
+        
+        # Enviar email
+        resultado = send_mail(
+            subject=subject,
+            message=plain_message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[cliente.email],
+            html_message=html_message,
+            fail_silently=False
+        )
+        
+        if resultado:
+            logger.info(f"Email de entrada finalizada enviado exitosamente a {cliente.email}")
+            return True
+        else:
+            logger.error(f"Error al enviar email de entrada finalizada a {cliente.email}")
+            return False
+            
+    except Exception as e:
+        logger.error(f"Error al enviar email de entrada finalizada a {cliente.email}: {str(e)}")
+        return False

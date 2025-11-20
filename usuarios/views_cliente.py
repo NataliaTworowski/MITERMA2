@@ -9,9 +9,13 @@ from .decorators import cliente_required
 from .models import Favorito
 from termas.models import Terma
 import base64
+import logging
 from io import BytesIO
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
+
+# Configurar logger
+logger = logging.getLogger(__name__)
 
 @cliente_required
 def perfil_cliente(request):
@@ -37,7 +41,7 @@ def actualizar_perfil(request):
         # Verificar que es el formulario correcto
         form_type = request.POST.get('form_type')
         if form_type != 'perfil':
-            print(f"DEBUG - Tipo de formulario inválido: {form_type}")
+            logger.warning("Tipo de formulario inválido")
             messages.error(request, 'Tipo de formulario inválido.')
             return redirect('usuarios:perfil_cliente')
         
@@ -46,7 +50,7 @@ def actualizar_perfil(request):
         apellido = request.POST.get('apellido', '').strip()
         telefono = request.POST.get('telefono', '').strip()
         
-        print(f"DEBUG - Actualizando perfil: nombre='{nombre}', apellido='{apellido}', telefono='{telefono}'")
+        logger.info("Actualizando perfil de cliente")
         
         # Validaciones
         if not nombre or not apellido:
@@ -64,17 +68,14 @@ def actualizar_perfil(request):
         usuario.telefono = telefono if telefono else None
         usuario.save(update_fields=['nombre', 'apellido', 'telefono'])
         
-        print(f"DEBUG - Perfil actualizado exitosamente para usuario {usuario.id}")
-        print(f"DEBUG - Valores guardados: nombre='{usuario.nombre}', apellido='{usuario.apellido}', telefono='{usuario.telefono}'")
+        logger.info("Perfil actualizado exitosamente")
         messages.success(request, 'Tu información personal ha sido actualizada correctamente.')
         
         # Los datos frescos se obtendrán en la vista perfil_cliente() que ahora
         # siempre consulta la BD directamente
         
     except Exception as e:
-        print(f"DEBUG - Error al actualizar perfil: {str(e)}")
-        import traceback
-        print(f"DEBUG - Traceback: {traceback.format_exc()}")
+        logger.error(f"Error al actualizar perfil: {str(e)}")
         messages.error(request, f'Error al actualizar la información: {str(e)}')
     
     return redirect('usuarios:perfil_cliente')

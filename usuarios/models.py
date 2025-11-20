@@ -42,6 +42,18 @@ class UsuarioManager(BaseUserManager):
         user.save(using=self._db)
         return user
     
+    def create_guest_user(self, email, nombre="Usuario", apellido="Invitado"):
+        """
+        Crea un usuario invitado con solo email para compras sin registro.
+        """
+        return self.create_user(
+            email=email,
+            nombre=nombre, 
+            apellido=apellido,
+            password=secrets.token_urlsafe(12),
+            es_invitado=True
+        )
+    
     def create_superuser(self, email, nombre, apellido, password=None, **extra_fields):
         """
         Crea y guarda un superusuario con email y contraseña.
@@ -96,6 +108,7 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     is_staff = models.BooleanField(default=False, help_text="Permite acceso al admin de Django")
     is_active = models.BooleanField(default=True, help_text="Usuario activo en el sistema")
     tiene_password_temporal = models.BooleanField(default=False, help_text="Indica si el usuario tiene una contraseña temporal que debe cambiar")
+    es_invitado = models.BooleanField(default=False, help_text="Indica si el usuario fue creado como invitado (solo con email) para una compra")
     
     # Relaciones
     rol = models.ForeignKey(Rol, on_delete=models.CASCADE, null=True, blank=True)
@@ -238,6 +251,51 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         self.is_active = self.estado
         
         super().save(*args, **kwargs)
+    
+    @classmethod
+    def crear_usuario_invitado(cls, email, nombre="Usuario", apellido="Invitado"):
+        """
+        Crea un usuario invitado con solo email para permitir compras sin registro.
+        """
+        email = email.lower().strip()
+        
+        # Verificar si ya existe un usuario con este email
+        usuario_existente = cls.objects.filter(email=email).first()
+        if usuario_existente:
+            if usuario_existente.es_invitado:
+                return usuario_existente  # Retornar el usuario invitado existente
+            else:
+                raise ValueError(f"Ya existe un usuario registrado con el email {email}")
+        
+        # Crear nuevo usuario invitado
+        usuario = cls(
+            email=email,
+            nombre=nombre,
+            apellido=apellido,
+            es_invitado=True,
+            rol_id=1  # Rol de cliente por defecto
+        )
+        usuario.set_password(secrets.token_urlsafe(12))  # Password temporal random
+        usuario.save()
+        
+        return usuario
+    
+    def convertir_a_registrado(self, nombre, apellido, password):
+        """
+        Convierte un usuario invitado a un usuario registrado completo.
+        """
+        if not self.es_invitado:
+            raise ValueError("Solo se pueden convertir usuarios invitados")
+        
+        # Actualizar información del usuario
+        self.nombre = nombre
+        self.apellido = apellido
+        self.set_password(password)
+        self.es_invitado = False
+        self.tiene_password_temporal = False
+        self.save()
+        
+        return self
     
 class TokenRestablecerContrasena(models.Model):
     """

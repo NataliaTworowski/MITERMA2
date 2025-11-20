@@ -10,11 +10,13 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body class="bg-gray-50 min-h-screen">
-    <main class="pt-16">
-    <div class="fixed top-0 left-0 right-0 z-40 bg-white shadow-md">
+    {% if user.is_authenticated %}
         {% include 'partials/navbar_usuario2.html' %}
-    </div>
-    <div class="container mx-auto px-4 py-12 max-w-2xl">
+    {% else %}
+        {% include 'partials/navbar.html' with navbar_mode='termas_only' %}
+    {% endif %}
+    <main class="{% if not user.is_authenticated %}pt-32{% else %}pt-16{% endif %}">
+        <div class="container mx-auto px-4 py-12 max-w-2xl">
     {% if success %}
         <!-- Icono de éxito -->
         <div class="text-center mb-8">
@@ -90,9 +92,11 @@
             <a href="{% url 'usuarios:inicio' %}" class="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors duration-200 text-center font-medium">
                 Volver al inicio
             </a>
+            {% if user.is_authenticated %}
             <a href="{% url 'usuarios:mis_entradas' %}" class="px-6 py-3 bg-cyan-500 text-white rounded-lg hover:bg-cyan-600 transition-colors duration-200 text-center font-medium">
                 Ver mis reservas
             </a>
+            {% endif %}
         </div>
         
     {% elif error_message %}

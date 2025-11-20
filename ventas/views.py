@@ -1,6 +1,7 @@
 from django.shortcuts import render
 import mercadopago
 import os
+import logging
 from dotenv import load_dotenv
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
@@ -15,6 +16,9 @@ from ventas.models import Compra
 # Cargar variables de entorno
 load_dotenv()
 
+# Configurar logger
+logger = logging.getLogger(__name__)
+
 def pago(request, terma_id=None):
     datos = {}
     
@@ -27,7 +31,6 @@ def pago(request, terma_id=None):
         
         if entrada_id and fecha_visita_str:
             from datetime import datetime, timedelta
-            from django.utils import timezone
             
             try:
                 fecha_visita_obj = datetime.strptime(fecha_visita_str, '%Y-%m-%d').date()
@@ -69,13 +72,26 @@ def pago(request, terma_id=None):
         datos['cantidad'] = request.POST.get('cantidad')
         datos['fecha'] = request.POST.get('fecha')
         datos['cantidad_entradas'] = request.POST.get('cantidad')
+        datos['email_invitado'] = request.POST.get('email_invitado', '').strip().lower()  # Nuevo campo para invitados
         
-        # VALIDACION ANTI-DUPLICADOS: Verificar usuario autenticado
-        if not request.user.is_authenticated:
-            datos['compra_error'] = "Debes iniciar sesión para realizar una compra."
+        # VALIDACION ANTI-DUPLICADOS: Verificar usuario autenticado o email para invitado
+        usuario = None
+        email_invitado = datos.get('email_invitado', '').strip().lower()
+        
+        if request.user.is_authenticated:
+            usuario = request.user
+        elif email_invitado:
+            # Crear o obtener usuario invitado
+            from usuarios.models import Usuario
+            try:
+                usuario = Usuario.crear_usuario_invitado(email_invitado)
+                print(f"[COMPRA INVITADO] Usuario invitado creado/obtenido: {usuario.email}")
+            except ValueError as e:
+                datos['compra_error'] = str(e)
+                return render(request, 'ventas/pago.html', datos)
+        else:
+            datos['compra_error'] = "Debes iniciar sesión o proporcionar un email para realizar una compra."
             return render(request, 'ventas/pago.html', datos)
-        
-        usuario = request.user
         
         # Obtener datos críticos para verificación
         entrada_id = datos.get('entrada_id')
@@ -98,7 +114,6 @@ def pago(request, terma_id=None):
         
         # VALIDACIÓN ANTI-SPAM: Solo bloquear clicks múltiples accidentales inmediatos
         # Buscar compra muy reciente (últimos 15 minutos) con parámetros idénticos
-        from django.utils import timezone
         from datetime import timedelta
         
         tiempo_limite = timezone.now() - timedelta(minutes=15)
@@ -622,7 +637,6 @@ def mercadopago_webhook(request):
                         print(f"[WEBHOOK] PRUEBA - Payment data: {payment_data}")
                     if status == 'approved' and external_reference:
                         from ventas.models import Compra
-                        from django.utils import timezone
                         from django.db import transaction
                         with transaction.atomic():
                             compra = Compra.objects.select_for_update().filter(
@@ -640,6 +654,15 @@ def mercadopago_webhook(request):
                                     compra.save()
                                     print(f"[WEBHOOK] Compra {compra.id} actualizada")
                                     
+                                    # GENERAR CÓDIGO QR INMEDIATAMENTE
+                                    try:
+                                        from ventas.utils import generar_datos_qr
+                                        print(f"[WEBHOOK] Generando código QR para compra {compra.id}")
+                                        qr_data = generar_datos_qr(compra)
+                                        print(f"[WEBHOOK] Código QR generado exitosamente para compra {compra.id}")
+                                    except Exception as e:
+                                        print(f"[WEBHOOK] Error al generar código QR: {str(e)}")
+                                    
                                     # NUEVO: Procesar distribución de pago
                                     try:
                                         from ventas.utils import procesar_pago_completo
@@ -655,14 +678,18 @@ def mercadopago_webhook(request):
                                     try:
                                         from ventas.utils import enviar_entrada_por_correo
                                         print(f"[WEBHOOK] Preparando envío de correo para compra {compra.id}")
-                                        print(f"[WEBHOOK] Email del usuario: {compra.usuario.email}")
-                                        enviar_entrada_por_correo(compra)
-                                        print(f"[WEBHOOK] Correo enviado exitosamente para la compra {compra.id}")
+                                        logger.info("[WEBHOOK] Procesando compra de usuario")
+                                        correo_enviado = enviar_entrada_por_correo(compra)
+                                        if correo_enviado:
+                                            print(f"[WEBHOOK] Correo enviado exitosamente para la compra {compra.id}")
+                                        else:
+                                            print(f"[WEBHOOK] No se pudo enviar el correo, pero el QR está disponible en la plataforma para compra {compra.id}")
                                     except Exception as e:
                                         import traceback
                                         print(f"[WEBHOOK] Error al enviar correo: {str(e)}")
                                         print("[WEBHOOK] Traceback completo:")
                                         print(traceback.format_exc())
+                                        print(f"[WEBHOOK] El código QR está disponible en la plataforma para compra {compra.id}")
 
                                     if is_test:
                                         print(f"[WEBHOOK] PRUEBA - Compra aprobada: {compra.id}")
@@ -762,6 +789,15 @@ def pago_exitoso(request):
                             compra.save()
                             print(f"[PAGO_EXITOSO] Compra {compra.id} actualizada a aprobado")
                             
+                            # GENERAR CÓDIGO QR INMEDIATAMENTE
+                            try:
+                                from ventas.utils import generar_datos_qr
+                                print(f"[PAGO_EXITOSO] Generando código QR para compra {compra.id}")
+                                qr_data = generar_datos_qr(compra)
+                                print(f"[PAGO_EXITOSO] Código QR generado exitosamente para compra {compra.id}")
+                            except Exception as e:
+                                print(f"[PAGO_EXITOSO] Error al generar código QR: {str(e)}")
+                            
                             # NUEVO: Procesar distribución de pago
                             try:
                                 from ventas.utils import procesar_pago_completo
@@ -777,14 +813,18 @@ def pago_exitoso(request):
                             try:
                                 from ventas.utils import enviar_entrada_por_correo
                                 print(f"[PAGO_EXITOSO] Preparando envío de correo para compra {compra.id}")
-                                print(f"[PAGO_EXITOSO] Email del usuario: {compra.usuario.email}")
-                                enviar_entrada_por_correo(compra)
-                                print(f"[PAGO_EXITOSO] Correo enviado exitosamente para la compra {compra.id}")
+                                logger.info("[PAGO_EXITOSO] Procesando compra de usuario")
+                                correo_enviado = enviar_entrada_por_correo(compra)
+                                if correo_enviado:
+                                    print(f"[PAGO_EXITOSO] Correo enviado exitosamente para la compra {compra.id}")
+                                else:
+                                    print(f"[PAGO_EXITOSO] No se pudo enviar el correo, pero el QR está disponible en la plataforma para compra {compra.id}")
                             except Exception as e:
                                 import traceback
                                 print(f"[PAGO_EXITOSO] Error al enviar correo: {str(e)}")
                                 print("[PAGO_EXITOSO] Traceback completo:")
                                 print(traceback.format_exc())
+                                print(f"[PAGO_EXITOSO] El código QR está disponible en la plataforma para compra {compra.id}")
                         else:
                             print(f"[PAGO_EXITOSO] payment_id {payment_id} ya registrado en otra compra")
                             error_message = "Este pago ya fue procesado anteriormente."

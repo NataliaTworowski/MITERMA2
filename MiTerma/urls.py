@@ -18,6 +18,13 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from core import error_views
+
+# Configurar las vistas de error personalizadas
+handler400 = 'core.error_views.error_400'
+handler403 = 'core.error_views.error_403'
+handler404 = 'core.error_views.error_404'
+handler500 = 'core.error_views.error_500'
 
 urlpatterns = [
     path('admin/', admin.site.urls),

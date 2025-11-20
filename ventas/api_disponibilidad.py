@@ -2,6 +2,7 @@
 API endpoints para verificación de disponibilidad de termas
 """
 from django.http import JsonResponse
+from django.utils import timezone
 from django.views import View
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
@@ -168,7 +169,6 @@ def estadisticas_disponibilidad(request):
         from termas.models import Terma
         from ventas.models import Compra
         from django.db.models import Count, Sum
-        from django.utils import timezone
         from datetime import timedelta
         
         # Estadísticas básicas

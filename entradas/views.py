@@ -1,4 +1,6 @@
+
 from django.shortcuts import render
+from django.utils import timezone
 
 def lista_entradas(request):
     """Vista para mostrar lista de entradas."""

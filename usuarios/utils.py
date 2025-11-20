@@ -40,7 +40,7 @@ def enviar_email_confirmacion(usuario_email, nombre_usuario):
             html_message=mensaje_html,
             fail_silently=False,
         )
-        logger.info(f"Email enviado exitosamente a {usuario_email}")
+        logger.info("Email enviado exitosamente")
         return True
     except Exception as e:
         logger.error(f"Error enviando email a {usuario_email}: {str(e)}")

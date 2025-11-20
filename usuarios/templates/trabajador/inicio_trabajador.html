@@ -47,6 +47,55 @@
             </div>
         </div>
 
+        <!-- Toast notifications -->
+        <div id="toast-container" class="fixed top-6 right-6 z-50 flex flex-col space-y-3"></div>
+        <script type="application/json" id="toast-messages">
+            [{% for message in messages %}{% if not forloop.first %},{% endif %}{
+                "text": "{{ message|escapejs }}",
+                "tags": "{{ message.tags }}"
+            }{% endfor %}]
+        </script>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const toastContainer = document.getElementById('toast-container');
+            let messages = [];
+            try {
+                messages = JSON.parse(document.getElementById('toast-messages').textContent.trim());
+            } catch (e) {}
+            messages.forEach(function(msg) {
+                let bg = 'bg-blue-500', text = 'text-white', icon = '';
+                if (msg.tags.includes('success')) {
+                    bg = 'bg-green-500'; text = 'text-white';
+                    icon = `<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
+                } else if (msg.tags.includes('error')) {
+                    bg = 'bg-red-500'; text = 'text-white';
+                    icon = `<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`;
+                } else if (msg.tags.includes('warning')) {
+                    bg = 'bg-yellow-400'; text = 'text-gray-900';
+                    icon = `<svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>`;
+                }
+                const toast = document.createElement('div');
+                toast.className = `${bg} ${text} px-5 py-3 rounded-lg shadow-lg flex items-center animate-fade-in`;
+                toast.innerHTML = `${icon}<span>${msg.text}</span>`;
+                toastContainer.appendChild(toast);
+                setTimeout(function() {
+                    toast.style.transition = 'opacity 0.5s';
+                    toast.style.opacity = '0';
+                    setTimeout(function() { toast.remove(); }, 500);
+                }, 3000);
+            });
+        });
+        </script>
+        <style>
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fade-in 0.4s;
+        }
+        </style>
+
         <div class="max-w-7xl mx-auto">
             <!-- Cards de estadísticas -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -450,6 +499,32 @@
         function cerrarResultado() {
             document.getElementById('result-modal').classList.add('hidden');
         }
+
+         // Auto-ocultar mensajes de éxito/error después de 3 segundos
+        document.addEventListener('DOMContentLoaded', function() {
+            // Buscar todos los mensajes dentro del bloque de mensajes Django
+            const messageContainers = document.querySelectorAll('.mb-6.p-4.rounded-lg');
+            
+            messageContainers.forEach(function(message) {
+                // Verificar que sea un mensaje (tiene las clases de colores)
+                if (message.classList.contains('bg-green-100') || 
+                    message.classList.contains('bg-red-100') || 
+                    message.classList.contains('bg-yellow-100') || 
+                    message.classList.contains('bg-blue-100')) {
+                    
+                    // Esperar 3 segundos antes de iniciar la animación
+                    setTimeout(function() {
+                        message.style.transition = 'opacity 0.5s ease-out';
+                        message.style.opacity = '0';
+                        
+                        // Remover completamente el elemento después de la animación
+                        setTimeout(function() {
+                            message.remove();
+                        }, 500);
+                    }, 3000);
+                }
+            });
+        });
     </script>
 </body>
 </html>

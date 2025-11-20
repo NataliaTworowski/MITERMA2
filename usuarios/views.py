@@ -65,16 +65,52 @@ def login_usuario(request):
     Vista de login segura usando Django Auth.
     Reemplaza completamente el sistema de sesiones manuales.
     """
-    # Si ya está autenticado, redirigir
+    
+    # IMPORTANTE: Limpiar cualquier variable de terma inactiva anterior
+    if hasattr(request, '_terma_inactiva'):
+        delattr(request, '_terma_inactiva')
+        logger.info("Variable _terma_inactiva anterior limpiada")
+    
+    # DEBUG: Verificar estado de autenticación
+    logger.info(f"=== ESTADO INICIAL LOGIN ===")
+    logger.info(f"Usuario actual: {request.user}")
+    logger.info(f"¿Está autenticado?: {request.user.is_authenticated}")
+    logger.info(f"User ID: {request.user.id if request.user.is_authenticated else 'Anonymous'}")
+    
+    # Si es POST, significa que viene del formulario - FORZAR LOGOUT primero
+    if request.method == 'POST':
+        logger.info("=== POST REQUEST - FORZANDO LOGOUT ===")
+        if request.user.is_authenticated:
+            logger.info(f"Usuario {request.user.email} estaba autenticado, haciendo logout")
+            from django.contrib.auth import logout
+            logout(request)
+            request.session.flush()
+            logger.info("Logout forzado y sesión limpiada")
+    
+    # Verificar nuevamente después del logout
+    logger.info(f"=== DESPUÉS DEL LOGOUT ===")
+    logger.info(f"¿Está autenticado ahora?: {request.user.is_authenticated}")
+    
+    # Si TODAVÍA está autenticado después del logout, hay un problema serio
     if request.user.is_authenticated:
-        logger.info(f"Usuario ya autenticado: {request.user.email}, rol: {request.user.rol.nombre if request.user.rol else 'sin rol'}")
-        return _redirect_by_role(request.user, request)
+        logger.error("PROBLEMA: Usuario sigue autenticado después del logout forzado")
+        # Último recurso: limpiar completamente la sesión
+        request.session.clear()
+        request.session.cycle_key()
+        logger.info("Sesión completamente reiniciada")
     
     if request.method == 'POST':
+        # Debug: Mostrar TODOS los datos POST
+        logger.info(f"=== DATOS DEL FORMULARIO ===")
+        logger.info(f"POST data completo: {dict(request.POST)}")
+        
         email = request.POST.get('email', '').strip().lower()
         password = request.POST.get('password', '')
         
-        logger.info(f"Intento de login para email: {email}")
+        logger.info(f"=== DATOS EXTRAÍDOS ===")
+        logger.info(f"Email extraído: '{email}'")
+        logger.info(f"Password extraído: '***' (longitud: {len(password)})")
+        logger.info(f"Email raw (antes de lower): '{request.POST.get('email', '')}'")
         
         # Validaciones básicas
         if not email or not password:
@@ -84,45 +120,38 @@ def login_usuario(request):
         
         # Validar formato de email
         if not _is_valid_email(email):
-            logger.warning(f"Login fallido - email inválido: {email}")
+            logger.warning(f"Login fallido - email inválido: '{email}'")
             messages.error(request, 'Por favor ingresa un email válido.')
             return redirect('core:home')
         
         # Intentar autenticación con Django Auth
-        logger.info(f"Intentando autenticación para: {email}")
+        logger.info(f"=== LLAMANDO AUTHENTICATE ===")
+        logger.info(f"Llamando authenticate(request, email='{email}', password='***')")
         usuario = authenticate(request, email=email, password=password)
+        logger.info(f"=== RESULTADO DE AUTHENTICATE ===")
+        logger.info(f"Usuario retornado: {usuario}")
+        logger.info(f"Usuario email (si existe): {usuario.email if usuario else 'None'}")
+        logger.info(f"Usuario ID (si existe): {usuario.id if usuario else 'None'}")
         
         if usuario:
             # Login exitoso con Django Auth
-            print(f"\n🔒 AUTENTICACIÓN EXITOSA:")
-            print(f"   Email: {email}")
-            print(f"   Usuario ID: {usuario.id}")
-            print(f"   Usuario Rol: {usuario.rol.nombre if usuario.rol else 'None'}")
-            print(f"   Usuario Rol ID: {usuario.rol.id if usuario.rol else 'None'}")
+            logger.info(f"Autenticación exitosa para: {usuario.email}")
             
-            logger.info(f"Autenticación exitosa para: {email}")
-            logger.info(f"USUARIO AUTENTICADO - ID: {usuario.id}, Email: {usuario.email}, Rol: {usuario.rol.nombre if usuario.rol else 'None'}")
+            # Limpiar cualquier sesión anterior
+            request.session.flush()
+            logger.info("Sesión anterior limpiada")
             
             login(request, usuario)
-            logger.info(f"Login de Django completado para: {email}")
-            
-            # Verificación crítica antes de redireccionar
-            current_user = request.user
-            print(f"\n🔍 VERIFICACIÓN POST-LOGIN:")
-            print(f"   request.user.email: {current_user.email}")
-            print(f"   request.user.rol: {current_user.rol.nombre if current_user.rol else 'None'}")
-            print(f"   request.user.id: {current_user.id}")
-            
-            logger.info(f"VERIFICACIÓN POST-LOGIN - request.user.email: {current_user.email}, rol: {current_user.rol.nombre if current_user.rol else 'None'}")
+            logger.info("Django login() ejecutado")
             
             # Log del evento de login
-            logger.info(f"Login exitoso: {usuario.email} ({usuario.rol.nombre if usuario.rol else 'sin rol'})")
+            logger.info(f"Login exitoso para rol: {usuario.rol.nombre if usuario.rol else 'sin rol'}")
             
             messages.success(request, f'¡Bienvenid@ {usuario.nombre}!')
             
             # Verificar si tiene contraseña temporal
             if usuario.tiene_password_temporal:
-                logger.info(f"Usuario {usuario.email} tiene contraseña temporal, mostrando modal de cambio")
+                logger.info("Usuario tiene contraseña temporal, mostrando modal de cambio")
                 # Renderizar página especial con modal activado
                 return render(request, 'cambio_password_temporal.html', {
                     'usuario': usuario,
@@ -131,16 +160,31 @@ def login_usuario(request):
                 })
             
             # Redirigir según el rol del usuario
-            print(f"\n🔄 INICIANDO REDIRECCIÓN...")
-            logger.info(f"Redirigiendo usuario por rol...")
+            logger.info(f"Redirigiendo usuario por rol: {usuario.rol.nombre}")
             redirect_response = _redirect_by_role(usuario, request)
-            print(f"   Respuesta: {redirect_response}")
-            print(f"   URL: {redirect_response.url if hasattr(redirect_response, 'url') else 'N/A'}")
-            logger.info(f"Respuesta de redirección obtenida: {redirect_response}")
             return redirect_response
         else:
+            # Verificar si el usuario existe pero está inactivo
+            try:
+                usuario_existe = Usuario.objects.get(email=email)
+                # Verificar la contraseña manualmente
+                if usuario_existe.check_password(password):
+                    # Usuario y contraseña correctos, pero está inactivo
+                    if not usuario_existe.estado or not usuario_existe.is_active:
+                        logger.warning("Usuario inactivo intenta hacer login")
+                        # Redirigir a home con parámetro para mostrar modal de usuario inactivo
+                        from django.http import HttpResponseRedirect
+                        from django.urls import reverse
+                        return HttpResponseRedirect(reverse('core:home') + '?usuario_inactivo=1')
+                    elif not usuario_existe.rol or not usuario_existe.rol.activo:
+                        logger.warning("Usuario con rol inactivo intenta hacer login")
+                        return HttpResponseRedirect(reverse('core:home') + '?usuario_inactivo=1')
+                    
+            except Usuario.DoesNotExist:
+                pass
+            
             # Log del intento fallido (ya se registra en el backend, pero agregamos contexto)
-            logger.warning(f"Intento de login fallido para email: {email}")
+            logger.warning("Intento de login fallido")
             messages.error(request, 'Email o contraseña incorrectos.')
             return redirect('core:home')
     
@@ -200,34 +244,16 @@ def _redirect_by_role(user, request=None):
     """
     Función helper para redirigir usuarios según su rol de forma segura.
     """
-    import time
-    session_id = f"{user.id}_{int(time.time())}"
-    
-    print(f"\n🎯 _redirect_by_role INICIADO [SESSION: {session_id}]")
-    print(f"   Usuario: {user.email}")
-    print(f"   Usuario ID: {user.id}")
-    print(f"   Usuario rol: {user.rol.nombre if user.rol else 'None'}")
-    print(f"   Usuario rol ID: {user.rol.id if user.rol else 'None'}")
-    print(f"   IP: {request.META.get('REMOTE_ADDR') if request else 'N/A'}")
-    
-    logger.info(f"=== INICIANDO _redirect_by_role [SESSION: {session_id}] ===")
-    logger.info(f"Usuario: {user.email}")
-    logger.info(f"Usuario ID: {user.id}")
-    logger.info(f"Usuario rol object: {user.rol}")
-    logger.info(f"IP del request: {request.META.get('REMOTE_ADDR') if request else 'N/A'}")
-    logger.info(f"User agent: {request.META.get('HTTP_USER_AGENT', 'N/A')[:100] if request else 'N/A'}")
     
     if not user.rol:
-        print(f"   ❌ ERROR: Usuario sin rol!")
-        logger.error(f"[SESSION: {session_id}] Usuario {user.email} sin rol durante redirección")
+        logger.error("Usuario sin rol durante redirección")
         if request:
             messages.error(request, 'Tu cuenta no tiene un rol asignado. Contacta al administrador.')
             logout(request)
         return redirect('core:home')
     
     rol_nombre = user.rol.nombre
-    print(f"   📋 Rol detectado: '{rol_nombre}' (ID: {user.rol.id})")
-    logger.info(f"[SESSION: {session_id}] Rol del usuario: '{rol_nombre}' (ID: {user.rol.id})")
+    logger.info(f"Redirección para rol: {rol_nombre}")
     
     # Diccionario actualizado con los roles correctos
     role_redirects = {
@@ -241,39 +267,28 @@ def _redirect_by_role(user, request=None):
     }
     
     redirect_url = role_redirects.get(rol_nombre, 'usuarios:inicio')
-    print(f"   🔗 URL calculada: {redirect_url}")
-    logger.info(f"[SESSION: {session_id}] URL de redirección calculada: {redirect_url}")
+    logger.info(f"URL de redirección calculada: {redirect_url}")
     
-    # Verificación crítica de seguridad
-    if rol_nombre == 'administrador_terma' and redirect_url != 'usuarios:adm_termas':
-        print(f"   🚨 ERROR CRÍTICO: Admin terma debería ir a adm_termas!")
-        logger.error(f"[SESSION: {session_id}] ERROR CRÍTICO: Admin terma redirigido a URL incorrecta!")
-        
-    if rol_nombre == 'administrador_general' and redirect_url != 'usuarios:admin_general':
-        print(f"   🚨 ERROR CRÍTICO: Admin general debería ir a admin_general!")
-        logger.error(f"[SESSION: {session_id}] ERROR CRÍTICO: Admin general redirigido a URL incorrecta!")
-        
-    if rol_nombre == 'cliente' and redirect_url != 'usuarios:inicio':
-        print(f"   🚨 ERROR CRÍTICO: Cliente debería ir a inicio!")
-        logger.error(f"[SESSION: {session_id}] ERROR CRÍTICO: Cliente redirigido a URL incorrecta!")
-        
-    if rol_nombre in ['trabajador', 'operador'] and redirect_url != 'usuarios:inicio_trabajador':
-        print(f"   🚨 ERROR CRÍTICO: Trabajador/Operador debería ir a inicio_trabajador!")
-        logger.error(f"[SESSION: {session_id}] ERROR CRÍTICO: Trabajador/Operador redirigido a URL incorrecta!")
+    # Verificación de seguridad simplificada
+    expected_urls = {
+        'administrador_terma': 'usuarios:adm_termas',
+        'administrador_general': 'usuarios:admin_general',
+        'cliente': 'usuarios:inicio',
+        'trabajador': 'usuarios:inicio_trabajador',
+        'operador': 'usuarios:inicio_trabajador'
+    }
+    
+    if rol_nombre in expected_urls and redirect_url != expected_urls[rol_nombre]:
+        logger.error(f"ERROR CRÍTICO: Rol {rol_nombre} redirigido a URL incorrecta!")
     
     try:
         # Verificar que la URL existe
         from django.urls import reverse
         resolved_url = reverse(redirect_url)
-        print(f"   ✅ URL resuelta: {resolved_url}")
-        logger.info(f"[SESSION: {session_id}] URL resuelta: {resolved_url}")
+        logger.info("URL resuelta exitosamente")
         return redirect(redirect_url)
     except Exception as e:
-        print(f"   ❌ ERROR resolviendo URL: {e}")
-        logger.error(f"[SESSION: {session_id}] Error resolviendo URL {redirect_url}: {str(e)}")
-        logger.error(f"[SESSION: {session_id}] Tipo de error: {type(e)}")
-        import traceback
-        logger.error(f"[SESSION: {session_id}] Traceback: {traceback.format_exc()}")
+        logger.error(f"Error resolviendo URL {redirect_url}: {str(e)}")
         return redirect('core:home')
 
 
@@ -291,9 +306,31 @@ def logout_usuario(request):
     """
     Vista de logout segura que limpia completamente la sesión.
     """
+    user_id = None
+    user_email = None
+    
     if request.user.is_authenticated:
-        logger.info(f"Logout: {request.user.email}")
-        messages.success(request, 'Has cerrado sesión correctamente.')
+        user_id = request.user.id
+        user_email = request.user.email
+        logger.info(f"Usuario {user_email} realizando logout")
+    
+    # Limpiar mensajes acumulados antes del logout
+    storage = messages.get_messages(request)
+    for _ in storage:
+        pass  # Esto consume y limpia todos los mensajes
+    
+    # Limpiar variables específicas de terma inactiva
+    if hasattr(request, '_terma_inactiva'):
+        delattr(request, '_terma_inactiva')
+        logger.info("Variable _terma_inactiva limpiada")
+    
+    # Limpiar caché específico del usuario
+    if user_id:
+        from django.core.cache import cache
+        cache.delete(f"user_{user_id}")
+        if user_email:
+            cache.delete(f"user_email_{user_email}")
+        logger.info(f"Caché de usuario {user_id} limpiado")
     
     # Logout de Django Auth
     logout(request)
@@ -301,6 +338,7 @@ def logout_usuario(request):
     # Limpiar cualquier dato de sesión restante
     request.session.flush()
     
+    logger.info("Logout completo, redirigiendo al home")
     return redirect('core:home')
 
 @login_required
@@ -313,7 +351,7 @@ def inicio(request):
         
         # Verificar que el usuario tenga rol asignado
         if not hasattr(usuario, 'rol') or not usuario.rol:
-            logger.error(f"Usuario {usuario.email} sin rol asignado")
+            logger.error("Usuario sin rol asignado")
             messages.error(request, 'Tu cuenta no tiene un rol asignado. Contacta al administrador.')
             return redirect('core:home')
         
@@ -327,7 +365,7 @@ def inicio(request):
         elif usuario.rol.nombre in ['admin_terma', 'administrador_terma']:
             return redirect('usuarios:adm_termas')
         else:
-            logger.error(f"Rol no reconocido para usuario {usuario.email}: {usuario.rol.nombre}")
+            logger.error(f"Rol no reconocido: {usuario.rol.nombre}")
             messages.error(request, 'Tu rol no está configurado correctamente. Contacta al administrador.')
             return redirect('core:home')
             
@@ -343,7 +381,7 @@ def inicio_cliente(request):
     try:
         usuario = request.user
         
-        logger.info(f"Usuario cliente autenticado correctamente: {usuario.email}")
+        logger.info("Usuario cliente autenticado correctamente")
         
         # Solo redirigir si HAY búsqueda real (no parámetros vacíos)
         busqueda = request.GET.get('busqueda', '').strip()
@@ -444,7 +482,7 @@ def inicio_cliente(request):
         return render(request, 'clientes/Inicio_cliente.html', context)
         
     except Exception as e:
-        logger.error(f"Error en vista inicio para usuario {request.user.email}: {str(e)}")
+        logger.error(f"Error en vista inicio: {str(e)}")
         import traceback
         logger.error(f"Traceback: {traceback.format_exc()}")
         messages.error(request, 'Ocurrió un error al cargar el dashboard.')
@@ -556,6 +594,26 @@ def adm_termas(request):
         usuario = request.user
         terma = usuario.terma
         
+        # Verificar si la terma está inactiva (viene del decorador)
+        # IMPORTANTE: Solo leer esta variable si el usuario es realmente admin de terma
+        terma_inactiva = False
+        if (hasattr(usuario, 'rol') and usuario.rol and 
+            usuario.rol.nombre == 'administrador_terma' and 
+            hasattr(request, '_terma_inactiva')):
+            terma_inactiva = getattr(request, '_terma_inactiva', False)
+            logger.info(f"Admin terma {usuario.email}: terma_inactiva = {terma_inactiva}")
+        
+        # Si la terma está inactiva, mostrar página especial
+        if terma_inactiva:
+            context = {
+                'title': f'Terma Inactiva - {terma.nombre_terma if terma else "Mi Terma"}',
+                'usuario': usuario,
+                'terma': terma,
+                'terma_inactiva': True,
+            }
+            logger.info(f"Mostrando página de terma inactiva para {usuario.email}")
+            return render(request, 'administrador_termas/adm_termas.html', context)
+        
         # Obtener filtro de comentarios desde GET parameter
         filtro_comentarios = request.GET.get('filtro_comentarios', 'recientes')
         
@@ -607,12 +665,12 @@ def adm_termas(request):
             })
         
         # Log de acceso exitoso
-        logger.info(f"Acceso dashboard admin terma: {usuario.email} - Terma: {terma.nombre_terma if terma else 'N/A'}")
+        logger.info(f"Acceso dashboard admin terma")
         
         return render(request, 'administrador_termas/adm_termas.html', context)
         
     except Exception as e:
-        logger.error(f"Error en vista adm_termas para usuario {request.user.email}: {str(e)}")
+        logger.error(f"Error en vista adm_termas: {str(e)}")
         messages.error(request, 'Ocurrió un error al cargar el dashboard.')
         return redirect('core:home')
 
@@ -656,7 +714,7 @@ def limpiar_compras_hoy(request):
         })
         
     except Exception as e:
-        logger.error(f"Error limpiando compras de hoy para usuario {request.user.email}: {str(e)}")
+        logger.error(f"Error limpiando compras de hoy: {str(e)}")
         return JsonResponse({'success': False, 'message': 'Error interno del servidor'})
 
 
@@ -699,7 +757,7 @@ def admin_general(request):
         return render(request, 'administrador_general/admin_general.html', context)
         
     except Exception as e:
-        logger.error(f"Error en vista admin_general para usuario {request.user.email}: {str(e)}")
+        logger.error(f"Error en vista admin_general: {str(e)}")
         messages.error(request, 'Ocurrió un error al cargar el dashboard.')
         return redirect('core:home')
 
@@ -732,24 +790,9 @@ def solicitudes_pendientes(request):
         return render(request, 'administrador_termas/solicitudes_pendientes.html', context)
         
     except Exception as e:
-        logger.error(f"Error en vista solicitudes_pendientes para usuario {request.user.email}: {str(e)}")
+        logger.error(f"Error en vista solicitudes_pendientes: {str(e)}")
         messages.error(request, 'Ocurrió un error al cargar las solicitudes.')
         return redirect('core:home')
-
-def logout_usuario(request):
-    """
-    Vista para cerrar sesión del usuario.
-    Sistema híbrido: cierra sesión tanto en Django Auth como en sesiones personalizadas.
-    """
-    # Cerrar sesión en Django Auth si está activo
-    if hasattr(request, 'user') and request.user.is_authenticated:
-        logout(request)
-    
-    # Limpiar todas las variables de sesión personalizadas
-    request.session.flush()
-    
-    messages.success(request, 'Has cerrado sesión correctamente.')
-    return redirect('core:home')
 
 def reset_password(request):
     """Vista para solicitar código de verificación"""
@@ -850,7 +893,7 @@ def cargar_comentarios_filtrados(request, terma_id):
         
         # Verificar que es el administrador de la terma
         if usuario.terma != terma:
-            logger.warning(f"Usuario {usuario.email} sin permisos para ver comentarios de terma {terma.nombre_terma}")
+            logger.warning(f"Usuario sin permisos para ver comentarios de terma {terma.nombre_terma}")
             return JsonResponse({'error': 'Sin permisos'}, status=403)
         
         filtro = request.GET.get('filtro', 'recientes')
@@ -873,7 +916,7 @@ def cargar_comentarios_filtrados(request, terma_id):
             'total': len(calificaciones_data)
         })
     except Exception as e:
-        logger.error(f"Error al cargar comentarios filtrados para usuario {request.user.email}: {str(e)}")
+        logger.error(f"Error al cargar comentarios filtrados: {str(e)}")
         return JsonResponse({'error': str(e)}, status=500)
     
 
@@ -1395,7 +1438,7 @@ def admin_general_terma_estadisticas(request, terma_id):
                 'total_fotos': terma.total_fotos() or 0,
             }
         except Exception as e:
-            print(f"Error en estadísticas generales: {e}")
+            logger.error(f"Error en estadísticas generales: {e}")
             estadisticas_generales = {
                 'total_visitantes': 0,
                 'ingresos_historicos': 0,
@@ -1425,7 +1468,7 @@ def admin_general_terma_estadisticas(request, terma_id):
                 'visitantes_totales': ventas_mes['visitantes_totales'] or 0,
             }
         except Exception as e:
-            print(f"Error en ventas del mes: {e}")
+            logger.error(f"Error en ventas del mes: {e}")
             ventas_mes = {
                 'total_ventas': 0,
                 'ingresos_totales': 0,
@@ -1452,7 +1495,7 @@ def admin_general_terma_estadisticas(request, terma_id):
                 'visitantes_totales': ventas_30_dias['visitantes_totales'] or 0,
             }
         except Exception as e:
-            print(f"Error en ventas de 30 días: {e}")
+            logger.error(f"Error en ventas de 30 días: {e}")
             ventas_30_dias = {
                 'total_ventas': 0,
                 'ingresos_totales': 0,
@@ -1466,13 +1509,13 @@ def admin_general_terma_estadisticas(request, terma_id):
             try:
                 ventas_dia = DetalleCompra.objects.filter(
                     entrada_tipo__terma=terma,
-                    entrada_tipo__fecha=fecha,
-                    compra__estado_pago='pagado'
+                    compra__estado_pago='pagado',
+                    compra__fecha_visita=fecha
                 ).aggregate(
                     total_visitantes=Sum('cantidad')
                 )['total_visitantes'] or 0
             except Exception as e:
-                print(f"Error calculando ocupación para fecha {fecha}: {e}")
+                logger.error(f"Error calculando ocupación para fecha {fecha}: {e}")
                 ventas_dia = 0
             
             ocupacion_diaria.append({
@@ -1496,7 +1539,7 @@ def admin_general_terma_estadisticas(request, terma_id):
         })
         
     except Exception as e:
-        print(f"Error general en estadísticas: {e}")
+        logger.error(f"Error general en estadísticas: {e}")
         return JsonResponse({
             'success': False,
             'message': f'Error al cargar las estadísticas: {str(e)}'
@@ -1599,7 +1642,6 @@ def historial_entradas(request):
         from ventas.models import Compra, DetalleCompra, RegistroEscaneo, CodigoQR
         from entradas.models import EntradaTipo
         from django.db.models import Count, Sum, Q
-        from django.utils import timezone
         from datetime import date, timedelta
         from collections import defaultdict
         
@@ -1803,3 +1845,165 @@ def historial_entradas(request):
     except Exception as e:
         messages.error(request, f'Error al cargar el historial de entradas: {str(e)}')
         return redirect('usuarios:adm_termas')
+
+
+# =============================================
+# VISTAS PARA CONFIGURACIÓN DE ADMINISTRADOR GENERAL
+# =============================================
+
+@admin_general_required
+def configuracion_admin(request):
+    """
+    Vista para mostrar la página de configuración del administrador general.
+    Permite ver y editar información personal y cambiar contraseña.
+    """
+    try:
+        usuario = request.user
+        
+        context = {
+            'title': 'Configuración de Cuenta - MiTerma Admin',
+            'usuario': usuario,
+            'user': usuario,  # Para compatibilidad con template
+        }
+        
+        return render(request, 'administrador_general/configuracion.html', context)
+        
+    except Exception as e:
+        logger.error(f"Error en configuracion_admin: {str(e)}")
+        messages.error(request, 'Ocurrió un error al cargar la configuración.')
+        return redirect('usuarios:admin_general')
+
+
+@admin_general_required
+@require_http_methods(["POST"])
+def actualizar_perfil_admin(request):
+    """
+    Vista para actualizar la información personal del administrador general.
+    """
+    try:
+        usuario = request.user
+        
+        # Verificar que es el formulario correcto
+        form_type = request.POST.get('form_type')
+        if form_type != 'perfil':
+            messages.error(request, 'Tipo de formulario inválido.')
+            return redirect('usuarios:configuracion_admin')
+        
+        # Obtener datos del formulario
+        nombre = request.POST.get('nombre', '').strip()
+        apellido = request.POST.get('apellido', '').strip()
+        telefono = request.POST.get('telefono', '').strip()
+        
+        # Validaciones
+        if not nombre or not apellido:
+            messages.error(request, 'El nombre y apellido son obligatorios.')
+            return redirect('usuarios:configuracion_admin')
+        
+        # Validar teléfono si se proporciona
+        if telefono and not re.match(r'^[\+]?[0-9\s\-]{8,15}$', telefono):
+            messages.error(request, 'El número de teléfono debe contener solo números, espacios, guiones y el símbolo +.')
+            return redirect('usuarios:configuracion_admin')
+        
+        # Actualizar datos del usuario
+        usuario.nombre = nombre
+        usuario.apellido = apellido
+        usuario.telefono = telefono if telefono else None
+        usuario.save()
+        
+        logger.info(f"Perfil actualizado para admin general: {usuario.email}")
+        messages.success(request, 'Tu información personal ha sido actualizada correctamente.')
+        
+        return redirect('usuarios:configuracion_admin')
+        
+    except Exception as e:
+        logger.error(f"Error actualizando perfil admin: {str(e)}")
+        messages.error(request, 'Ocurrió un error al actualizar tu información.')
+        return redirect('usuarios:configuracion_admin')
+
+
+@admin_general_required
+@require_http_methods(["POST"])
+def cambiar_contrasena_admin(request):
+    """
+    Vista para cambiar la contraseña del administrador general.
+    """
+    try:
+        usuario = request.user
+        
+        # Verificar que es el formulario correcto
+        form_type = request.POST.get('form_type')
+        if form_type != 'password':
+            messages.error(request, 'Tipo de formulario inválido.')
+            return redirect('usuarios:configuracion_admin')
+        
+        # Obtener datos del formulario
+        current_password = request.POST.get('current_password', '')
+        new_password = request.POST.get('new_password', '')
+        confirm_password = request.POST.get('confirm_password', '')
+        
+        # Validaciones básicas
+        if not current_password or not new_password or not confirm_password:
+            messages.error(request, 'Todos los campos son obligatorios.')
+            return redirect('usuarios:configuracion_admin')
+        
+        # Verificar contraseña actual
+        if not usuario.check_password(current_password):
+            logger.warning("Intento fallido de cambio de contraseña para admin - contraseña actual incorrecta")
+            messages.error(request, 'La contraseña actual es incorrecta.')
+            return redirect('usuarios:configuracion_admin')
+        
+        # Verificar que las nuevas contraseñas coincidan
+        if new_password != confirm_password:
+            messages.error(request, 'Las contraseñas nuevas no coinciden.')
+            return redirect('usuarios:configuracion_admin')
+        
+        # Validar fortaleza de la contraseña
+        if len(new_password) < 8:
+            messages.error(request, 'La contraseña debe tener al menos 8 caracteres.')
+            return redirect('usuarios:configuracion_admin')
+        
+        if not re.search(r'[A-Z]', new_password):
+            messages.error(request, 'La contraseña debe contener al menos una letra mayúscula.')
+            return redirect('usuarios:configuracion_admin')
+        
+        if not re.search(r'[a-z]', new_password):
+            messages.error(request, 'La contraseña debe contener al menos una letra minúscula.')
+            return redirect('usuarios:configuracion_admin')
+        
+        if not re.search(r'[0-9]', new_password):
+            messages.error(request, 'La contraseña debe contener al menos un número.')
+            return redirect('usuarios:configuracion_admin')
+        
+        if not re.search(r'[@$!%*?&]', new_password):
+            messages.error(request, 'La contraseña debe contener al menos un carácter especial (@$!%*?&).')
+            return redirect('usuarios:configuracion_admin')
+        
+        # Verificar que no sea la misma contraseña actual
+        if usuario.check_password(new_password):
+            messages.error(request, 'La nueva contraseña debe ser diferente a la actual.')
+            return redirect('usuarios:configuracion_admin')
+        
+        # Cambiar la contraseña
+        usuario.set_password(new_password)
+        
+        # Si tenía contraseña temporal, marcar como cambiada
+        if usuario.tiene_password_temporal:
+            usuario.tiene_password_temporal = False
+        
+        usuario.save()
+        
+        # Log del cambio exitoso
+        logger.info(f"Contraseña cambiada exitosamente para admin general: {usuario.email}")
+        
+        # Actualizar la sesión para mantener al usuario logueado
+        from django.contrib.auth import update_session_auth_hash
+        update_session_auth_hash(request, usuario)
+        
+        messages.success(request, 'Tu contraseña ha sido cambiada correctamente.')
+        
+        return redirect('usuarios:configuracion_admin')
+        
+    except Exception as e:
+        logger.error(f"Error cambiando contraseña admin: {str(e)}")
+        messages.error(request, 'Ocurrió un error al cambiar la contraseña.')
+        return redirect('usuarios:configuracion_admin')

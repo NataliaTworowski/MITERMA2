@@ -28,7 +28,7 @@ class CustomAuthBackend(BaseBackend):
         """
         logger.info(f"=== INICIANDO AUTENTICACIÓN ===")
         logger.info(f"Email recibido: '{email}' (tipo: {type(email)})")
-        logger.info(f"Password recibido: '{password}' (tipo: {type(password)}, longitud: {len(password) if password else 0})")
+        logger.info(f"Password recibido: '***' (longitud: {len(password) if password else 0})")
         logger.info(f"IP cliente: {self._get_client_ip(request)}")
         
         if not email or not password:
@@ -44,16 +44,27 @@ class CustomAuthBackend(BaseBackend):
             return None
         
         try:
-            # Buscar usuario por email
-            logger.info(f"Buscando usuario en base de datos...")
-            usuario = self._get_user_by_email(email)
+            # IMPORTANTE: No usar caché para búsqueda de usuario - buscar directamente en DB
+            logger.info(f"=== BUSCANDO USUARIO DIRECTAMENTE EN DB ===")
+            logger.info(f"Query: Usuario.objects.get(email='{email}')")
+            
+            # Buscar directamente en la base de datos, SIN caché
+            usuario = Usuario.objects.select_related('rol', 'terma').filter(email=email).first()
             
             if not usuario:
-                logger.warning(f"Usuario no encontrado: {email}")
+                logger.warning(f"Usuario NO encontrado en DB: {email}")
+                # Verificar si hay algún usuario con email similar
+                usuarios_similares = Usuario.objects.filter(email__icontains=email[:10]).values_list('email', flat=True)[:5]
+                logger.info(f"Usuarios con email similar: {list(usuarios_similares)}")
                 self._record_failed_attempt(request, email, 'user_not_found')
                 return None
             
-            logger.info(f"Usuario encontrado: ID={usuario.id}, email={usuario.email}, rol={usuario.rol.nombre if usuario.rol else 'None'}")
+            logger.info(f"=== USUARIO ENCONTRADO ===")
+            logger.info(f"Usuario ID: {usuario.id}")
+            logger.info(f"Usuario email DB: '{usuario.email}'")
+            logger.info(f"Usuario nombre: '{usuario.nombre}'")
+            logger.info(f"Usuario rol: {usuario.rol.nombre if usuario.rol else 'None'}")
+            logger.info(f"Usuario activo: {usuario.estado}")
             
             # Verificar estado del usuario
             if not self._is_user_valid(usuario):
@@ -61,10 +72,16 @@ class CustomAuthBackend(BaseBackend):
                 self._record_failed_attempt(request, email, 'user_inactive')
                 return None
             
-            logger.info(f"Verificando password...")
+            logger.info(f"=== VERIFICANDO PASSWORD ===")
+            logger.info(f"Hash en DB: {usuario.password[:20]}...")
+            
             # Verificar contraseña
-            if self._verify_password(usuario, password):
-                logger.info(f"Password verificado correctamente para: {email}")
+            password_valida = self._verify_password(usuario, password)
+            logger.info(f"Password válida: {password_valida}")
+            
+            if password_valida:
+                logger.info(f"=== AUTENTICACIÓN EXITOSA ===")
+                logger.info(f"Retornando usuario: ID={usuario.id}, email={usuario.email}")
                 self._record_successful_login(request, usuario)
                 self._clear_failed_attempts(request, email)
                 return usuario
@@ -81,10 +98,10 @@ class CustomAuthBackend(BaseBackend):
     
     def get_user(self, user_id):
         """
-        Obtiene un usuario por ID con cache para mejor rendimiento.
+        Obtiene un usuario por ID con cache mínimo para evitar problemas.
         """
         try:
-            # Intentar obtener del cache primero
+            # Usar caché muy corto (30 segundos) para evitar problemas
             cache_key = f"user_{user_id}"
             usuario = cache.get(cache_key)
             
@@ -93,17 +110,19 @@ class CustomAuthBackend(BaseBackend):
                     pk=user_id, 
                     estado=True
                 )
-                # Cachear por 5 minutos
-                cache.set(cache_key, usuario, 300)
+                # Cachear solo por 30 segundos para evitar problemas
+                cache.set(cache_key, usuario, 30)
             
             return usuario if self._is_user_valid(usuario) else None
             
         except Usuario.DoesNotExist:
+            # Limpiar caché si el usuario no existe
+            cache.delete(cache_key)
             return None
     
     def _get_user_by_email(self, email):
         """
-        Obtiene usuario por email con cache.
+        Obtiene usuario por email con cache mínimo.
         """
         cache_key = f"user_email_{email}"
         usuario = cache.get(cache_key)
@@ -113,7 +132,8 @@ class CustomAuthBackend(BaseBackend):
                 usuario = Usuario.objects.select_related('rol', 'terma').get(
                     email=email
                 )
-                cache.set(cache_key, usuario, 300)  # Cache por 5 minutos
+                # Cache muy corto para evitar problemas
+                cache.set(cache_key, usuario, 30)
             except Usuario.DoesNotExist:
                 return None
         
@@ -134,9 +154,9 @@ class CustomAuthBackend(BaseBackend):
         if not usuario.rol or not usuario.rol.activo:
             return False
         
-        # Si es admin de terma, debe tener terma asignada y activa
+        # Si es admin de terma, debe tener terma asignada (pero puede estar inactiva)
         if usuario.rol.nombre == 'administrador_terma':
-            if not usuario.terma or usuario.terma.estado_suscripcion != 'activa':
+            if not usuario.terma:
                 return False
         
         return True

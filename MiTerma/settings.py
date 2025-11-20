@@ -29,14 +29,35 @@ SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
 
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", default="", cast=lambda v: [h.strip() for h in v.split(",") if h])
-# CSRF trusted origins and optional public base URL for testing (ngrok)
+
+# Agregar soporte automático para dominios de desarrollo y producción
+ALLOWED_HOSTS.extend([
+    '.trycloudflare.com',  # Wildcard para todos los subdominios de Cloudflare Tunnel
+    'localhost',
+    '127.0.0.1',
+    '0.0.0.0',  # Para contenedores Docker
+])
+
+# Eliminar duplicados manteniendo el orden
+ALLOWED_HOSTS = list(dict.fromkeys(ALLOWED_HOSTS))
+# Filtrar hosts vacíos
+ALLOWED_HOSTS = [h for h in ALLOWED_HOSTS if h.strip()]
+
+# CSRF trusted origins and optional public base URL for testing (Cloudflare Tunnel)
 from decouple import UndefinedValueError
 try:
     CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='', cast=Csv())
 except UndefinedValueError:
     CSRF_TRUSTED_ORIGINS = []
 
-# If you set MP_BASE_URL (public/ngrok URL), include it automatically
+# Agregar orígenes CSRF automáticamente
+CSRF_TRUSTED_ORIGINS.extend([
+    'https://*.trycloudflare.com',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+])
+
+# If you set MP_BASE_URL (public Cloudflare Tunnel URL), include it automatically
 MP_BASE_URL = os.getenv('MP_BASE_URL') or config('MP_BASE_URL', default='')
 if MP_BASE_URL:
     from urllib.parse import urlparse
@@ -48,6 +69,10 @@ if MP_BASE_URL:
     # ensure host in ALLOWED_HOSTS
     if host and host not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append(host)
+
+# Limpiar CSRF_TRUSTED_ORIGINS duplicados
+CSRF_TRUSTED_ORIGINS = list(dict.fromkeys(CSRF_TRUSTED_ORIGINS))
+CSRF_TRUSTED_ORIGINS = [o for o in CSRF_TRUSTED_ORIGINS if o.strip()]
 
 
 # Application definition
@@ -96,6 +121,8 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    # Middleware para limpiar variables entre usuarios
+    'usuarios.clean_middleware.CleanRequestMiddleware',
     # Middlewares personalizados de seguridad - TEMPORALMENTE DESACTIVADOS PARA DEBUG
     # 'usuarios.middleware.AuthMigrationMiddleware',
     # 'usuarios.middleware.SecurityAuditMiddleware', 
@@ -303,4 +330,23 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = config('EMAIL_HOST_USER', default='noreply@miterma.com')
-SERVER_EMAIL = config('EMAIL_HOST_USER', default='noreply@miterma.com')  
+SERVER_EMAIL = config('EMAIL_HOST_USER', default='noreply@miterma.com')
+
+# Configuración de Cache - Usando LocMemCache con timeouts cortos para evitar problemas
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'miterma-cache',
+        'TIMEOUT': 60,  # 1 minuto por defecto
+        'OPTIONS': {
+            'MAX_ENTRIES': 1000,  # Limitar entradas para evitar crecimiento
+            'CULL_FREQUENCY': 3,  # Limpiar cada 3 accesos cuando se llena
+        }
+    }
+}
+
+# Auto-limpieza de cache cada cierto tiempo
+CACHE_AUTO_CLEAN = {
+    'enabled': True,
+    'interval': 300,  # 5 minutos
+}  

@@ -2,17 +2,22 @@ from termas.forms import SolicitudTermaForm
 from termas.models import SolicitudTerma, Comuna, Terma, PlanSuscripcion
 from django.shortcuts import render
 from django.http import JsonResponse
+from django.utils import timezone
 
 def mostrar_termas(request):
-    # Obtener solo termas que tienen calificaciones
-    termas_query = Terma.objects.all()
+    # Obtener solo termas activas
+    termas_query = Terma.objects.filter(estado_suscripcion='activa')
     
     # Aplicar filtros basados en los parámetros GET
+    nombre_filtro = request.GET.get('nombre')
     comuna_filtro = request.GET.get('comuna')
     region_filtro = request.GET.get('region')
     calificacion_filtro = request.GET.get('calificacion')
-    precio_min = request.GET.get('precio_min')
-    precio_max = request.GET.get('precio_max')
+    precio_filtro = request.GET.get('precio')
+    
+    # Filtro por nombre (búsqueda parcial, insensible a mayúsculas)
+    if nombre_filtro:
+        termas_query = termas_query.filter(nombre_terma__icontains=nombre_filtro)
     
     # Filtro por comuna
     if comuna_filtro:
@@ -35,21 +40,24 @@ def mostrar_termas(request):
         except (ValueError, TypeError):
             pass
     
-    # Filtro por precio mínimo
-    if precio_min:
+    # Filtro por rango de precio
+    if precio_filtro:
         try:
-            precio_min_val = float(precio_min)
-            # Filtrar termas que tengan algún tipo de entrada con precio >= precio_min
-            termas_query = termas_query.filter(entradatipo__precio__gte=precio_min_val).distinct()
-        except (ValueError, TypeError):
-            pass
-    
-    # Filtro por precio máximo
-    if precio_max:
-        try:
-            precio_max_val = float(precio_max)
-            # Filtrar termas que tengan algún tipo de entrada con precio <= precio_max
-            termas_query = termas_query.filter(entradatipo__precio__lte=precio_max_val).distinct()
+            precio_rango = int(precio_filtro)
+            if precio_rango == 1:  # Hasta $20.000
+                termas_query = termas_query.filter(entradatipo__precio__lte=20000).distinct()
+            elif precio_rango == 2:  # $20.000 - $40.000
+                termas_query = termas_query.filter(
+                    entradatipo__precio__gte=20000,
+                    entradatipo__precio__lte=40000
+                ).distinct()
+            elif precio_rango == 3:  # $40.000 - $60.000
+                termas_query = termas_query.filter(
+                    entradatipo__precio__gte=40000,
+                    entradatipo__precio__lte=60000
+                ).distinct()
+            elif precio_rango == 4:  # Más de $60.000
+                termas_query = termas_query.filter(entradatipo__precio__gte=60000).distinct()
         except (ValueError, TypeError):
             pass
     

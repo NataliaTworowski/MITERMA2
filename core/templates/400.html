@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error 400 - Solicitud Incorrecta | MiTerma</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+    <div class="max-w-md w-full mx-4">
+        <div class="bg-white rounded-2xl shadow-xl p-8 text-center">
+            <!-- Icono de error -->
+            <div class="mb-6">
+                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
+                    <svg class="h-8 w-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">Error 400</h1>
+                <h2 class="text-xl text-gray-600 mb-4">Solicitud Incorrecta</h2>
+            </div>
+
+            <div class="mb-8">
+                <p class="text-gray-600 text-base leading-relaxed mb-4">
+                    La solicitud que enviaste no pudo ser procesada debido a un formato incorrecto o datos inválidos.
+                </p>
+                <p class="text-gray-600 text-sm">
+                    Por favor, revisa los datos e intenta nuevamente.
+                </p>
+            </div>
+
+            <!-- Botones de acción -->
+            <div class="space-y-3">
+                <a href="/" class="block w-full bg-gray-200 hover:bg-gray-300 text-gray-700 py-3 px-6 rounded-lg font-medium transition-colors duration-200">
+                    Ir al Inicio
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

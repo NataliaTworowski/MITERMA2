@@ -1,0 +1,99 @@
+<!-- Modal de Usuario Inactivo -->
+<div id="usuarioInactivoModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4 hidden" onclick="if(event.target === this) closeUsuarioInactivoModal()">
+    <div id="usuarioInactivoModalContent" class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative transform transition-all duration-200 scale-100 opacity-100" onclick="event.stopPropagation()">
+        <!-- Header con icono -->
+        <div class="text-center mb-6">
+            <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
+                <svg class="h-8 w-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 15.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-900 mb-2">Cuenta Inactiva</h2>
+        </div>
+
+        <!-- Contenido -->
+        <div class="text-center mb-8">
+            <p class="text-gray-600 text-base leading-relaxed mb-4">
+                Tu cuenta está actualmente <strong>inactiva</strong> y no puedes acceder al sistema.
+            </p>
+            <p class="text-gray-600 text-base leading-relaxed">
+                Para reactivar tu cuenta o resolver cualquier problema, por favor ponte en contacto con nuestro equipo de soporte.
+            </p>
+        </div>
+
+        <!-- Información de contacto -->
+        <div class="bg-gray-50 rounded-lg p-4 mb-6">
+            <h3 class="font-semibold text-gray-900 mb-3">Contacta con Soporte:</h3>
+            <div class="space-y-2 text-sm text-gray-600">
+                <div class="flex items-center gap-2">
+                    <svg class="h-4 w-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                    </svg>
+                    <span>mitermasoporte@gmail.com</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <svg class="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                    </svg>
+                    <span>+56 9 58070480</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Botones -->
+        <div class="flex flex-col gap-3">
+            <a href="mailto:soporte@miterma.com?subject=Cuenta%20Inactiva&body=Hola,%0A%0AMi%20cuenta%20está%20inactiva%20y%20necesito%20ayuda%20para%20reactivarla.%0A%0AGracias."
+               class="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold text-center transition-all duration-200 shadow-md hover:shadow-lg">
+                <svg class="inline h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                </svg>
+                Enviar Email a Soporte
+            </a>
+            
+            <button onclick="closeUsuarioInactivoModal()" 
+                    class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 py-3 px-4 rounded-lg font-semibold transition-all duration-200">
+                Cerrar
+            </button>
+        </div>
+
+        <!-- Botón de cerrar (X) -->
+        <button type="button" onclick="closeUsuarioInactivoModal()" 
+                class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full text-xl font-bold transition-all duration-200">
+            ✕
+        </button>
+    </div>
+</div>
+
+<script>
+function openUsuarioInactivoModal() {
+    const modal = document.getElementById('usuarioInactivoModal');
+    const modalContent = document.getElementById('usuarioInactivoModalContent');
+    
+    if (modal && modalContent) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        
+        // Animar la entrada
+        setTimeout(() => {
+            modalContent.classList.remove('scale-95', 'opacity-0');
+            modalContent.classList.add('scale-100', 'opacity-100');
+        }, 10);
+    }
+}
+
+function closeUsuarioInactivoModal() {
+    const modal = document.getElementById('usuarioInactivoModal');
+    const modalContent = document.getElementById('usuarioInactivoModalContent');
+    
+    if (modal && modalContent) {
+        // Animar el cierre
+        modalContent.classList.remove('scale-100', 'opacity-100');
+        modalContent.classList.add('scale-95', 'opacity-0');
+        
+        setTimeout(() => {
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }, 200);
+    }
+}
+</script>

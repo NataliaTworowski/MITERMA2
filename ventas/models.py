@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 from datetime import date
 from usuarios.models import Usuario
 from entradas.models import EntradaTipo
@@ -53,6 +54,8 @@ class RegistroEscaneo(models.Model):
     mensaje = models.CharField(max_length=255, blank=True)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     dispositivo = models.CharField(max_length=255, blank=True)
+    email_finalizacion_enviado = models.BooleanField(default=False, help_text="Indica si se envió el email cuando la entrada se finalizó")
+    fecha_email_finalizacion = models.DateTimeField(null=True, blank=True, help_text="Fecha y hora cuando se envió el email de finalización")
 
 
 class CuponDescuento(models.Model):
@@ -164,14 +167,12 @@ class DistribucionPago(models.Model):
     
     def marcar_como_procesado(self):
         """Marca la distribución como procesada"""
-        from django.utils import timezone
         self.estado = 'procesado'
         self.fecha_procesado = timezone.now()
         self.save()
     
     def marcar_pago_terma_enviado(self, referencia=None):
         """Marca que el pago fue enviado a la terma"""
-        from django.utils import timezone
         self.estado = 'pagado_terma'
         self.fecha_pago_terma = timezone.now()
         if referencia:

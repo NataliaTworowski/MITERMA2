@@ -10,6 +10,10 @@ from termas.models import Terma
 from .models import Usuario
 from .decorators import cliente_required
 import json
+import logging
+
+# Configurar logger
+logger = logging.getLogger(__name__)
 
 def trabajador_required(view_func):
     """
@@ -33,24 +37,21 @@ def inicio_trabajador(request):
     hoy = timezone.now().date()
     inicio_mes = hoy.replace(day=1)
     
-    print(f"DEBUG TRABAJADOR - Usuario: {usuario.email} (ID: {usuario.id})")
-    print(f"DEBUG TRABAJADOR - Rol: {usuario.rol.nombre if usuario.rol else 'Sin rol'}")
+    logger.info("Iniciando vista trabajador")
     
     # Obtener la terma asociada al trabajador
     terma = usuario.terma
     
-    print(f"DEBUG TRABAJADOR - Usuario: {usuario.email} (ID: {usuario.id})")
-    print(f"DEBUG TRABAJADOR - Rol: {usuario.rol.nombre if usuario.rol else 'Sin rol'}")
-    print(f"DEBUG TRABAJADOR - Terma asignada: {terma.nombre_terma if terma else 'Sin terma asignada'}")
+    logger.info(f"Terma asignada al trabajador")
     
     # Si no tiene terma asignada, usar la primera terma activa como fallback
     if not terma:
         from termas.models import Terma
         terma = Terma.objects.filter(estado_suscripcion='activa').first()
         if terma:
-            print(f"DEBUG TRABAJADOR - Usando fallback a terma activa: {terma.nombre_terma}")
+            logger.info("Usando fallback a terma activa")
         else:
-            print("DEBUG TRABAJADOR - No hay termas activas disponibles")
+            logger.warning("No hay termas activas disponibles")
     
     # Calcular estadísticas del día
     entradas_hoy = 0
@@ -60,62 +61,76 @@ def inicio_trabajador(request):
     ultimos_registros = []
     
     if terma:
-        print(f"DEBUG TRABAJADOR - Calculando estadísticas para terma: {terma.nombre_terma}")
+        logger.info("Calculando estadísticas para terma")
         
-        # Entradas escaneadas hoy (usar RegistroEscaneo para mayor precisión y evitar problemas de zona horaria)
         from ventas.models import RegistroEscaneo
+        from django.db.models import Sum, Q
+        
+        # Obtener zona horaria y rango del día actual
         tz = timezone.get_current_timezone()
         inicio_dia = timezone.localtime(timezone.now(), tz).replace(hour=0, minute=0, second=0, microsecond=0)
         fin_dia = inicio_dia + timedelta(days=1)
+        
+        # Base queryset para registros de hoy exitosos
         registros_hoy = RegistroEscaneo.objects.filter(
             codigo_qr__compra__terma=terma,
-            usuario_scanner__terma=terma,  # Solo escaneos de trabajadores de esta terma
             fecha_escaneo__gte=inicio_dia,
             fecha_escaneo__lt=fin_dia,
             exitoso=True
-        )
+        ).select_related('codigo_qr__compra')
+        
+        # Entradas escaneadas hoy (contar registros únicos)
         entradas_hoy = registros_hoy.count()
-        print(f"DEBUG TRABAJADOR - Escaneos registrados hoy: {entradas_hoy}")
-        # Debug: mostrar algunos registros de hoy
-        for registro in registros_hoy[:3]:
-            print(f"  - Escaneo: {registro.codigo_qr.compra.usuario.email} a las {registro.fecha_escaneo} por {registro.usuario_scanner.email}")
+        logger.debug(f"Escaneos registrados hoy: {entradas_hoy}")
         
-        # Visitantes actuales: sumar la cantidad de cada entrada escaneada hoy
-        visitantes_actuales = 0
-        for registro in registros_hoy:
-            compra = registro.codigo_qr.compra
-            visitantes_actuales += getattr(compra, 'cantidad', 1)
+        # Visitantes actuales: sumar cantidad de personas por entrada
+        visitantes_actuales = registros_hoy.aggregate(
+            total=Sum('codigo_qr__compra__cantidad')
+        )['total'] or 0
+        logger.debug(f"Visitantes actuales: {visitantes_actuales}")
         
-        # Total escaneado del mes (usar RegistroEscaneo)
+        # Total escaneado del mes
+        inicio_mes_aware = timezone.make_aware(
+            datetime.combine(inicio_mes, datetime.min.time()),
+            tz
+        )
         registros_mes = RegistroEscaneo.objects.filter(
             codigo_qr__compra__terma=terma,
-            usuario_scanner__terma=terma,  # Solo escaneos de trabajadores de esta terma
-            fecha_escaneo__gte=inicio_mes,
+            fecha_escaneo__gte=inicio_mes_aware,
             exitoso=True
         )
         total_mes = registros_mes.count()
-        print(f"DEBUG TRABAJADOR - Escaneos registrados este mes: {total_mes}")
+        logger.debug(f"Escaneos registrados este mes: {total_mes}")
         
-        # Entradas inválidas hoy (por ahora simulamos con 0)
-        entradas_invalidas_hoy = 0
+        # Entradas inválidas hoy (escaneos no exitosos)
+        entradas_invalidas_hoy = RegistroEscaneo.objects.filter(
+            codigo_qr__compra__terma=terma,
+            fecha_escaneo__gte=inicio_dia,
+            fecha_escaneo__lt=fin_dia,
+            exitoso=False
+        ).count()
+        logger.debug(f"Entradas inválidas hoy: {entradas_invalidas_hoy}")
         
-        # Últimos registros (últimos 10 registros de escaneo)
+        # Últimos registros (últimos 10 registros de escaneo exitosos)
         ultimos_registros = RegistroEscaneo.objects.filter(
             codigo_qr__compra__terma=terma,
-            usuario_scanner__terma=terma,  # Solo escaneos de trabajadores de esta terma
-            exitoso=True,
-            fecha_escaneo__isnull=False
+            exitoso=True
         ).select_related(
-            'codigo_qr__compra', 
             'codigo_qr__compra__usuario',
             'usuario_scanner'
         ).prefetch_related(
-            'codigo_qr__compra__detalles'
+            'codigo_qr__compra__detalles__entrada_tipo'
         ).order_by('-fecha_escaneo')[:10]
         
-        print(f"DEBUG TRABAJADOR - Últimos registros encontrados: {ultimos_registros.count()}")
+        logger.debug(f"Últimos registros encontrados: {ultimos_registros.count()}")
+        
+        # Debug: mostrar algunos registros de hoy
+        for registro in registros_hoy[:3]:
+            print(f"  - Escaneo: {registro.codigo_qr.compra.usuario.email} "
+                  f"a las {registro.fecha_escaneo} "
+                  f"(cantidad: {registro.codigo_qr.compra.cantidad})")
     else:
-        print("DEBUG TRABAJADOR - Sin terma asignada, estadísticas en 0")
+        logger.warning("Sin terma asignada, estadísticas en 0")
     
     context = {
         'title': f'Dashboard - {terma.nombre_terma if terma else "Trabajador"}',
@@ -130,10 +145,7 @@ def inicio_trabajador(request):
         'ultimos_registros': ultimos_registros,
     }
     
-    print(f"DEBUG TRABAJADOR - Context preparado para template:")
-    print(f"  - Title: {context['title']}")
-    print(f"  - Terma en context: {context['terma'].nombre_terma if context['terma'] else 'None'}")
-    print(f"  - Estadísticas: {context['estadisticas']}")
+    logger.debug("Context preparado para vista trabajador")
     
     return render(request, 'trabajador/inicio_trabajador.html', context)
 
@@ -180,9 +192,10 @@ def escanear_qr(request):
         
         # Verificar si ya fue usado
         if codigo_qr.usado:
+            fecha_local = timezone.localtime(codigo_qr.fecha_uso)
             return JsonResponse({
                 'success': False,
-                'error': f'Este código QR ya fue utilizado el {codigo_qr.fecha_uso.strftime("%d/%m/%Y %H:%M")}',
+                'error': f'Este código QR ya fue utilizado el {fecha_local.strftime("%d/%m/%Y %H:%M")}',
                 'ya_usado': True
             })
         
@@ -213,9 +226,9 @@ def escanear_qr(request):
                 ip_address=request.META.get('REMOTE_ADDR', ''),
                 dispositivo=request.META.get('HTTP_USER_AGENT', '')
             )
-            print(f"DEBUG - Registro de escaneo creado: ID {registro.id}")
+            logger.info(f"Registro de escaneo creado: ID {registro.id}")
         except Exception as e:
-            print(f"DEBUG - Error al crear registro de escaneo: {str(e)}")
+            logger.error(f"Error al crear registro de escaneo: {str(e)}")
         
         return JsonResponse({
             'success': True,

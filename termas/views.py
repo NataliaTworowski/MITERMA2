@@ -899,6 +899,30 @@ def vista_termas(request):
 def vista_terma(request, terma_id):
     """Vista para mostrar los datos de una terma y permitir elegir entrada - Migrada a Django Auth."""
     terma = get_object_or_404(Terma, id=terma_id)
+    
+    # Verificar si la terma está activa
+    if terma.estado_suscripcion != 'activa':
+        # Si el usuario es admin general, permitir el acceso
+        if request.user.is_authenticated and hasattr(request.user, 'rol') and request.user.rol and request.user.rol.nombre == 'administrador_general':
+            pass  # Permitir acceso sin restricciones
+        # Si el usuario es el dueño de la terma (admin terma), mostrar popup informativo
+        elif request.user.is_authenticated and hasattr(request.user, 'rol') and request.user.rol and request.user.rol.nombre == 'administrador_terma' and request.user.terma and request.user.terma.id == terma.id:
+            context = {
+                'terma': terma,
+                'terma_inactiva': True,
+                'navbar_mode': 'termas_only'
+            }
+            return render(request, 'administrador_termas/vista_terma.html', context)
+        else:
+            # Para clientes y otros usuarios, redirigir con error 404
+            from core.error_views import custom_error_page
+            return custom_error_page(
+                request, 
+                error_type='not_found',
+                message='Esta terma no está disponible en este momento.',
+                status_code=404
+            )
+    
     entradas = terma.get_tipos_entrada()
     imagenes = ImagenTerma.objects.filter(terma=terma)
     calificacion_promedio = terma.promedio_calificacion()
@@ -999,6 +1023,7 @@ def vista_terma(request, terma_id):
         'servicios_por_entrada_json': json.dumps(servicios_por_entrada),
         'opiniones': opiniones,
         'usuario': request.user if request.user.is_authenticated else None,
+        'navbar_mode': 'termas_only'  # Para mostrar navbar azul con solo login/registro
     }
     
     return render(request, 'administrador_termas/vista_terma.html', context)
@@ -1536,28 +1561,53 @@ def cambiar_estado_trabajador(request, trabajador_id):
         trabajador = get_object_or_404(Usuario, id=trabajador_id)
         logger.info(f"=== TRABAJADOR ENCONTRADO: {trabajador.email}, ESTADO ACTUAL: {trabajador.is_active} ===")
         
-        # Verificar que el trabajador pertenece a la terma y tiene rol trabajador
-        if trabajador.terma != terma or (trabajador.rol and trabajador.rol.nombre != 'trabajador'):
+        # Verificar permisos: debe ser trabajador actual de la terma O ex-trabajador de esta terma
+        es_trabajador_actual = (trabajador.terma == terma and trabajador.rol and trabajador.rol.nombre == 'trabajador')
+        
+        # Verificar si fue trabajador de esta terma anteriormente (para reactivación)
+        from usuarios.models import HistorialTrabajador
+        fue_trabajador_anterior = HistorialTrabajador.objects.filter(
+            usuario=trabajador, 
+            terma=terma
+        ).exists()
+        
+        if not es_trabajador_actual and not fue_trabajador_anterior:
+            logger.warning(f"=== PERMISO DENEGADO: {trabajador.email} no es/fue trabajador de {terma.nombre_terma} ===")
             return JsonResponse({'success': False, 'error': 'No tienes permisos para modificar este trabajador.'})
+        
+        logger.info(f"=== PERMISO CONCEDIDO: es_trabajador_actual={es_trabajador_actual}, fue_trabajador_anterior={fue_trabajador_anterior} ===")
         
         # No permitir desactivar al mismo administrador
         if trabajador.id == usuario_admin.id:
             return JsonResponse({'success': False, 'error': 'No puedes desactivar tu propia cuenta.'})
         
-        # Cambiar estado
-        nuevo_estado = not trabajador.is_active
-        logger.info(f"=== CAMBIANDO ESTADO DE {trabajador.is_active} A {nuevo_estado} ===")
-        logger.info(f"=== VALOR ACTUAL DEL CAMPO 'estado': {trabajador.estado} ===")
+        # Determinar el nuevo estado - para jefe de terma es diferente
+        if usuario_admin.rol and usuario_admin.rol.nombre == 'administrador_terma':
+            # Para jefe de terma: "desactivar" significa cambiar rol, no desactivar cuenta
+            if trabajador.rol and trabajador.rol.nombre == 'trabajador':
+                # Está activo como trabajador, lo vamos a convertir a cliente
+                nuevo_estado_cuenta = True  # La cuenta sigue activa
+                accion_realizada = 'rol_cambiado_a_cliente'
+                logger.info(f"=== JEFE DE TERMA: CONVIRTIENDO TRABAJADOR A CLIENTE ===")
+            else:
+                # Es cliente/ex-trabajador, lo vamos a reactivar como trabajador
+                nuevo_estado_cuenta = True  # La cuenta sigue activa
+                accion_realizada = 'rol_cambiado_a_trabajador'
+                logger.info(f"=== JEFE DE TERMA: CONVIRTIENDO CLIENTE A TRABAJADOR ===")
+        else:
+            # Para admin general: desactivar/activar cuenta normalmente
+            nuevo_estado_cuenta = not trabajador.is_active
+            accion_realizada = 'estado_cuenta_cambiado'
+            logger.info(f"=== ADMIN GENERAL: CAMBIANDO ESTADO DE CUENTA ===")
         
-        trabajador.is_active = nuevo_estado
-        trabajador.estado = nuevo_estado
+        logger.info(f"=== ACCIÓN: {accion_realizada}, ESTADO CUENTA: {nuevo_estado_cuenta} ===")
         
-        # Si se está DESACTIVANDO el trabajador
-        if not nuevo_estado:
-            logger.info(f"=== DESACTIVANDO - ROL ACTUAL: {trabajador.rol.nombre if trabajador.rol else None} (ID: {trabajador.rol.id if trabajador.rol else None}) ===")
-            logger.info(f"=== DESACTIVANDO - TERMA ACTUAL: {trabajador.terma.nombre_terma if trabajador.terma else None} ===")
+        # Aplicar cambios según la acción
+        if accion_realizada == 'rol_cambiado_a_cliente':
+            # Jefe de terma convierte trabajador a cliente
+            logger.info(f"=== CONVIRTIENDO TRABAJADOR A CLIENTE ===")
+            logger.info(f"=== ROL ACTUAL: {trabajador.rol.nombre if trabajador.rol else None} ===")
             
-            # Importar el modelo HistorialTrabajador
             from usuarios.models import HistorialTrabajador
             
             # Finalizar el historial activo del trabajador en esta terma
@@ -1567,8 +1617,9 @@ def cambiar_estado_trabajador(request, trabajador_id):
                 activo=True
             ).first()
             
+
             if historial_activo:
-                historial_activo.finalizar(motivo='desactivado')
+                historial_activo.finalizar(motivo='convertido_a_cliente')
                 logger.info(f"=== HISTORIAL FINALIZADO ===")
             else:
                 # Si no existe historial, crearlo y finalizarlo inmediatamente
@@ -1578,58 +1629,94 @@ def cambiar_estado_trabajador(request, trabajador_id):
                     rol=trabajador.rol,
                     fecha_inicio=trabajador.date_joined,
                     fecha_fin=timezone.now(),
-                    motivo_fin='desactivado',
+                    motivo_fin='convertido_a_cliente',
                     activo=False
                 )
                 logger.info(f"=== HISTORIAL CREADO Y FINALIZADO ===")
-            
-            # Cambiar rol a cliente (rol_id = 1)
+
+            # Cambiar rol a cliente
             try:
                 rol_cliente = Rol.objects.get(id=1)
                 trabajador.rol = rol_cliente
-                logger.info(f"=== ROL CAMBIADO A: {rol_cliente.nombre} (ID: {rol_cliente.id}) ===")
+                trabajador.terma = None
+                trabajador.is_active = True  # La cuenta permanece activa
+                trabajador.estado = True     # El estado también permanece activo
+                logger.info(f"=== ROL CAMBIADO A CLIENTE - CUENTA ACTIVA ===")
             except Rol.DoesNotExist:
-                logger.warning("=== ROL CLIENTE (ID: 1) NO ENCONTRADO ===")
+                logger.warning("=== ROL CLIENTE NO ENCONTRADO ===")
+
+            mensaje_respuesta = f"Trabajador {trabajador.get_full_name()} convertido a cliente exitosamente."
+            nuevo_estado_respuesta = True  # Para el frontend
             
-            # Desvincular de la terma
-            trabajador.terma = None
-            logger.info(f"=== TRABAJADOR DESVINCULADO DE LA TERMA ===")
-        
-        # Si se está REACTIVANDO, volver a asignar rol trabajador y terma
-        elif nuevo_estado:
+        elif accion_realizada == 'rol_cambiado_a_trabajador':
+            # Jefe de terma convierte cliente/ex-trabajador a trabajador
+            logger.info(f"=== CONVIRTIENDO A TRABAJADOR ===")
+            
             from usuarios.models import HistorialTrabajador
+            
             try:
                 rol_trabajador = Rol.objects.get(nombre='trabajador')
                 trabajador.rol = rol_trabajador
                 trabajador.terma = terma
+                trabajador.is_active = True
+                trabajador.estado = True
                 
                 # Crear nuevo historial activo
                 HistorialTrabajador.crear_historial(trabajador, terma, rol_trabajador)
-                logger.info(f"=== REACTIVADO: ROL Y TERMA RESTAURADOS + HISTORIAL CREADO ===")
+                logger.info(f"=== CONVERTIDO A TRABAJADOR ===")
             except Rol.DoesNotExist:
                 logger.warning("=== ROL TRABAJADOR NO ENCONTRADO ===")
+                
+            mensaje_respuesta = f"Usuario {trabajador.get_full_name()} convertido a trabajador exitosamente."
+            nuevo_estado_respuesta = True  # Para el frontend
+                
+        else:
+            # Admin general cambia estado de cuenta (activar/desactivar completamente)
+            nuevo_estado = not trabajador.is_active
+            logger.info(f"=== ADMIN GENERAL: CAMBIANDO ESTADO DE CUENTA A {nuevo_estado} ===")
+            
+            trabajador.is_active = nuevo_estado
+            trabajador.estado = nuevo_estado
+            
+            if not nuevo_estado:
+                # Desactivando cuenta completamente
+                from usuarios.models import HistorialTrabajador
+                
+                historial_activo = HistorialTrabajador.objects.filter(
+                    usuario=trabajador, 
+                    terma=terma, 
+                    activo=True
+                ).first()
+                
+                if historial_activo:
+                    historial_activo.finalizar(motivo='cuenta_desactivada')
+                    logger.info(f"=== HISTORIAL FINALIZADO POR DESACTIVACIÓN ===")
+                
+            estado_texto = "activado" if nuevo_estado else "desactivado"
+            mensaje_respuesta = f"Trabajador {trabajador.get_full_name()} {estado_texto} exitosamente."
+            nuevo_estado_respuesta = nuevo_estado
         
         trabajador.save()
         
         # Verificar que los cambios se guardaron correctamente
         trabajador.refresh_from_db()
         logger.info(f"=== POST-SAVE: Estado = {trabajador.is_active} ===")
-        logger.info(f"=== POST-SAVE: Rol = {trabajador.rol.nombre if trabajador.rol else None} (ID: {trabajador.rol.id if trabajador.rol else None}) ===")
+        logger.info(f"=== POST-SAVE: Rol = {trabajador.rol.nombre if trabajador.rol else None} ===")
         logger.info(f"=== POST-SAVE: Terma = {trabajador.terma.nombre_terma if trabajador.terma else None} ===")
-        logger.info(f"=== POST-SAVE: Campo estado = {trabajador.estado} ===")
         
-        logger.info(f"=== ESTADO GUARDADO, ENVIANDO EMAIL ===")
-        # Enviar email de notificación de cambio de estado
-        email_enviado = enviar_email_cambio_estado_trabajador(trabajador, terma, nuevo_estado)
+        # Enviar email de notificación solo para cambios de cuenta (no cambios de rol)
+        email_enviado = False
+        if accion_realizada == 'estado_cuenta_cambiado':
+            logger.info(f"=== ENVIANDO EMAIL DE CAMBIO DE ESTADO ===")
+            email_enviado = enviar_email_cambio_estado_trabajador(trabajador, terma, nuevo_estado_respuesta)
         
-        estado_texto = "activado" if nuevo_estado else "desactivado"
         mensaje_email = " Se ha enviado una notificación por correo." if email_enviado else ""
         
-        logger.info(f"=== RETORNANDO RESPUESTA: {estado_texto} ===")
+        logger.info(f"=== RETORNANDO RESPUESTA: {mensaje_respuesta} ===")
         return JsonResponse({
             'success': True,
-            'mensaje': f"Trabajador {trabajador.get_full_name()} {estado_texto} exitosamente.{mensaje_email}",
-            'nuevo_estado': nuevo_estado
+            'mensaje': f"{mensaje_respuesta}{mensaje_email}",
+            'nuevo_estado': nuevo_estado_respuesta
         })
         
     except Exception as e:

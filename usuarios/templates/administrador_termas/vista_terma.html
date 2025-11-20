@@ -9,9 +9,29 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="{% static 'usuarios/css/vista_terma.css' %}">
  
+    <style>
+        /* Estilos para evitar solapamiento del navbar fijo */
+        .navbar-padding {
+            padding-top: 80px; /* Altura del navbar + margen */
+        }
+        
+        /* Solo aplicar margen cuando se usa navbar fijo (usuarios no autenticados) */
+        .fixed-navbar-offset {
+            margin-top: 100px; /* Más espacio para navbar principal fijo */
+        }
+        
+        /* Para usuarios autenticados: sin margen extra (navbar_usuario2 no es fijo) */
+        .static-navbar-offset {
+            margin-top: 0px; /* Sin margen extra para navbar estático */
+        }
+    </style>
 </head>
 <body class="bg-gray-200 text-gray-800">
-    {% include 'partials/navbar_usuario2.html' %}
+    {% if user.is_authenticated %}
+        {% include 'partials/navbar_usuario2.html' %}
+    {% else %}
+        {% include 'partials/navbar.html' with navbar_mode='termas_only' %}
+    {% endif %}
     
     <!-- MENSAJES DE FEEDBACK -->
     {% if messages %}
@@ -59,7 +79,9 @@
     {% endif %}
     
     <!-- HEADER -->
-    <header class="shadow-lg py-6 px-8 flex items-center justify-between" style="background-color: #005350;">
+    <header class="shadow-lg py-6 px-8 flex items-center justify-between 
+                   {% if not user.is_authenticated %}fixed-navbar-offset{% else %}static-navbar-offset{% endif %}" 
+            style="background-color: #005350;">
         <button onclick="window.history.back()" class="mr-4 flex items-center justify-center w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 text-white transition-all duration-300 backdrop-blur-sm">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
         </button>
@@ -68,6 +90,7 @@
         </div>
     </header>
 
+    {% if not terma_inactiva %}
     <!-- CARRUSEL LINEAL DE IMÁGENES -->
     <section class="w-full bg-white py-8">
         <div class="max-w-7xl mx-auto px-6">
@@ -293,17 +316,63 @@
                 
                 <!-- Pop-up de login -->
                 <div id="popup-login" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-                    <div class="bg-white rounded-2xl p-8 shadow-2xl max-w-md w-full mx-4 text-center">
-                        <div class="mb-4">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-emerald-600 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div class="bg-white rounded-2xl p-8 shadow-2xl max-w-md w-full mx-4">
+                        <div class="text-center mb-6">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-emerald-600 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                             </svg>
+                            <h3 class="text-2xl font-bold text-emerald-800 mb-2">Inicia sesión para continuar</h3>
+                            <p class="text-gray-600">Para completar tu reserva puedes iniciar sesión o comprar como invitado.</p>
                         </div>
-                        <h3 class="text-2xl font-bold text-emerald-800 mb-4">Inicia sesión para continuar</h3>
-                        <p class="mb-6 text-gray-600">Para completar tu reserva necesitas tener una cuenta.</p>
-                        <div class="space-y-3">
-                            <a href="{% url 'usuarios:inicio' %}" class="block w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-lg transition-colors">Iniciar sesión</a>
-                            <button type="button" id="cerrar-popup-login" class="w-full text-gray-500 hover:text-gray-700 py-2">Cancelar</button>
+                        
+                        <!-- Opciones de acceso -->
+                        <div class="space-y-4">
+                            <!-- Botón iniciar sesión -->
+                            <a href="{% url 'usuarios:inicio' %}" class="block w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-6 rounded-lg transition-colors text-center">
+                                Iniciar sesión
+                            </a>
+                            
+                            <!-- Separador -->
+                            <div class="relative">
+                                <div class="absolute inset-0 flex items-center">
+                                    <div class="w-full border-t border-gray-300"></div>
+                                </div>
+                                <div class="relative flex justify-center text-sm">
+                                    <span class="px-2 bg-white text-gray-500">o</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Opción comprar como invitado -->
+                            <div id="guest-option">
+                                <button type="button" id="btn-comprar-invitado" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-3 px-6 rounded-lg transition-colors">
+                                    Comprar como invitado
+                                </button>
+                            </div>
+                            
+                            <!-- Formulario de email para invitado (oculto inicialmente) -->
+                            <div id="guest-form" class="hidden">
+                                <div class="mb-4">
+                                    <label for="email-invitado" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Ingresa tu correo electrónico
+                                    </label>
+                                    <input type="email" id="email-invitado" name="email_invitado" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500" 
+                                           placeholder="tu@email.com" required>
+                                </div>
+                                <div class="flex space-x-3">
+                                    <button type="button" id="btn-confirmar-invitado" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-lg transition-colors">
+                                        Continuar
+                                    </button>
+                                    <button type="button" id="btn-cancelar-invitado" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 font-medium py-3 px-4 rounded-lg transition-colors">
+                                        Atrás
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Botón cancelar general -->
+                            <button type="button" id="cerrar-popup-login" class="w-full text-gray-500 hover:text-gray-700 py-2 text-sm">
+                                Cancelar
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -524,6 +593,7 @@
             </div>
         </div>
     </section>
+    {% endif %}
 
 
     <script id="servicios-por-entrada-json" type="application/json">
@@ -961,9 +1031,18 @@
         const popupLogin = document.getElementById('popup-login');
         const cerrarPopup = document.getElementById('cerrar-popup-login');
         const usuarioLogueado = "{{ usuario|yesno:'true,false'|lower }}";
+        const formPago = btnPagar ? btnPagar.closest('form') : null;
         
-        if (btnPagar && popupLogin) {
-            btnPagar.closest('form').addEventListener('submit', function(e) {
+        // Elementos del popup de invitado
+        const btnComprarInvitado = document.getElementById('btn-comprar-invitado');
+        const guestOption = document.getElementById('guest-option');
+        const guestForm = document.getElementById('guest-form');
+        const btnConfirmarInvitado = document.getElementById('btn-confirmar-invitado');
+        const btnCancelarInvitado = document.getElementById('btn-cancelar-invitado');
+        const emailInvitado = document.getElementById('email-invitado');
+        
+        if (btnPagar && popupLogin && formPago) {
+            formPago.addEventListener('submit', function(e) {
                 if (usuarioLogueado !== "true") {
                     e.preventDefault();
                     popupLogin.classList.remove('hidden');
@@ -971,9 +1050,78 @@
             });
         }
         
+        // Mostrar formulario de email de invitado
+        if (btnComprarInvitado) {
+            btnComprarInvitado.addEventListener('click', function() {
+                guestOption.classList.add('hidden');
+                guestForm.classList.remove('hidden');
+                emailInvitado.focus();
+            });
+        }
+        
+        // Volver a las opciones
+        if (btnCancelarInvitado) {
+            btnCancelarInvitado.addEventListener('click', function() {
+                guestForm.classList.add('hidden');
+                guestOption.classList.remove('hidden');
+                emailInvitado.value = '';
+            });
+        }
+        
+        // Confirmar compra como invitado
+        if (btnConfirmarInvitado) {
+            btnConfirmarInvitado.addEventListener('click', function() {
+                const email = emailInvitado.value.trim();
+                
+                if (!email) {
+                    alert('Por favor, ingresa tu correo electrónico.');
+                    emailInvitado.focus();
+                    return;
+                }
+                
+                // Validación básica de email
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(email)) {
+                    alert('Por favor, ingresa un correo electrónico válido.');
+                    emailInvitado.focus();
+                    return;
+                }
+                
+                // Agregar el email al formulario de pago y enviarlo
+                if (formPago) {
+                    // Crear un input hidden para el email
+                    const emailInput = document.createElement('input');
+                    emailInput.type = 'hidden';
+                    emailInput.name = 'email_invitado';
+                    emailInput.value = email;
+                    formPago.appendChild(emailInput);
+                    
+                    // Cerrar popup y enviar formulario
+                    popupLogin.classList.add('hidden');
+                    formPago.submit();
+                }
+            });
+        }
+        
+        // Permitir envío con Enter en el campo de email
+        if (emailInvitado) {
+            emailInvitado.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    btnConfirmarInvitado.click();
+                }
+            });
+        }
+        
         if (cerrarPopup) {
             cerrarPopup.addEventListener('click', function() {
                 popupLogin.classList.add('hidden');
+                // Resetear estado del popup
+                if (guestForm && guestOption) {
+                    guestForm.classList.add('hidden');
+                    guestOption.classList.remove('hidden');
+                    emailInvitado.value = '';
+                }
             });
         }
         
@@ -982,6 +1130,12 @@
             popupLogin.addEventListener('click', function(e) {
                 if (e.target === popupLogin) {
                     popupLogin.classList.add('hidden');
+                    // Resetear estado del popup
+                    if (guestForm && guestOption) {
+                        guestForm.classList.add('hidden');
+                        guestOption.classList.remove('hidden');
+                        emailInvitado.value = '';
+                    }
                 }
             });
         }
@@ -1042,7 +1196,51 @@
             });
         }
     });
-    </script>    
+    </script>
+
+    <!-- Modal de Terma Inactiva -->
+    {% if terma_inactiva %}
+    <div id="terma-inactiva-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-2xl p-8 shadow-2xl max-w-md w-full mx-4 text-center">
+            <div class="mb-6">
+                <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 mb-4">
+                    <svg class="h-8 w-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 15.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                </div>
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">Terma Inactiva</h2>
+            </div>
+
+            <div class="text-center mb-8">
+                <p class="text-gray-600 text-base leading-relaxed mb-4">
+                    Esta terma está actualmente <strong>inactiva</strong> y no está disponible para reservas.
+                </p>
+                {% if user.is_authenticated and user.terma.id == terma.id %}
+                <p class="text-gray-600 text-base leading-relaxed">
+                    Como administrador de esta terma, ponte en contacto con soporte para reactivar tu suscripción.
+                </p>
+                {% else %}
+                <p class="text-gray-600 text-base leading-relaxed">
+                    Por favor, elige otra terma disponible o contacta con soporte si necesitas más información.
+                </p>
+                {% endif %}
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-3">
+                <a href="{% url 'core:mostrar_termas' %}" class="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-lg font-medium text-center transition-colors">
+                    Ver Otras Termas
+                </a>
+                {% if user.is_authenticated and user.terma.id == terma.id %}
+                <a href="mailto:mitermasoporte@gmail.com?subject=Reactivar%20Terma&body=Hola,%0A%0ANecesito%20reactivar%20mi%20terma%20{{ terma.nombre_terma }}.%0A%0AGracias." 
+                   class="flex-1 bg-green-500 hover:bg-green-600 text-white py-3 px-4 rounded-lg font-medium text-center transition-colors">
+                    Contactar Soporte
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
 <!-- Footer -->
     {% include 'partials/footer.html' %}
 </body>

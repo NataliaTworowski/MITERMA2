@@ -65,6 +65,10 @@ def admin_terma_required(view_func):
     def _wrapped_view(request, *args, **kwargs):
         user = request.user
         
+        # IMPORTANTE: Limpiar cualquier variable de terma inactiva anterior
+        if hasattr(request, '_terma_inactiva'):
+            delattr(request, '_terma_inactiva')
+        
         # Verificar rol de administrador de terma
         if not hasattr(user, 'rol') or user.rol.nombre != 'administrador_terma':
             logger.warning(f"Usuario {user.email} sin rol admin_terma intentó acceder a {request.path}")
@@ -77,11 +81,13 @@ def admin_terma_required(view_func):
             messages.error(request, 'No tienes una terma asignada. Contacta al administrador.')
             return redirect('core:home')
         
-        # Verificar que la terma esté activa
+        # Verificar que la terma esté activa (permitir acceso pero marcar estado)
         if user.terma.estado_suscripcion != 'activa':
-            logger.warning(f"Admin terma {user.email} con terma inactiva intentó acceder a {request.path}")
-            messages.error(request, 'Tu terma no está activa. Contacta al administrador.')
-            return redirect('core:home')
+            logger.warning(f"Admin terma {user.email} con terma inactiva accedió a {request.path}")
+            # En lugar de redirigir, agregar información al request para que la vista la maneje
+            request._terma_inactiva = True
+        else:
+            request._terma_inactiva = False
         
         logger.info(f"Acceso autorizado admin terma: {user.email} para terma {user.terma.nombre_terma}")
         return view_func(request, *args, **kwargs)
