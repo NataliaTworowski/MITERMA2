@@ -9,12 +9,26 @@ from entradas.models import EntradaTipo
 from termas.models import Terma
 
 
-def calcular_entradas_vendidas_por_dia(terma_id: int, fecha: date) -> int:
+def calcular_entradas_vendidas_por_dia(terma_id, fecha: date) -> int:
     """
     Calcula el total de entradas vendidas para una terma en una fecha específica
     Solo cuenta las compras pagadas
+    
+    Args:
+        terma_id: int o UUID de la terma
+        fecha: fecha a consultar
     """
     try:
+        # Obtener el ID numérico si se pasó un UUID
+        if isinstance(terma_id, str):
+            from uuid import UUID
+            try:
+                UUID(terma_id)  # Validar que es un UUID
+                terma = Terma.objects.get(uuid=terma_id)
+                terma_id = terma.id
+            except (ValueError, Terma.DoesNotExist):
+                return 0
+        
         total_vendidas = DetalleCompra.objects.filter(
             compra__terma_id=terma_id,
             compra__fecha_visita=fecha,
@@ -30,12 +44,26 @@ def calcular_entradas_vendidas_por_dia(terma_id: int, fecha: date) -> int:
         return 0
 
 
-def calcular_entradas_pendientes_por_dia(terma_id: int, fecha: date) -> int:
+def calcular_entradas_pendientes_por_dia(terma_id, fecha: date) -> int:
     """
     Calcula el total de entradas en estado pendiente para una terma en una fecha específica
     Esto incluye compras que están siendo procesadas
+    
+    Args:
+        terma_id: int o UUID de la terma
+        fecha: fecha a consultar
     """
     try:
+        # Obtener el ID numérico si se pasó un UUID
+        if isinstance(terma_id, str):
+            from uuid import UUID
+            try:
+                UUID(terma_id)  # Validar que es un UUID
+                terma = Terma.objects.get(uuid=terma_id)
+                terma_id = terma.id
+            except (ValueError, Terma.DoesNotExist):
+                return 0
+        
         total_pendientes = DetalleCompra.objects.filter(
             compra__terma_id=terma_id,
             compra__fecha_visita=fecha,
@@ -51,9 +79,13 @@ def calcular_entradas_pendientes_por_dia(terma_id: int, fecha: date) -> int:
         return 0
 
 
-def calcular_disponibilidad_terma(terma_id: int, fecha: date = None) -> Dict:
+def calcular_disponibilidad_terma(terma_id, fecha: date = None) -> Dict:
     """
     Calcula la disponibilidad actual de una terma para una fecha específica
+    
+    Args:
+        terma_id: int o UUID de la terma
+        fecha: fecha a consultar (por defecto hoy)
     
     Returns:
         Dict con:
@@ -68,7 +100,28 @@ def calcular_disponibilidad_terma(terma_id: int, fecha: date = None) -> Dict:
         fecha = date.today()
     
     try:
-        terma = Terma.objects.get(id=terma_id)
+        # Obtener la terma (aceptar UUID o ID)
+        if isinstance(terma_id, str):
+            from uuid import UUID
+            try:
+                UUID(terma_id)  # Validar que es un UUID
+                terma = Terma.objects.get(uuid=terma_id)
+            except (ValueError, Terma.DoesNotExist):
+                return {
+                    'error': 'Terma no encontrada',
+                    'limite_diario': 0,
+                    'vendidas': 0,
+                    'pendientes': 0,
+                    'comprometidas': 0,
+                    'disponibles': 0,
+                    'puede_vender': False,
+                    'sin_limite': False
+                }
+        else:
+            terma = Terma.objects.get(id=terma_id)
+        
+        # Usar el ID numérico para las consultas
+        terma_id = terma.id
         limite_diario = terma.limite_ventas_diario or 0
         
         # Si no tiene límite configurado, asumimos disponibilidad ilimitada
@@ -119,9 +172,14 @@ def calcular_disponibilidad_terma(terma_id: int, fecha: date = None) -> Dict:
         }
 
 
-def validar_cantidad_disponible(terma_id: int, cantidad_solicitada: int, fecha: date = None) -> Dict:
+def validar_cantidad_disponible(terma_id, cantidad_solicitada: int, fecha: date = None) -> Dict:
     """
     Valida si es posible vender una cantidad específica de entradas para una fecha
+    
+    Args:
+        terma_id: int o UUID de la terma
+        cantidad_solicitada: cantidad de entradas a vender
+        fecha: fecha de la visita (por defecto hoy)
     
     Returns:
         Dict con:

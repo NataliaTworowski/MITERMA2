@@ -4,6 +4,7 @@ from django.db.models import Q
 from django.contrib import messages
 from django.views.decorators.http import require_http_methods
 from django.utils import timezone
+from django.utils.html import escape
 from .models import Terma, Region, Comuna, ImagenTerma
 from usuarios.models import Usuario
 from usuarios.decorators import admin_terma_required
@@ -22,9 +23,9 @@ def lista_termas(request):
     }
     return render(request, 'termas/lista.html', context)
 
-def detalle_terma(request, pk):
+def detalle_terma(request, uuid):
     """Vista para mostrar detalle de una terma."""
-    terma = get_object_or_404(Terma, pk=pk, estado_suscripcion='true')
+    terma = get_object_or_404(Terma, uuid=uuid, estado_suscripcion='true')
     context = {
         'title': f'Terma {terma.nombre_terma} - MiTerma',
         'terma': terma
@@ -251,7 +252,7 @@ def subir_fotos(request):
         messages.error(request, 'Sesión inválida.')
         return redirect('core:home')
 
-def eliminar_foto(request, foto_id):
+def eliminar_foto(request, foto_uuid):
     """Vista para eliminar una foto de la terma."""
     
     # Verificar si el usuario está logueado
@@ -284,7 +285,7 @@ def eliminar_foto(request, foto_id):
                 return redirect('usuarios:adm_termas')
             
             # Obtener la imagen y verificar que pertenezca a la terma del usuario
-            imagen = get_object_or_404(ImagenTerma, id=foto_id, terma=usuario.terma)
+            imagen = get_object_or_404(ImagenTerma, uuid=foto_uuid, terma=usuario.terma)
             
             # Eliminar el archivo físico si existe
             try:
@@ -596,14 +597,14 @@ def agregar_servicio(request):
     return redirect('termas:editar_terma')
 
 @admin_terma_required
-def quitar_servicio(request, servicio_id):
+def quitar_servicio(request, servicio_uuid):
     """Vista para quitar un servicio de la terma - Migrada a Django Auth."""
     if request.method == 'POST':
         usuario = request.user
         terma = usuario.terma
         
         from termas.models import ServicioTerma
-        servicio = get_object_or_404(ServicioTerma, id=servicio_id, terma=terma)
+        servicio = get_object_or_404(ServicioTerma, uuid=servicio_uuid, terma=terma)
         servicio_nombre = servicio.servicio
         servicio.delete()
         messages.success(request, f'Servicio "{servicio_nombre}" eliminado correctamente.')
@@ -612,13 +613,13 @@ def quitar_servicio(request, servicio_id):
     return redirect('termas:editar_terma')
 
 @admin_terma_required
-def editar_servicio(request, servicio_id):
+def editar_servicio(request, servicio_uuid):
     """Vista para editar un servicio de la terma - Migrada a Django Auth."""
     usuario = request.user
     terma = usuario.terma
     
     from termas.models import ServicioTerma
-    servicio = get_object_or_404(ServicioTerma, id=servicio_id, terma=terma)
+    servicio = get_object_or_404(ServicioTerma, uuid=servicio_uuid, terma=terma)
     
     if request.method == 'POST':
         servicio_anterior = servicio.servicio
@@ -652,13 +653,13 @@ def precios_terma(request):
     return render(request, 'administrador_termas/precios_terma.html', context)
 
 @admin_terma_required
-def editar_entrada(request, entrada_id):
+def editar_entrada(request, entrada_uuid):
     """Vista para editar un tipo de entrada - Migrada a Django Auth."""
     # El decorador ya verificó que el usuario está autenticado y es admin_terma
     usuario = request.user
     terma = usuario.terma
     
-    entrada = get_object_or_404(EntradaTipo, id=entrada_id, terma=terma)
+    entrada = get_object_or_404(EntradaTipo, uuid=entrada_uuid, terma=terma)
     from termas.models import ServicioTerma
     servicios_disponibles = ServicioTerma.objects.filter(terma=terma)
     
@@ -725,13 +726,13 @@ def editar_entrada(request, entrada_id):
     return render(request, 'administrador_termas/editar_entrada.html', context)
 
 @admin_terma_required
-def eliminar_entrada(request, entrada_id):
+def eliminar_entrada(request, entrada_uuid):
     """Vista para eliminar un tipo de entrada con confirmación - Migrada a Django Auth."""
     # El decorador ya verificó que el usuario está autenticado y es admin_terma
     usuario = request.user
     terma = usuario.terma
     
-    entrada = get_object_or_404(EntradaTipo, id=entrada_id, terma=terma)
+    entrada = get_object_or_404(EntradaTipo, uuid=entrada_uuid, terma=terma)
     
     if request.method == 'POST':
         entrada_nombre = entrada.nombre
@@ -778,14 +779,14 @@ def crear_entrada(request):
 
 @admin_terma_required
 @require_http_methods(["GET", "POST"])
-def gestionar_servicios_entrada(request, entrada_id):
+def gestionar_servicios_entrada(request, entrada_uuid):
     """Vista para gestionar servicios de una entrada específica - Migrada a Django Auth."""
     # El decorador ya verificó que el usuario está autenticado y es admin_terma
     usuario = request.user
     terma = usuario.terma
     
     # Obtener la entrada específica
-    entrada = get_object_or_404(EntradaTipo, id=entrada_id, terma=terma)
+    entrada = get_object_or_404(EntradaTipo, uuid=entrada_uuid, terma=terma)
     
     if request.method == 'POST':
         # Obtener servicios seleccionados del formulario
@@ -896,9 +897,9 @@ def vista_termas(request):
         messages.error(request, 'Sesión inválida.')
         return redirect('core:home')
 
-def vista_terma(request, terma_id):
+def vista_terma(request, terma_uuid):
     """Vista para mostrar los datos de una terma y permitir elegir entrada - Migrada a Django Auth."""
-    terma = get_object_or_404(Terma, id=terma_id)
+    terma = get_object_or_404(Terma, uuid=terma_uuid)
     
     # Verificar si la terma está activa
     if terma.estado_suscripcion != 'activa':
@@ -931,28 +932,46 @@ def vista_terma(request, terma_id):
     import json
     servicios_por_entrada = {}
     
+    # Función para escapar datos de servicios de forma segura
+    def escape_servicio_data(servicios_list):
+        """Escapa los datos de los servicios para prevenir XSS."""
+        escaped_servicios = []
+        for servicio in servicios_list:
+            escaped_servicio = {
+                'id': servicio['id'],
+                'uuid': str(servicio['uuid']),
+                'servicio': escape(str(servicio['servicio'])) if servicio['servicio'] else '',
+                'descripcion': escape(str(servicio['descripcion'])) if servicio['descripcion'] else '',
+                'precio': servicio['precio']
+            }
+            escaped_servicios.append(escaped_servicio)
+        return escaped_servicios
+    
     # Obtener todos los servicios disponibles de la terma una sola vez
-    todos_servicios = list(terma.servicios.values('id', 'servicio', 'descripcion', 'precio'))
+    todos_servicios = list(terma.servicios.values('id', 'uuid', 'servicio', 'descripcion', 'precio'))
+    todos_servicios_escaped = escape_servicio_data(todos_servicios)
     
     for entrada in entradas:
         # Obtener servicios incluidos de esta entrada específica
-        incluidos = list(entrada.servicios.values('id', 'servicio', 'descripcion', 'precio'))
+        incluidos = list(entrada.servicios.values('id', 'uuid', 'servicio', 'descripcion', 'precio'))
+        incluidos_escaped = escape_servicio_data(incluidos)
         
         # Crear un set de IDs de servicios incluidos para búsqueda más eficiente
         servicios_incluidos_ids = {s['id'] for s in incluidos}
         
         # Filtrar servicios extra: excluir los que ya están incluidos en la entrada
         extras = [s for s in todos_servicios if s['id'] not in servicios_incluidos_ids]
+        extras_escaped = escape_servicio_data(extras)
         
-        servicios_por_entrada[entrada.id] = {
-            'incluidos': incluidos,
-            'extras': extras,
-            'nombre': entrada.nombre  # Agregar el nombre de la entrada para referencia
+        servicios_por_entrada[str(entrada.uuid)] = {
+            'incluidos': incluidos_escaped,
+            'extras': extras_escaped,
+            'nombre': escape(str(entrada.nombre)) if entrada.nombre else ''  # Escapar el nombre también
         }
 
     entrada_seleccionada = entradas.first() if entradas.exists() else None
-    servicios_incluidos = servicios_por_entrada[entrada_seleccionada.id]['incluidos'] if entrada_seleccionada else []
-    servicios_extra = servicios_por_entrada[entrada_seleccionada.id]['extras'] if entrada_seleccionada else []
+    servicios_incluidos = servicios_por_entrada[str(entrada_seleccionada.uuid)]['incluidos'] if entrada_seleccionada else []
+    servicios_extra = servicios_por_entrada[str(entrada_seleccionada.uuid)]['extras'] if entrada_seleccionada else []
 
     # Procesar nuevo comentario - Migrado a Django Auth
     if request.method == 'POST' and 'puntuacion' in request.POST and 'comentario' in request.POST:
@@ -1478,7 +1497,7 @@ def editar_trabajador(request, trabajador_id):
         terma = usuario_admin.terma
         
         # Obtener trabajador
-        trabajador = get_object_or_404(Usuario, id=trabajador_id)
+        trabajador = get_object_or_404(Usuario, uuid=trabajador_uuid)
         
         # Verificar que el trabajador pertenece a la terma y tiene rol trabajador
         if trabajador.terma != terma or (trabajador.rol and trabajador.rol.nombre != 'trabajador'):
@@ -1542,11 +1561,11 @@ def editar_trabajador(request, trabajador_id):
 
 
 @admin_terma_required
-def cambiar_estado_trabajador(request, trabajador_id):
+def cambiar_estado_trabajador(request, trabajador_uuid):
     """Vista para habilitar/inhabilitar trabajador."""
-    print(f"FUNCIÓN CAMBIAR ESTADO LLAMADA - ID: {trabajador_id} ")
-    logger.info(f" FUNCIÓN CAMBIAR ESTADO LLAMADA - ID: {trabajador_id}")
-    logger.info(f"=== INICIO CAMBIAR ESTADO TRABAJADOR ID: {trabajador_id} ===")
+    print(f"FUNCIÓN CAMBIAR ESTADO LLAMADA - UUID: {trabajador_uuid} ")
+    logger.info(f" FUNCIÓN CAMBIAR ESTADO LLAMADA - UUID: {trabajador_uuid}")
+    logger.info(f"=== INICIO CAMBIAR ESTADO TRABAJADOR UUID: {trabajador_uuid} ===")
     try:
         from usuarios.models import Usuario, Rol
         from .email_utils import enviar_email_cambio_estado_trabajador
@@ -1558,7 +1577,7 @@ def cambiar_estado_trabajador(request, trabajador_id):
         terma = usuario_admin.terma
         
         # Obtener trabajador
-        trabajador = get_object_or_404(Usuario, id=trabajador_id)
+        trabajador = get_object_or_404(Usuario, uuid=trabajador_uuid)
         logger.info(f"=== TRABAJADOR ENCONTRADO: {trabajador.email}, ESTADO ACTUAL: {trabajador.is_active} ===")
         
         # Verificar permisos: debe ser trabajador actual de la terma O ex-trabajador de esta terma
@@ -1725,10 +1744,10 @@ def cambiar_estado_trabajador(request, trabajador_id):
 
 
 @admin_terma_required
-def detalle_trabajador(request, trabajador_id):
+def detalle_trabajador(request, trabajador_uuid):
     """Vista para obtener detalles de un trabajador."""
     try:
-        logger.info(f"=== DETALLE TRABAJADOR - ID: {trabajador_id} ===")
+        logger.info(f"=== DETALLE TRABAJADOR - UUID: {trabajador_uuid} ===")
         from usuarios.models import Usuario, HistorialTrabajador
         
         usuario_admin = request.user
@@ -1736,7 +1755,7 @@ def detalle_trabajador(request, trabajador_id):
         logger.info(f"=== ADMIN: {usuario_admin.email}, TERMA: {terma.nombre_terma if terma else 'None'} ===")
         
         # Obtener trabajador
-        trabajador = get_object_or_404(Usuario, id=trabajador_id)
+        trabajador = get_object_or_404(Usuario, uuid=trabajador_uuid)
         logger.info(f"=== TRABAJADOR ENCONTRADO: {trabajador.email} ===")
         logger.info(f"=== TRABAJADOR - Activo: {trabajador.is_active}, Rol: {trabajador.rol.nombre if trabajador.rol else 'None'}, Terma: {trabajador.terma.nombre_terma if trabajador.terma else 'None'} ===")
         

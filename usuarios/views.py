@@ -883,13 +883,13 @@ def reset_password_confirm(request):
 # Vista AJAX para cargar comentarios filtrados
 @require_http_methods(["GET"])
 @admin_terma_required
-def cargar_comentarios_filtrados(request, terma_id):
+def cargar_comentarios_filtrados(request, terma_uuid):
     """Vista AJAX para cargar comentarios filtrados - Migrada a Django Auth"""
     try:
         from termas.models import Terma
         # Obtener la terma y verificar que el usuario tenga acceso
         usuario = request.user
-        terma = get_object_or_404(Terma, id=terma_id)
+        terma = get_object_or_404(Terma, uuid=terma_uuid)
         
         # Verificar que es el administrador de la terma
         if usuario.terma != terma:
@@ -1006,9 +1006,8 @@ def vincular_mercadopago(request):
         
         terma = usuario.terma
         
-        # URL de autorización de Mercado Pago
-        # En producción, esto debería usar el Client ID real de Mercado Pago
-        mp_auth_url = f"https://auth.mercadopago.com.ar/authorization?client_id=TEST-CLIENT-ID&response_type=code&platform_id=mp&state={terma.id}&redirect_uri=http://localhost:8000/usuarios/mercadopago-callback/"
+        # URL de login de Mercado Pago
+        mp_auth_url = "https://www.mercadolibre.com/jms/mlc/lgz/msl/login/H4sIAAAAAAAEAy1OSw6CMBC9y6yJ-AMDSy_SjGWojYU27WAxxLs7VZfv_zZw3thZ8SsQ9EBrcFZbhgqCQx59nJQdRJiCUMky_aHTxYIRJ2KKCfqtFBkariShUsVxIfHgwnc1Op-F-k4JZ5OiVWIzOpXp9rRU1BFdKgnjBdyZQ-rrOue8myhqHHxA43fa1fCuxJtYcUT9gL4MyU4oz5Gtn38X23PXHA-nfdftz21zgfcHRIHk1esAAAA/user"
         
         context = {
             'terma': terma,
@@ -1045,9 +1044,9 @@ def mercadopago_callback(request):
             messages.error(request, 'Parámetros de autorización inválidos.')
             return redirect('usuarios:billetera')
         
-        # Buscar la terma
+        # Buscar la terma (state contiene el UUID)
         from termas.models import Terma
-        terma = get_object_or_404(Terma, id=state)
+        terma = get_object_or_404(Terma, uuid=state)
         
         # Verificar que el usuario actual es el administrador de esta terma
         usuario = get_current_user(request)
@@ -1229,13 +1228,13 @@ def admin_general_crear_terma(request):
 
 @admin_general_required
 @require_http_methods(["GET"])
-def admin_general_terma_detalle(request, terma_id):
+def admin_general_terma_detalle(request, terma_uuid):
     """Vista para obtener los detalles de una terma"""
     from termas.models import Terma
     from django.template.loader import render_to_string
     
     try:
-        terma = get_object_or_404(Terma, id=terma_id)
+        terma = get_object_or_404(Terma, uuid=terma_uuid)
         
         # Calcular estadísticas básicas
         estadisticas = {
@@ -1266,13 +1265,13 @@ def admin_general_terma_detalle(request, terma_id):
 
 @admin_general_required
 @require_http_methods(["GET"])
-def admin_general_terma_editar(request, terma_id):
+def admin_general_terma_editar(request, terma_uuid):
     """Vista para obtener el formulario de edición de una terma"""
     from termas.models import Terma, Region, Comuna, PlanSuscripcion
     from django.template.loader import render_to_string
     
     try:
-        terma = get_object_or_404(Terma, id=terma_id)
+        terma = get_object_or_404(Terma, uuid=terma_uuid)
         
         # Obtener datos para el formulario
         regiones = Region.objects.all().order_by('nombre')
@@ -1300,12 +1299,12 @@ def admin_general_terma_editar(request, terma_id):
 
 @admin_general_required
 @require_http_methods(["POST"])
-def admin_general_terma_actualizar(request, terma_id):
+def admin_general_terma_actualizar(request, terma_uuid):
     """Vista para actualizar una terma"""
     from termas.models import Terma, Comuna, PlanSuscripcion
     
     try:
-        terma = get_object_or_404(Terma, id=terma_id)
+        terma = get_object_or_404(Terma, uuid=terma_uuid)
         
         # Obtener datos del formulario
         nombre_terma = request.POST.get('nombre_terma')
@@ -1375,13 +1374,13 @@ def admin_general_terma_actualizar(request, terma_id):
 
 @admin_general_required
 @require_http_methods(["POST"])
-def admin_general_terma_cambiar_estado(request, terma_id):
+def admin_general_terma_cambiar_estado(request, terma_uuid):
     """Vista para cambiar el estado de una terma (activar/desactivar)"""
     from termas.models import Terma
     import json
     
     try:
-        terma = get_object_or_404(Terma, id=terma_id)
+        terma = get_object_or_404(Terma, uuid=terma_uuid)
         
         data = json.loads(request.body)
         nuevo_estado = data.get('estado')
@@ -1411,7 +1410,7 @@ def admin_general_terma_cambiar_estado(request, terma_id):
 
 @admin_general_required
 @require_http_methods(["GET"])
-def admin_general_terma_estadisticas(request, terma_id):
+def admin_general_terma_estadisticas(request, terma_uuid):
     """Vista para obtener estadísticas detalladas de una terma"""
     from termas.models import Terma
     from ventas.models import Compra, DetalleCompra
@@ -1420,7 +1419,7 @@ def admin_general_terma_estadisticas(request, terma_id):
     from datetime import datetime, timedelta
     
     try:
-        terma = get_object_or_404(Terma, id=terma_id)
+        terma = get_object_or_404(Terma, uuid=terma_uuid)
         
         # Calcular estadísticas detalladas
         hoy = datetime.now().date()

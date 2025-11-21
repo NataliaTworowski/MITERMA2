@@ -2,6 +2,7 @@ from django.db import models
 from usuarios.models import Usuario
 from django.utils import timezone
 from datetime import timedelta, datetime
+import uuid
 # Ciudad está definida en este mismo archivo
 
 class Terma(models.Model):
@@ -9,6 +10,7 @@ class Terma(models.Model):
         ("activa", "Activa"),
         ("inactiva", "Inactiva"),
     ]
+    uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False, db_index=True)
     nombre_terma = models.CharField(max_length=100)
     descripcion_terma = models.TextField(null=True, blank=True)
     direccion_terma = models.TextField(null=True, blank=True)
@@ -367,12 +369,14 @@ class Calificacion(models.Model):
 
 
 class ImagenTerma(models.Model):
+    uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False, db_index=True)
     terma = models.ForeignKey(Terma, on_delete=models.CASCADE, related_name="imagenes")
     url_imagen = models.TextField()
     descripcion = models.TextField(null=True, blank=True)
 
 
 class ServicioTerma(models.Model):
+    uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False, db_index=True)
     terma = models.ForeignKey(Terma, on_delete=models.CASCADE, related_name="servicios")
     servicio = models.CharField(max_length=100)
     descripcion = models.TextField(null=True, blank=True)
@@ -383,6 +387,7 @@ class ServicioTerma(models.Model):
 
 
 class SolicitudTerma(models.Model):
+    uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False, db_index=True)
     usuario = models.ForeignKey("usuarios.Usuario", on_delete=models.CASCADE, null=True, blank=True)  
     nombre_terma = models.CharField(max_length=100)
     descripcion = models.TextField(null=True, blank=True)

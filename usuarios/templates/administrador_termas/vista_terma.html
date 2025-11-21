@@ -178,7 +178,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
                 {% for entrada in entradas %}
                 <div class="bg-white rounded-2xl shadow-lg p-6 border-4 transition-all experiencia-card cursor-pointer hover:shadow-xl {% if forloop.first %}border-emerald-500{% else %}border-transparent hover:border-emerald-300{% endif %}" 
-                     data-nombre="{{ entrada.nombre }}" data-precio="{{ entrada.precio }}" data-id="{{ entrada.id }}" data-duracion="{{ entrada.duracion_horas }}">
+                     data-nombre="{{ entrada.nombre }}" data-precio="{{ entrada.precio }}" data-id="{{ entrada.uuid }}" data-duracion="{{ entrada.duracion_horas }}">
                     <div class="flex justify-between items-start mb-4">
                         <span class="text-xl font-bold text-emerald-800">{{ entrada.nombre }}</span>
                         <span class="text-2xl font-bold text-orange-500">${{ entrada.precio|formato_precio }}</span>
@@ -222,7 +222,7 @@
                     <div class="bg-white rounded-2xl shadow-lg p-6 border border-gray-200 hover:border-emerald-300 transition-all">
                         <label class="flex items-center gap-4 cursor-pointer">
                             <input type="checkbox" class="servicio-extra-checkbox w-5 h-5 text-emerald-600 rounded focus:ring-emerald-500" 
-                                   data-precio="{{ servicio.precio }}" data-nombre="{{ servicio.servicio }}" value="{{ servicio.id }}">
+                                   data-precio="{{ servicio.precio }}" data-nombre="{{ servicio.servicio }}" value="{{ servicio.uuid }}">
                             <div class="flex-1">
                                 <h4 class="text-lg font-bold text-gray-800">{{ servicio.servicio }}</h4>
                                 <p class="text-gray-600 text-sm mb-2">{{ servicio.descripcion }}</p>
@@ -231,7 +231,7 @@
                             <div class="flex flex-col items-center gap-2">
                                 <span class="text-xs text-gray-500">Cantidad</span>
                                 <input type="number" class="servicio-extra-cantidad w-16 border rounded-lg px-2 py-1 text-center focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500" 
-                                       min="1" value="1" data-precio="{{ servicio.precio }}" data-nombre="{{ servicio.servicio }}" data-id="{{ servicio.id }}">
+                                       min="1" value="1" data-precio="{{ servicio.precio }}" data-nombre="{{ servicio.servicio }}" data-id="{{ servicio.uuid }}">
                             </div>
                         </label>
                     </div>
@@ -245,9 +245,9 @@
             <div class="bg-white rounded-2xl shadow-xl p-6 sticky top-6">
                 <h3 class="text-xl font-bold text-emerald-800 mb-6">Resumen de tu Reserva</h3>
                 
-                <form method="post" action="{% url 'ventas:pago' terma.id %}" class="space-y-6">
+                <form method="post" action="{% url 'ventas:pago' terma.uuid %}" class="space-y-6">
                     {% csrf_token %}
-                    <input type="hidden" name="terma_id" value="{{ terma.id }}">
+                    <input type="hidden" name="terma_uuid" value="{{ terma.uuid }}">
                     <input type="hidden" id="entrada_id" name="entrada_id" value="">
                     <input type="hidden" id="input-experiencia" name="input_experiencia" value="">
                     <input type="hidden" id="input-precio" name="input_precio" value="">
@@ -678,7 +678,7 @@
                         <div class="bg-white rounded-2xl shadow-lg p-6 border border-gray-200 hover:border-emerald-300 transition-all">
                             <label class="flex items-center gap-4 cursor-pointer">
                                 <input type="checkbox" class="servicio-extra-checkbox w-5 h-5 text-emerald-600 rounded focus:ring-emerald-500" 
-                                       data-precio="${servicio.precio || 0}" data-nombre="${servicio.servicio}" value="${servicio.id}">
+                                       data-precio="${servicio.precio || 0}" data-nombre="${servicio.servicio}" value="${servicio.uuid}">
                                 
                                 <div class="text-4xl text-emerald-500">
                                     ${getIconoServicio(servicio.servicio)}
@@ -693,7 +693,7 @@
                                 <div class="flex flex-col items-center gap-2">
                                     <span class="text-xs text-gray-500">Cantidad</span>
                                     <input type="number" class="servicio-extra-cantidad w-16 border rounded-lg px-2 py-1 text-center focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500" 
-                                           min="1" value="1" disabled data-precio="${servicio.precio || 0}" data-nombre="${servicio.servicio}" data-id="${servicio.id}">
+                                           min="1" value="1" disabled data-precio="${servicio.precio || 0}" data-nombre="${servicio.servicio}" data-id="${servicio.uuid}">
                                 </div>
                             </label>
                         </div>

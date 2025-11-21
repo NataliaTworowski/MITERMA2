@@ -215,7 +215,7 @@ class ValidarEntradaQRView(View):
                         'error': 'Esta entrada ya fue utilizada',
                         'fecha_uso': codigo_qr.fecha_uso.isoformat() if codigo_qr.fecha_uso else None,
                         'detail': 'La entrada ya fue escaneada previamente'
-                    }, status=400)
+                    }, status=200)  # ✅ Cambiado de 400 a 200
 
                 # Verificar el estado de la compra
                 logger.info(f"Estado de pago de la compra: {compra.estado_pago}")
@@ -225,7 +225,7 @@ class ValidarEntradaQRView(View):
                         'valid': False,
                         'error': 'Esta entrada no ha sido pagada',
                         'detail': f'Estado actual: {compra.estado_pago}'
-                    }, status=400)
+                    }, status=200)  # ✅ Cambiado de 400 a 200
 
                 # Verificar fecha de visita
                 # Obtener fecha actual en la zona horaria de Chile
@@ -239,14 +239,14 @@ class ValidarEntradaQRView(View):
                         'valid': False,
                         'error': 'Fecha incorrecta',
                         'detail': f'Esta entrada venció el {fecha_visita}. No es válida hoy ({fecha_actual})'
-                    }, status=400)
+                    }, status=200)  # ✅ Cambiado de 400 a 200
                 elif fecha_actual < fecha_visita:
                     logger.warning(f"Intento de usar entrada antes de su fecha: {compra.id}")
                     return JsonResponse({
                         'valid': False,
                         'error': 'Fecha incorrecta',
                         'detail': f'Esta entrada es para el {fecha_visita}. No puede usarse antes de esa fecha.'
-                    }, status=400)
+                    }, status=200)  # ✅ Cambiado de 400 a 200
 
                 # Usar transacción para asegurar que todo se guarde o nada
                 from django.db import transaction
@@ -478,3 +478,37 @@ class ValidarEntradaQRView(View):
                 'valid': False,
                 'error': str(e)
             }, status=500)
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class DebugQRUsadoView(View):
+    """Vista de debug para probar respuesta de QR ya usado"""
+    
+    def get(self, request):
+        """Devuelve un ejemplo de respuesta para QR ya usado"""
+        from ventas.models import CodigoQR
+        
+        # Buscar un QR ya usado
+        qr_usado = CodigoQR.objects.filter(usado=True).first()
+        
+        if not qr_usado:
+            return JsonResponse({
+                'debug': True,
+                'error': 'No hay QRs usados para probar'
+            })
+            
+        # Simular la respuesta exacta que devuelve ValidarEntradaQRView
+        respuesta = {
+            'valid': False,
+            'error': 'Esta entrada ya fue utilizada',
+            'fecha_uso': qr_usado.fecha_uso.isoformat() if qr_usado.fecha_uso else None,
+            'detail': 'La entrada ya fue escaneada previamente'
+        }
+        
+        # Añadir info de debug
+        respuesta['debug'] = True
+        respuesta['qr_id'] = qr_usado.id
+        respuesta['fecha_uso_raw'] = str(qr_usado.fecha_uso)
+        respuesta['fecha_uso_tipo'] = str(type(qr_usado.fecha_uso))
+        
+        return JsonResponse(respuesta)

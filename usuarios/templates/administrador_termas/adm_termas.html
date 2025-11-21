@@ -64,7 +64,7 @@
                     <div class="text-3xl font-bold text-gray-900 mb-1">${{ terma.ingresos_totales|default:"0"|formato_precio }}</div>
                     <div class="text-xs text-green-600 font-medium">↗ 12.5% <span class="text-gray-500 font-normal">vs. mes anterior</span></div>
                     <div class="mt-2">
-                        <a href="{% url 'termas:dashboard_comisiones' terma.id %}" class="text-xs text-blue-600 hover:text-blue-800 underline">
+                        <a href="{% url 'termas:dashboard_comisiones' terma.uuid %}" class="text-xs text-blue-600 hover:text-blue-800 underline">
                             Ver comisiones detalladas
                         </a>
                     </div>
@@ -244,8 +244,8 @@
                     loadingIndicator.classList.remove('hidden');
                     comentariosContainer.style.opacity = '0.5';
                     
-                    // Hacer petición AJAX usando directamente el ID de la terma
-                    fetch(`/termas/comentarios-filtrados/{{ terma.id }}/?filtro=${filtro}`)
+                    // Hacer petición AJAX usando directamente el UUID de la terma
+                    fetch(`/termas/comentarios-filtrados/{{ terma.uuid }}/?filtro=${filtro}`)
                         .then(response => response.json())
                         .then(data => {
                             // Actualizar comentarios

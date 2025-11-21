@@ -24,13 +24,13 @@
                     {% if solicitud.estado == 'pendiente' %}
                     <form method="post" style="display: inline;">
                         {% csrf_token %}
-                        <input type="hidden" name="solicitud_id" value="{{ solicitud.id }}">
+                        <input type="hidden" name="solicitud_id" value="{{ solicitud.uuid }}">
                         <input type="hidden" name="action" value="aprobar">
                         <button type="submit" class="button">Aprobar</button>
                     </form>
                     <form method="post" style="display: inline;">
                         {% csrf_token %}
-                        <input type="hidden" name="solicitud_id" value="{{ solicitud.id }}">
+                        <input type="hidden" name="solicitud_id" value="{{ solicitud.uuid }}">
                         <input type="hidden" name="action" value="rechazar">
                         <textarea name="motivo_rechazo" placeholder="Motivo del rechazo" required></textarea>
                         <button type="submit" class="button" style="background: #ba2121;">Rechazar</button>

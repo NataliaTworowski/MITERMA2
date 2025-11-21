@@ -174,14 +174,14 @@ def mostrar_entradas(request):
 
 @cliente_required
 @require_POST
-def ocultar_compra(request, compra_id):
+def ocultar_compra(request, compra_uuid):
     """Vista para ocultar una compra del historial - Migrada a Django Auth."""
     # El decorador ya verificó que el usuario está autenticado y es cliente
     usuario = request.user
     
     # Verificar que la compra pertenezca al usuario
     compra = get_object_or_404(Compra, 
-        id=compra_id, 
+        uuid=compra_uuid, 
         usuario_id=usuario.id
     )
     
@@ -198,14 +198,14 @@ def ocultar_compra(request, compra_id):
         }, status=500)
 
 @cliente_required
-def get_qr_code(request, compra_id):
+def get_qr_code(request, compra_uuid):
     """Vista para obtener el código QR de una compra - Migrada a Django Auth."""
     # El decorador ya verificó que el usuario está autenticado y es cliente
     usuario = request.user
     
     # Verificar que la compra pertenezca al usuario
     compra = get_object_or_404(Compra, 
-        id=compra_id, 
+        uuid=compra_uuid, 
         usuario_id=usuario.id,
         estado_pago='pagado'
     )
@@ -254,7 +254,7 @@ def favoritos(request):
 
 @csrf_exempt
 @require_POST
-def toggle_favorito(request, terma_id):
+def toggle_favorito(request, terma_uuid):
     """Vista para agregar o quitar una terma de favoritos."""
     if not request.user.is_authenticated:
         return JsonResponse({
@@ -273,7 +273,7 @@ def toggle_favorito(request, terma_id):
     usuario = request.user
     
     try:
-        terma = get_object_or_404(Terma, id=terma_id, estado_suscripcion='activa')
+        terma = get_object_or_404(Terma, uuid=terma_uuid, estado_suscripcion='activa')
         
         favorito, created = Favorito.objects.get_or_create(
             usuario=usuario,
@@ -303,7 +303,7 @@ def toggle_favorito(request, terma_id):
         }, status=500)
 
 
-def verificar_favorito(request, terma_id):
+def verificar_favorito(request, terma_uuid):
     """Vista para verificar si una terma está en favoritos."""
     if not request.user.is_authenticated:
         return JsonResponse({
@@ -318,10 +318,14 @@ def verificar_favorito(request, terma_id):
     
     usuario = request.user
     
-    es_favorito = Favorito.objects.filter(
-        usuario=usuario,
-        terma_id=terma_id
-    ).exists()
+    try:
+        terma = Terma.objects.get(uuid=terma_uuid)
+        es_favorito = Favorito.objects.filter(
+            usuario=usuario,
+            terma=terma
+        ).exists()
+    except Terma.DoesNotExist:
+        es_favorito = False
     
     return JsonResponse({
         'es_favorito': es_favorito

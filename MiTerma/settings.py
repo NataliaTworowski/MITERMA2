@@ -112,8 +112,69 @@ REST_FRAMEWORK = {
     ],
 }
 
-# Clave para encriptación de QR (generar una clave segura en producción)
-QR_ENCRYPTION_KEY = config('QR_ENCRYPTION_KEY', default=Fernet.generate_key())
+# Función para gestión segura de clave QR
+def get_or_create_qr_key():
+    """
+    Obtiene o crea una clave de encriptación QR persistente.
+    
+    Prioridad:
+    1. Variable de entorno QR_ENCRYPTION_KEY
+    2. Archivo de clave local .qr_key (para desarrollo)
+    3. Genera nueva clave y la guarda (solo si no existe)
+    
+    Returns:
+        bytes: Clave de encriptación válida para Fernet
+    """
+    import os
+    from pathlib import Path
+    from cryptography.fernet import Fernet
+    
+    # 1. Intentar obtener de variable de entorno
+    env_key = os.environ.get('QR_ENCRYPTION_KEY')
+    if env_key:
+        try:
+            # Verificar que la clave sea válida
+            Fernet(env_key.encode() if isinstance(env_key, str) else env_key)
+            return env_key.encode() if isinstance(env_key, str) else env_key
+        except Exception as e:
+            print(f"WARNING: Clave QR_ENCRYPTION_KEY en entorno es inválida: {e}")
+    
+    # 2. Intentar cargar desde archivo local (para desarrollo)
+    key_file = BASE_DIR / '.qr_key'
+    
+    if key_file.exists():
+        try:
+            with open(key_file, 'rb') as f:
+                stored_key = f.read()
+            # Verificar que la clave sea válida
+            Fernet(stored_key)
+            return stored_key
+        except Exception as e:
+            print(f"WARNING: Archivo .qr_key corrupto, generando nueva clave: {e}")
+            # Eliminar archivo corrupto
+            key_file.unlink()
+    
+    # 3. Generar nueva clave y guardarla
+    new_key = Fernet.generate_key()
+    
+    # Solo guardar en archivo si estamos en desarrollo
+    if DEBUG:
+        try:
+            with open(key_file, 'wb') as f:
+                f.write(new_key)
+            print(f"NOTICE: Nueva clave QR generada y guardada en {key_file}")
+            print(f"IMPORTANTE: En producción, configurar QR_ENCRYPTION_KEY={new_key.decode()}")
+        except Exception as e:
+            print(f"WARNING: No se pudo guardar clave QR en archivo: {e}")
+    else:
+        print("ERROR: No hay clave QR configurada en producción!")
+        print("Configurar variable de entorno QR_ENCRYPTION_KEY")
+        raise ValueError("QR_ENCRYPTION_KEY no configurada en producción")
+    
+    return new_key
+
+# Clave para encriptación de QR - Gestión segura y persistente
+QR_ENCRYPTION_KEY = get_or_create_qr_key()
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -331,6 +392,12 @@ EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = config('EMAIL_HOST_USER', default='noreply@miterma.com')
 SERVER_EMAIL = config('EMAIL_HOST_USER', default='noreply@miterma.com')
+
+# Configuración de MercadoPago
+MERCADOPAGO_AUTH_URL = config('MERCADOPAGO_AUTH_URL', default='https://auth.mercadopago.cl')
+MERCADOPAGO_CLIENT_ID = config('MERCADOPAGO_CLIENT_ID_TEST', default='')
+MERCADOPAGO_CLIENT_SECRET = config('MERCADOPAGO_CLIENT_SECRET_TEST', default='')
+MERCADOPAGO_REDIRECT_URI = config('MERCADOPAGO_REDIRECT_URI', default='')
 
 # Configuración de Cache - Usando LocMemCache con timeouts cortos para evitar problemas
 CACHES = {

@@ -18,6 +18,10 @@ class CleanRequestMiddleware:
         self.get_response = get_response
     
     def __call__(self, request):
+        # Excluir rutas de API móvil para evitar interferencias
+        if self.is_api_request(request):
+            return self.get_response(request)
+        
         # Limpiar variables específicas al inicio de cada request
         self.clean_request_variables(request)
         
@@ -27,6 +31,16 @@ class CleanRequestMiddleware:
         response = self.get_response(request)
         
         return response
+    
+    def is_api_request(self, request):
+        """
+        Determina si la request es para la API móvil
+        """
+        api_paths = [
+            '/usuarios/api/',
+            '/api/',
+        ]
+        return any(request.path.startswith(path) for path in api_paths)
     
     def clean_request_variables(self, request):
         """
@@ -83,6 +97,10 @@ class CleanRequestMiddleware:
         Se ejecuta antes de que Django llame a la vista.
         Aquí podemos hacer limpieza adicional si es necesario.
         """
+        # Excluir rutas de API móvil
+        if self.is_api_request(request):
+            return None
+            
         # Si el usuario cambió desde la última request, limpiar todo
         if hasattr(request, '_last_user_id') and request.user.is_authenticated:
             if request._last_user_id != request.user.id:

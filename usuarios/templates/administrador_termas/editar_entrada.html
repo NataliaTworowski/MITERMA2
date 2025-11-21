@@ -189,8 +189,8 @@
                                     <input 
                                         type="checkbox" 
                                         name="servicios" 
-                                        value="{{ servicio.id }}" 
-                                        {% if servicio.id in servicios_seleccionados %}checked{% endif %} 
+                                        value="{{ servicio.uuid }}" 
+                                        {% if servicio.uuid in servicios_seleccionados %}checked{% endif %} 
                                         class="w-4 h-4 text-terma-blue bg-gray-100 border-gray-300 rounded focus:ring-terma-blue focus:ring-2"
                                     >
                                     <div class="ml-3 flex-1">

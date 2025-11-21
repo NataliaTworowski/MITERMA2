@@ -118,10 +118,10 @@
             }
         }
 
-        // Variables para mantener el estado del mes actual
-        let currentDate = new Date();
-        let currentYear = currentDate.getFullYear();
-        let currentMonth = currentDate.getMonth();
+        // Variables para mantener el estado del mes actual usando valores del contexto
+        let currentYear = {{ anio_actual }};
+        let currentMonth = {{ mes_actual }} - 1; // Ajuste porque JS usa 0-11
+        let currentDate = new Date(currentYear, currentMonth, 1);
 
         // Inicializar calendario
         updateCalendar(currentYear, currentMonth);

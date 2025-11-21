@@ -68,7 +68,7 @@
                                     <img src="{% static 'img/terma_default.png' %}" alt="Imagen por defecto" class="w-full h-48 object-cover">
                                 {% endif %}
                                 <button class="favorito-btn absolute top-3 right-3 p-2 rounded-full bg-white/80 hover:bg-white transition-colors" 
-                                        data-terma-id="{{ favorito.terma.id }}" data-favorito="true">
+                                        data-terma-id="{{ favorito.terma.uuid }}" data-favorito="true">
                                     <svg class="w-5 h-5 text-red-500" fill="currentColor" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
                                     </svg>
@@ -107,7 +107,7 @@
                                             ${% if favorito.terma.precio_minimo %}{{ favorito.terma.precio_minimo|formato_precio }}{% else %}--{% endif %}
                                         </p>
                                     </div>
-                                    <a href="{% url 'termas:vista_terma' favorito.terma.id %}" class="bg-[#0F202A] text-white px-4 py-2 rounded-lg hover:bg-[#1a2f3a] transition-colors text-sm">
+                                    <a href="{% url 'termas:vista_terma' favorito.terma.uuid %}" class="bg-[#0F202A] text-white px-4 py-2 rounded-lg hover:bg-[#1a2f3a] transition-colors text-sm">
                                         Ver más
                                     </a>
                                 </div>

@@ -46,14 +46,14 @@
                                 <div class="flex items-start space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
                                     <input 
                                         type="checkbox" 
-                                        id="servicio_{{ servicio.id }}" 
+                                        id="servicio_{{ servicio.uuid }}" 
                                         name="servicios" 
-                                        value="{{ servicio.id }}"
+                                        value="{{ servicio.uuid }}"
                                         {% if servicio in servicios_actuales %}checked{% endif %}
                                         class="mt-1 h-4 w-4 text-sky-600 focus:ring-sky-500 border-gray-300 rounded"
                                     >
                                     <div class="flex-1">
-                                        <label for="servicio_{{ servicio.id }}" class="block text-sm font-medium text-gray-700 cursor-pointer">
+                                        <label for="servicio_{{ servicio.uuid }}" class="block text-sm font-medium text-gray-700 cursor-pointer">
                                             {{ servicio.servicio }}
                                         </label>
                                         {% if servicio.descripcion %}

@@ -84,7 +84,7 @@
                                     </td>
                                     <td class="px-6 py-4 text-sm font-medium">
                                         <div class="flex space-x-2">
-                                            <button onclick="mostrarDetalles('{{ solicitud.id }}')"
+                                            <button onclick="mostrarDetalles('{{ solicitud.uuid }}')"
                                                     class="inline-flex items-center px-3 py-1.5 border border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                                                 <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
@@ -92,14 +92,14 @@
                                                 </svg>
                                                 Ver
                                             </button>
-                                            <button onclick="aprobarSolicitud('{{ solicitud.id }}')"
+                                            <button onclick="aprobarSolicitud('{{ solicitud.uuid }}')"
                                                     class="inline-flex items-center px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
                                                 <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                                 </svg>
                                                 Aprobar
                                             </button>
-                                            <button onclick="rechazarSolicitud('{{ solicitud.id }}')"
+                                            <button onclick="rechazarSolicitud('{{ solicitud.uuid }}')"
                                                     class="inline-flex items-center px-3 py-1.5 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
                                                 <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>

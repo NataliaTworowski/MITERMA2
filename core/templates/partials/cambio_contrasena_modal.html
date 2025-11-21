@@ -3,17 +3,17 @@
 <link rel="stylesheet" href="{% static 'css/cambio_contrasena.css' %}">
 
 <!-- Modal de Cambio de Contraseña -->
-<div id="resetPasswordModal" class="fixed inset-0 bg-gradient-to-br from-blue-500/60 via-blue-200/40 to-white/80 backdrop-blur-lg hidden z-50 flex items-center justify-center p-2 md:p-8 overflow-y-auto">
-    <div class="bg-white/90 rounded-3xl shadow-2xl w-full max-w-lg transform transition-all duration-500 scale-95 opacity-0 border border-blue-100 max-h-[95vh] flex flex-col justify-between" id="resetPasswordModalContent" style="max-height:95vh;">
+<div id="resetPasswordModal" class="fixed inset-0 bg-black/30 backdrop-blur-sm hidden z-50 flex items-center justify-center p-2 md:p-8 overflow-y-auto">
+    <div class="bg-[#f6f3ee] rounded-3xl shadow-2xl w-full max-w-lg transform transition-all duration-500 scale-95 opacity-0 max-h-[95vh] flex flex-col justify-between" id="resetPasswordModalContent" style="max-height:95vh;">
         <!-- Header del Modal -->
-        <div class="bg-blue-700 rounded-t-3xl p-8 text-center relative shadow-lg">
-            <h2 class="text-3xl font-extrabold text-white mb-1 tracking-wide drop-shadow flex items-center justify-center gap-2">
-                <svg class="w-8 h-8 text-yellow-300" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 12H9v-2h2v2zm0-4H9V7h2v3z"/></svg>
+        <div class="rounded-t-3xl p-7 text-center relative">
+            <h2 class="text-3xl font-bold text-gray-800 mb-1 tracking-wide flex items-center justify-center gap-2">
+                <svg class="w-8 h-8 text-[#3b7c6e]" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 12H9v-2h2v2zm0-4H9V7h2v3z"/></svg>
                 Restablecer Contraseña
             </h2>
-            <p class="text-blue-100 text-base mb-1">Cambia tu contraseña de forma segura</p>
+            <p class="text-gray-500 text-base mb-1">Cambia tu contraseña de forma segura</p>
             <!-- Botón cerrar -->
-            <button onclick="closeResetPasswordModal()" class="absolute top-6 right-6 text-white hover:text-blue-200 transition-colors duration-200 bg-blue-500/40 rounded-full p-1.5 shadow-md">
+            <button onclick="closeResetPasswordModal()" class="absolute top-6 right-6 text-gray-400 hover:text-gray-700 transition-colors duration-200 rounded-full p-1.5">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                 </svg>
@@ -27,7 +27,7 @@
                     {% csrf_token %}
                     <div class="mb-6">
                         <label for="reset_email" class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                            <svg class="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                            <svg class="w-5 h-5 text-[#3b7c6e]" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path>
                                 <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path>
                             </svg>
@@ -36,13 +36,13 @@
                         <input type="email" 
                                id="reset_email" 
                                name="email"
-                               class="w-full px-4 py-3 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-300 bg-blue-50/60 focus:bg-white shadow-sm placeholder:text-blue-300"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-300 focus:border-green-300 transition-all duration-300 bg-white shadow-sm placeholder:text-gray-400"
                                placeholder="tu@email.com"
                                required>
                     </div>
                     
                     <button type="submit" 
-                            class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 px-4 rounded-xl font-bold text-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 tracking-wide flex items-center justify-center gap-2">
+                            class="w-full bg-[#3b7c6e] hover:bg-[#2e6357] text-white py-3 px-4 rounded-lg font-bold text-lg transition-all duration-300 shadow-md flex items-center justify-center gap-2">
                         <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"></path><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>
                         Enviar Código de Verificación
                     </button>
@@ -50,7 +50,7 @@
                 
                 <div class="mt-4 text-center">
                     <button onclick="showStep2()" 
-                            class="text-sm text-blue-600 hover:text-blue-700 font-semibold transition-colors duration-200 underline underline-offset-2">
+                            class="text-sm text-green-700 hover:text-green-900 font-semibold transition-colors duration-200 underline underline-offset-2">
                         ¿Ya tienes un código? Clic aquí
                     </button>
                 </div>
@@ -64,7 +64,7 @@
                     <!-- Campo para el código -->
                     <div class="mb-4">
                         <label for="verification_code" class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                            <svg class="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                            <svg class="w-5 h-5 text-[#3b7c6e]" fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M16.707 9.293a1 1 0 00-1.414 0L10 14.586l-2.293-2.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l6-6a1 1 0 000-1.414z" />
                             </svg>
                             Código de Verificación
@@ -72,7 +72,7 @@
                         <input type="text" 
                                id="verification_code" 
                                name="codigo"
-                               class="w-full px-4 py-3 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-300 bg-blue-50/60 focus:bg-white text-center text-2xl font-bold letter-spacing-wide shadow-sm placeholder:text-blue-300"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-300 focus:border-green-300 transition-all duration-300 bg-white text-center text-2xl font-bold letter-spacing-wide shadow-sm placeholder:text-gray-400"
                                placeholder="123456"
                                maxlength="6"
                                pattern="[0-9]{6}"
@@ -83,7 +83,7 @@
                     <!-- Nueva contraseña -->
                     <div class="mb-4">
                         <label for="new_password" class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                            <svg class="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                            <svg class="w-5 h-5 text-[#3b7c6e]" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
                             </svg>
                             Nueva Contraseña
@@ -92,13 +92,13 @@
                             <input type="password" 
                                    id="new_password" 
                                    name="new_password"
-                                   class="w-full px-4 py-3 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-300 bg-blue-50/60 focus:bg-white pr-16 shadow-sm placeholder:text-blue-300"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-300 focus:border-green-300 transition-all duration-300 bg-white pr-16 shadow-sm placeholder:text-gray-400"
                                    placeholder="Mínimo 8 caracteres"
                                    minlength="8"
                                    required>
                             <button type="button" 
                                     onclick="togglePasswordVisibility('new_password')"
-                                    class="absolute inset-y-0 right-0 pr-3 flex items-center text-blue-300 hover:text-blue-500 text-xs font-medium">
+                                    class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-green-600 text-xs font-medium">
                                 <span id="new_password_text">Mostrar</span>
                             </button>
                         </div>
@@ -107,7 +107,7 @@
                     <!-- Confirmar contraseña -->
                     <div class="mb-6">
                         <label for="confirm_password" class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-                            <svg class="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                            <svg class="w-5 h-5 text-[#3b7c6e]" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
                             </svg>
                             Confirmar Contraseña
@@ -116,13 +116,13 @@
                             <input type="password" 
                                    id="confirm_password" 
                                    name="confirm_password"
-                                   class="w-full px-4 py-3 border border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all duration-300 bg-blue-50/60 focus:bg-white pr-16 shadow-sm placeholder:text-blue-300"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-300 focus:border-green-300 transition-all duration-300 bg-white pr-16 shadow-sm placeholder:text-gray-400"
                                    placeholder="Repite tu nueva contraseña"
                                    minlength="8"
                                    required>
                             <button type="button" 
                                     onclick="togglePasswordVisibility('confirm_password')"
-                                    class="absolute inset-y-0 right-0 pr-3 flex items-center text-blue-300 hover:text-blue-500 text-xs font-medium">
+                                    class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-green-600 text-xs font-medium">
                                 <span id="confirm_password_text">Mostrar</span>
                             </button>
                         </div>
@@ -135,12 +135,12 @@
                             <span id="password-strength-text">Débil</span>
                         </div>
                         <div class="w-full bg-gray-200 rounded-full h-2">
-                            <div id="password-strength-bar" class="bg-blue-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                            <div id="password-strength-bar" class="bg-green-500 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
                         </div>
                     </div>
                     
                     <button type="submit" 
-                            class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 px-4 rounded-xl font-bold text-lg transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 tracking-wide flex items-center justify-center gap-2">
+                            class="w-full bg-[#3b7c6e] hover:bg-[#2e6357] text-white py-3 px-4 rounded-lg font-bold text-lg transition-all duration-300 shadow-md flex items-center justify-center gap-2">
                         <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path></svg>
                         Cambiar Contraseña
                     </button>
@@ -148,7 +148,7 @@
                 
                 <div class="mt-4 text-center">
                     <button onclick="showStep1()" 
-                            class="text-sm text-blue-600 hover:text-blue-700 font-semibold transition-colors duration-200 underline underline-offset-2">
+                            class="text-sm text-green-700 hover:text-green-900 font-semibold transition-colors duration-200 underline underline-offset-2">
                         ← Volver a solicitar código
                     </button>
                 </div>
@@ -156,9 +156,9 @@
         </div>
         
         <!-- Footer con información -->
-        <div class="bg-gradient-to-r from-blue-100 to-blue-50 rounded-b-3xl p-4 text-center border-t border-blue-100">
-            <p class="text-xs text-blue-500 flex items-center justify-center gap-2">
-                <svg class="w-4 h-4 text-blue-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 12H9v-2h2v2zm0-4H9V7h2v3z"/></svg>
+        <div class="bg-[#f0ede7] rounded-b-3xl p-4 text-center border-t border-gray-200">
+            <p class="text-xs text-gray-600 flex items-center justify-center gap-2">
+                <svg class="w-4 h-4 text-[#3b7c6e]" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 12H9v-2h2v2zm0-4H9V7h2v3z"/></svg>
                 Tu información está protegida y segura<br>
                 El código expira en 15 minutos
             </p>

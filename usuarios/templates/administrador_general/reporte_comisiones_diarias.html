@@ -127,10 +127,10 @@
                         <i class="fas fa-table text-gray-600 mr-2"></i>
                         Reporte Diario Detallado
                     </h2>
-                    <button onclick="exportarCSV()" 
-                            class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200">
+                    <a href="{% url 'termas:exportar_comisiones_diarias_csv' %}?fecha_inicio={{ filtros.fecha_inicio }}&fecha_fin={{ filtros.fecha_fin }}{% if filtros.terma_id %}&terma_id={{ filtros.terma_id }}{% endif %}" 
+                       class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200">
                         <i class="fas fa-download mr-2"></i>Exportar CSV
-                    </button>
+                    </a>
                 </div>
                 <div class="p-6">
                     {% if reporte.reporte_diario %}
@@ -288,37 +288,7 @@
         </div>
 
         <script>
-            function exportarCSV() {
-                const tabla = document.getElementById('tablaReporte');
-                let csv = 'Fecha,Terma,Plan,% Comisión,Ventas Totales,Comisión Ganada,Pagado a Terma,Transacciones\n';
-                
-                const filas = tabla.querySelectorAll('tbody tr:not(.bg-gray-50)');
-                filas.forEach(fila => {
-                    const celdas = fila.querySelectorAll('td');
-                    if (celdas.length > 0) {
-                        const fecha = celdas[0].textContent.trim().split('\n')[0];
-                        const terma = celdas[1].textContent.trim();
-                        const plan = celdas[2].textContent.trim();
-                        const porcentaje = celdas[3].textContent.trim();
-                        const ventas = celdas[4].textContent.trim();
-                        const comision = celdas[5].textContent.trim();
-                        const pagado = celdas[6].textContent.trim();
-                        const transacciones = celdas[7].textContent.trim();
-                        
-                        csv += `"${fecha}","${terma}","${plan}","${porcentaje}","${ventas}","${comision}","${pagado}","${transacciones}"\n`;
-                    }
-                });
-                
-                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement('a');
-                const url = URL.createObjectURL(blob);
-                link.setAttribute('href', url);
-                link.setAttribute('download', `reporte_comisiones_${new Date().getTime()}.csv`);
-                link.style.visibility = 'hidden';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            }
+            // Exportación ahora gestionada por el servidor vía endpoint CSV
 
             // Auto-actualizar fecha fin al cambiar fecha inicio
             document.getElementById('fecha_inicio').addEventListener('change', function() {

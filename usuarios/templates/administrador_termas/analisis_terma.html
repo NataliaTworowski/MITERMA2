@@ -68,8 +68,8 @@
                         Entradas
                     </button>
                 </div>
-                <div style="height: 300px;">
-                    <canvas id="ventasChart"></canvas>
+                <div class="relative h-80">
+                    <canvas id="ventasChart" class="absolute inset-0 w-full h-full"></canvas>
                 </div>
             </div>
             <div class="bg-white p-6 rounded-xl shadow">
@@ -81,8 +81,8 @@
                 </div>
                 
                 {% if servicios_populares %}
-                    <div style="height: 300px;">
-                        <canvas id="serviciosTortaChart"></canvas>
+                    <div class="relative h-80">
+                        <canvas id="serviciosTortaChart" class="absolute inset-0 w-full h-full"></canvas>
                     </div>
                     
                     <!-- Lista detallada de servicios populares -->
@@ -152,8 +152,8 @@
                         <span class="text-sm text-gray-500">Últimos {{ rango }} días</span>
                     </div>
                 </div>
-                <div style="height: 300px;">
-                    <canvas id="diaSemanaChart"></canvas>
+                <div class="relative h-80">
+                    <canvas id="diaSemanaChart" class="absolute inset-0 w-full h-full"></canvas>
                 </div>
                 <!-- Información adicional -->
                 <div class="mt-4 text-sm text-gray-600">
@@ -168,8 +168,8 @@
                             <span class="text-sm text-gray-500">Últimos {{ rango }} días</span>
                         </div>
                     </div>
-                    <div style="height: 300px;">
-                        <canvas id="entradasChart"></canvas>
+                    <div class="relative h-80">
+                        <canvas id="entradasChart" class="absolute inset-0 w-full h-full"></canvas>
                     </div>
                     <!-- Lista de entradas populares -->
                     <div class="mt-4 space-y-2">
@@ -284,6 +284,7 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    layout: { padding: { top: 10, right: 10, bottom: 10, left: 10 } },
                     plugins: {
                         legend: {
                             display: true,
@@ -409,14 +410,15 @@
                     },
                     options: {
                         responsive: true,
-                        maintainAspectRatio: true,
+                        maintainAspectRatio: false,
                         plugins: {
                             legend: {
-                                position: 'top',
+                                position: 'bottom',
                                 labels: {
                                     padding: 20,
                                     usePointStyle: true,
-                                    pointStyle: 'circle'
+                                    pointStyle: 'circle',
+                                    font: { size: 12 }
                                 }
                             },
                             tooltip: {
@@ -438,7 +440,7 @@
                         },
                         animation: {
                             animateScale: true,
-                            duration: 1500
+                            duration: 1000
                         }
                     }
                 });
@@ -479,6 +481,7 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    layout: { padding: { top: 10, right: 10, bottom: 10, left: 10 } },
                     plugins: {
                         legend: {
                             display: false

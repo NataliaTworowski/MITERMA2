@@ -174,22 +174,22 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
                                 <div class="flex items-center justify-center space-x-2">
-                                    <button onclick="verDetalleUsuario('{{ usuario.id }}')" 
+                                    <button onclick="verDetalleUsuario('{{ usuario.uuid }}')" 
                                             class="text-blue-600 hover:text-blue-900 transition-colors duration-200" 
                                             title="Ver detalles">
                                         <i class="fas fa-eye"></i>
                                     </button>
-                                    <button onclick="abrirModalEditarUsuario('{{ usuario.id }}')" 
+                                    <button onclick="abrirModalEditarUsuario('{{ usuario.uuid }}')" 
                                             class="text-yellow-600 hover:text-yellow-900 transition-colors duration-200" 
                                             title="Editar usuario">
                                         <i class="fas fa-edit"></i>
                                     </button>
-                                    <button onclick="cambiarEstadoUsuario('{{ usuario.id }}')" 
+                                    <button onclick="cambiarEstadoUsuario('{{ usuario.uuid }}')" 
                                             class="{% if usuario.estado %}text-red-600 hover:text-red-900{% else %}text-green-600 hover:text-green-900{% endif %} transition-colors duration-200" 
                                             title="{% if usuario.estado %}Desactivar{% else %}Activar{% endif %} usuario">
                                         <i class="fas {% if usuario.estado %}fa-user-slash{% else %}fa-user-check{% endif %}"></i>
                                     </button>
-                                    <button onclick="resetearPasswordUsuario('{{ usuario.id }}')" 
+                                    <button onclick="resetearPasswordUsuario('{{ usuario.uuid }}')" 
                                             class="text-purple-600 hover:text-purple-900 transition-colors duration-200" 
                                             title="Resetear contraseña">
                                         <i class="fas fa-key"></i>
@@ -505,7 +505,7 @@ function abrirModalEditarUsuario(usuarioId) {
         if (data.success) {
             const usuario = data.data;
             
-            document.getElementById('editar_usuario_id').value = usuario.id;
+            document.getElementById('editar_usuario_id').value = usuario.uuid || usuario.id;
             document.getElementById('editar_nombre').value = usuario.nombre;
             document.getElementById('editar_apellido').value = usuario.apellido;
             document.getElementById('editar_email').value = usuario.email;
@@ -514,8 +514,8 @@ function abrirModalEditarUsuario(usuarioId) {
             
             // Manejar campo de terma
             toggleTermaField('editar');
-            if (usuario.terma && usuario.terma.id) {
-                document.getElementById('editar_terma').value = usuario.terma.id;
+            if (usuario.terma && (usuario.terma.uuid || usuario.terma.id)) {
+                document.getElementById('editar_terma').value = usuario.terma.uuid || usuario.terma.id;
             }
             
             document.body.style.overflow = 'hidden';

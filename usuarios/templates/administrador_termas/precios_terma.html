@@ -117,7 +117,7 @@
                             </td>
                             <td class="py-4 px-6 whitespace-nowrap text-center">
                                 <div class="flex items-center justify-center space-x-2">
-                                    <a href="/termas/editar_entrada/{{ entrada.id }}/" 
+                                    <a href="/termas/editar_entrada/{{ entrada.uuid }}/" 
                                        class="inline-flex items-center px-3 py-2 border border-transparent text-xs leading-4 font-medium rounded-md text-white bg-sky-500 hover:bg-sky-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-500 transition duration-150 ease-in-out transform hover:scale-105"
                                        title="Editar">
                                         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -125,7 +125,7 @@
                                         </svg>
                                         Editar
                                     </a>
-                                    <a href="{% url 'termas:gestionar_servicios_entrada' entrada.id %}" 
+                                    <a href="{% url 'termas:gestionar_servicios_entrada' entrada.uuid %}" 
                                        class="inline-flex items-center px-3 py-2 border border-transparent text-xs leading-4 font-medium rounded-md text-white bg-green-500 hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-150 ease-in-out transform hover:scale-105"
                                        title="Gestionar Servicios">
                                         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -135,7 +135,7 @@
                                     </a>
                                     <button type="button" 
                                             class="inline-flex items-center px-3 py-2 border border-transparent text-xs leading-4 font-medium rounded-md text-white bg-red-500 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition duration-150 ease-in-out transform hover:scale-105" 
-                                            data-entrada-id="{{ entrada.id }}" 
+                                            data-entrada-id="{{ entrada.uuid }}" 
                                             data-entrada-nombre="{{ entrada.nombre|escapejs }}" 
                                             onclick="mostrarModalEliminar(this.dataset.entradaId, this.dataset.entradaNombre)">
                                         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

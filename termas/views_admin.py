@@ -16,14 +16,14 @@ from usuarios.decorators import admin_general_required
 
 @admin_general_required
 @require_http_methods(["POST"])
-def aprobar_solicitud(request, solicitud_id):
+def aprobar_solicitud(request, solicitud_uuid):
     """Vista para aprobar una solicitud de terma."""
-    print(f"[DEBUG] Entrando a aprobar_solicitud con ID: {solicitud_id}")
+    print(f"[DEBUG] Entrando a aprobar_solicitud con UUID: {solicitud_uuid}")
     print(f"[DEBUG] Usuario rol: {request.session.get('usuario_rol')}")
     print(f"[DEBUG] Método: {request.method}")
     
     try:
-        solicitud = get_object_or_404(SolicitudTerma, id=solicitud_id, estado='pendiente')
+        solicitud = get_object_or_404(SolicitudTerma, uuid=solicitud_uuid, estado='pendiente')
         print(f"[DEBUG] Solicitud encontrada: {solicitud.nombre_terma}")
         print(f"[DEBUG] Usuario asociado: {solicitud.usuario}")
         
@@ -176,7 +176,7 @@ def aprobar_solicitud(request, solicitud_id):
 
 @admin_general_required
 @require_http_methods(["POST"])
-def rechazar_solicitud(request, solicitud_id):
+def rechazar_solicitud(request, solicitud_uuid):
     """Vista para rechazar una solicitud de terma."""
     
     try:
@@ -189,7 +189,7 @@ def rechazar_solicitud(request, solicitud_id):
                 'message': 'Debes proporcionar un motivo de rechazo.'
             }, status=400)
 
-        solicitud = get_object_or_404(SolicitudTerma, id=solicitud_id, estado='pendiente')
+        solicitud = get_object_or_404(SolicitudTerma, uuid=solicitud_uuid, estado='pendiente')
         
         # Actualizar la solicitud
         solicitud.estado = 'rechazada'
@@ -237,11 +237,11 @@ def rechazar_solicitud(request, solicitud_id):
 
 @admin_general_required
 @require_http_methods(["GET"])
-def detalles_solicitud(request, solicitud_id):
+def detalles_solicitud(request, solicitud_uuid):
     """Vista para obtener los detalles de una solicitud."""
     
     try:
-        solicitud = get_object_or_404(SolicitudTerma, id=solicitud_id)
+        solicitud = get_object_or_404(SolicitudTerma, uuid=solicitud_uuid)
         
         datos = {
             'id': solicitud.id,
@@ -360,7 +360,7 @@ def ver_distribuciones_pago(request):
     return render(request, 'administrador_general/distribuciones_pago.html', context)
 
 
-def dashboard_comisiones_terma(request, terma_id):
+def dashboard_comisiones_terma(request, terma_uuid):
     """Vista para que una terma vea sus propias comisiones y pagos"""
     from ventas.models import DistribucionPago, HistorialPagoTerma
     from ventas.utils import obtener_resumen_comisiones_terma
@@ -368,7 +368,7 @@ def dashboard_comisiones_terma(request, terma_id):
     from usuarios.decorators import admin_terma_required
     
     # Verificar que el usuario es admin de esta terma
-    terma = get_object_or_404(Terma, id=terma_id)
+    terma = get_object_or_404(Terma, uuid=terma_uuid)
     
     # Obtener mes y año de los parámetros o usar el actual
     mes = request.GET.get('mes', timezone.now().month)
@@ -508,11 +508,11 @@ def reporte_comisiones_diarias(request):
 
 
 @admin_general_required
-def ver_detalle_distribucion(request, distribucion_id):
+def ver_detalle_distribucion(request, distribucion_uuid):
     """
     Vista para mostrar los detalles completos de una distribución de pago
     """
-    distribucion = get_object_or_404(DistribucionPago, id=distribucion_id)
+    distribucion = get_object_or_404(DistribucionPago, uuid=distribucion_uuid)
     
     context = {
         'distribucion': distribucion,
@@ -522,6 +522,72 @@ def ver_detalle_distribucion(request, distribucion_id):
     }
     
     return render(request, 'administrador_general/detalle_distribucion.html', context)
+
+
+@admin_general_required
+def exportar_comisiones_diarias_csv(request):
+    """Exporta el reporte de comisiones diarias a CSV para el administrador general."""
+    from datetime import datetime
+    from django.http import HttpResponse
+    import csv
+
+    fecha_inicio_str = request.GET.get('fecha_inicio')
+    fecha_fin_str = request.GET.get('fecha_fin')
+    terma_id_str = request.GET.get('terma_id')
+
+    # Validar fechas
+    if not fecha_inicio_str or not fecha_fin_str:
+        return HttpResponse('Faltan parámetros de fecha', status=400)
+    try:
+        fecha_inicio = datetime.strptime(fecha_inicio_str, '%Y-%m-%d').date()
+        fecha_fin = datetime.strptime(fecha_fin_str, '%Y-%m-%d').date()
+    except ValueError:
+        return HttpResponse('Formato de fecha inválido', status=400)
+
+    # Procesar terma opcional
+    terma_id = None
+    if terma_id_str:
+        try:
+            terma_id = int(terma_id_str)
+        except (ValueError, TypeError):
+            terma_id = None
+
+    # Obtener datos usando la utilidad existente
+    from ventas.utils import obtener_reporte_comisiones_diarias
+    reporte = obtener_reporte_comisiones_diarias(fecha_inicio, fecha_fin, terma_id)
+
+    # Crear respuesta CSV
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = (
+        f'attachment; filename="comisiones_diarias_{fecha_inicio}_{fecha_fin}.csv"'
+    )
+    response.write('\ufeff')  # BOM UTF-8
+
+    writer = csv.writer(response)
+    writer.writerow([
+        'Fecha', 'Terma', 'Plan', '% Comisión', 'Ventas Totales',
+        'Comisión Ganada', 'Pagado a Terma', 'Transacciones'
+    ])
+
+    # Estructura real: lista de días [{'fecha': date, 'termas': {nombre: datos}, 'totales': {...}}, ...]
+    reporte_diario = reporte.get('reporte_diario', [])
+    for dia in reporte_diario:
+        fecha_obj = dia.get('fecha')
+        fecha_str = fecha_obj.strftime('%Y-%m-%d') if hasattr(fecha_obj, 'strftime') else str(fecha_obj)
+        termas_dict = dia.get('termas', {})
+        for terma_nombre, datos in termas_dict.items():
+            writer.writerow([
+                fecha_str,
+                terma_nombre,
+                datos.get('plan', ''),
+                datos.get('porcentaje_comision', ''),
+                datos.get('ventas', 0),
+                datos.get('comisiones', 0),
+                datos.get('pagado_terma', 0),
+                datos.get('transacciones', 0)
+            ])
+
+    return response
 
 
 @admin_general_required
@@ -702,10 +768,10 @@ def crear_usuario(request):
 
 @admin_general_required
 @require_http_methods(["POST"])
-def editar_usuario(request, usuario_id):
+def editar_usuario(request, usuario_uuid):
     """Vista para editar un usuario existente"""
     try:
-        usuario = get_object_or_404(Usuario, id=usuario_id)
+        usuario = get_object_or_404(Usuario, uuid=usuario_uuid)
         data = json.loads(request.body)
         
         # Validar datos requeridos
@@ -797,11 +863,11 @@ def editar_usuario(request, usuario_id):
 
 @admin_general_required
 @require_http_methods(["POST"])
-def cambiar_estado_usuario(request, usuario_id):
+def cambiar_estado_usuario(request, usuario_uuid):
     """Vista para habilitar/deshabilitar un usuario"""
     try:
-        print(f"[DEBUG] Intentando cambiar estado de usuario ID: {usuario_id}")
-        usuario = get_object_or_404(Usuario, id=usuario_id)
+        print(f"[DEBUG] Intentando cambiar estado de usuario UUID: {usuario_uuid}")
+        usuario = get_object_or_404(Usuario, uuid=usuario_uuid)
         print(f"[DEBUG] Usuario encontrado: {usuario.email}")
         
         # No permitir desactivar al propio usuario
@@ -868,11 +934,11 @@ def cambiar_estado_usuario(request, usuario_id):
 
 @admin_general_required
 @require_http_methods(["GET"])
-def detalle_usuario(request, usuario_id):
+def detalle_usuario(request, usuario_uuid):
     """Vista para obtener los detalles de un usuario"""
     try:
-        print(f"[DEBUG] Obteniendo detalles para usuario ID: {usuario_id}")
-        usuario = get_object_or_404(Usuario, id=usuario_id)
+        print(f"[DEBUG] Obteniendo detalles para usuario UUID: {usuario_uuid}")
+        usuario = get_object_or_404(Usuario, uuid=usuario_uuid)
         print(f"[DEBUG] Usuario encontrado: {usuario.email}")
         
         # Obtener estadísticas si es cliente
@@ -941,10 +1007,10 @@ def detalle_usuario(request, usuario_id):
 
 @admin_general_required
 @require_http_methods(["POST"])
-def resetear_password_usuario(request, usuario_id):
+def resetear_password_usuario(request, usuario_uuid):
     """Vista para resetear la contraseña de un usuario"""
     try:
-        usuario = get_object_or_404(Usuario, id=usuario_id)
+        usuario = get_object_or_404(Usuario, uuid=usuario_uuid)
         
         # Generar nueva contraseña temporal
         password_temporal = ''.join(random.choices(string.ascii_letters + string.digits, k=12))

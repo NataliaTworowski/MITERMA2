@@ -178,3 +178,4 @@ logs/
 .env.local
 .env.production
 secret_key.txt
+.qr_key

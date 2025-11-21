@@ -20,13 +20,13 @@ logger = logging.getLogger(__name__)
 @login_required
 @require_POST
 @csrf_protect
-def reenviar_correo_compra(request, compra_id):
+def reenviar_correo_compra(request, compra_uuid):
     """
     Reenvía el correo electrónico con el PDF de la compra al cliente.
     """
     try:
         # Obtener la compra
-        compra = get_object_or_404(Compra, id=compra_id)
+        compra = get_object_or_404(Compra, uuid=compra_uuid)
         
         # Verificar que el usuario sea el propietario de la compra
         if compra.usuario != request.user:

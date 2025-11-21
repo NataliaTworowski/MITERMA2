@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', function() {
             serviciosExtraContainer.innerHTML = data.extras.map(servicio => `
                 <label class="flex items-center space-x-3 py-2">
                     <input type="checkbox" class="servicio-extra-checkbox" 
-                           data-id="${servicio.id}" 
+                           data-id="${servicio.uuid}" 
                            data-nombre="${servicio.servicio}"
                            data-precio="${servicio.precio || 0}">
                     <span>${servicio.servicio} (${servicio.precio ? '$' + parseInt(servicio.precio).toLocaleString('es-CL') + ' CLP' : 'Gratis'})</span>

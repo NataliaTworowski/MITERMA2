@@ -19,7 +19,7 @@ load_dotenv()
 # Configurar logger
 logger = logging.getLogger(__name__)
 
-def pago(request, terma_id=None):
+def pago(request, terma_uuid=None):
     datos = {}
     
     # VALIDACIÓN PREVIA: Verificar compras recientes antes de mostrar el formulario
@@ -29,20 +29,22 @@ def pago(request, terma_id=None):
         fecha_visita_str = request.GET.get('fecha')
         cantidad = request.GET.get('cantidad', 1)
         
-        if entrada_id and fecha_visita_str:
+        if entrada_id and fecha_visita_str and terma_uuid:
             from datetime import datetime, timedelta
             
             try:
+                # Obtener terma por UUID
+                terma = Terma.objects.get(uuid=terma_uuid)
                 fecha_visita_obj = datetime.strptime(fecha_visita_str, '%Y-%m-%d').date()
                 tiempo_limite = timezone.now() - timedelta(minutes=15)
                 
                 # Buscar compra idéntica muy reciente (pagada O pendiente)
                 compra_reciente = Compra.objects.filter(
                     usuario=request.user,
-                    terma_id=terma_id,
+                    terma=terma,
                     fecha_visita=fecha_visita_obj,
                     estado_pago__in=['pagado', 'pendiente'],  # Incluir pendientes también
-                    detalles__entrada_tipo_id=entrada_id,
+                    detalles__entrada_tipo__uuid=entrada_id,
                     cantidad=int(cantidad),
                     fecha_compra__gt=tiempo_limite
                 ).first()
@@ -54,11 +56,20 @@ def pago(request, terma_id=None):
                         datos['compra_error'] = f"Ya tienes una compra pendiente idéntica (ID: {compra_reciente.id}). Espera a que se procese antes de intentar otra."
                     return render(request, 'ventas/pago.html', datos)
                     
-            except (ValueError, TypeError):
+            except (ValueError, TypeError, Terma.DoesNotExist):
                 pass  # Continúa normal si hay error en los parámetros
     
     if request.method == 'POST':
-        datos['terma_id'] = request.POST.get('terma_id') or terma_id
+        datos['terma_uuid'] = terma_uuid
+        
+        # Obtener terma primero
+        terma = None
+        if terma_uuid:
+            terma = Terma.objects.filter(uuid=terma_uuid).first()
+            if not terma:
+                datos['compra_error'] = "No se encontró la terma seleccionada."
+                return render(request, 'ventas/pago.html', datos)
+        
         access_token = os.getenv("MP_ACCESS_TOKEN")
         if not access_token:
             return JsonResponse({'error': 'Error: No se encontró el token de acceso de Mercado Pago'}, status=500)
@@ -119,10 +130,10 @@ def pago(request, terma_id=None):
         tiempo_limite = timezone.now() - timedelta(minutes=15)
         compra_reciente = Compra.objects.filter(
             usuario=usuario,
-            terma_id=datos['terma_id'],
+            terma=terma,
             fecha_visita=fecha_visita_obj,
             estado_pago__in=['pendiente', 'pagado'],
-            detalles__entrada_tipo_id=entrada_id,
+            detalles__entrada_tipo__uuid=entrada_id,
             cantidad=int(datos.get('cantidad_entradas', 1)),
             fecha_compra__gt=tiempo_limite  # Solo últimos 15 minutos
         ).first()
@@ -138,10 +149,10 @@ def pago(request, terma_id=None):
         # Buscar compra pendiente para reutilizar
         compra_existente = Compra.objects.filter(
             usuario=usuario,
-            terma_id=datos['terma_id'],
+            terma=terma,
             fecha_visita=fecha_visita_obj,
             estado_pago='pendiente',
-            detalles__entrada_tipo_id=entrada_id,
+            detalles__entrada_tipo__uuid=entrada_id,
             cantidad=int(datos.get('cantidad_entradas', 1))
         ).first()
         
@@ -212,10 +223,10 @@ def pago(request, terma_id=None):
                         # Buscar el servicio en la base de datos
                         servicio = ServicioTerma.objects.filter(servicio__icontains=nombre_servicio).first()
                         if servicio:
-                            print(f"[DEBUG] Servicio encontrado - ID: {servicio.id}, Nombre: {servicio.servicio}, Cantidad: {cantidad}")
+                            print(f"[DEBUG] Servicio encontrado - UUID: {servicio.uuid}, Nombre: {servicio.servicio}, Cantidad: {cantidad}")
                             # Agregar el servicio tantas veces como la cantidad especificada
                             for _ in range(cantidad):
-                                servicios_ids.append(servicio.id)
+                                servicios_ids.append(str(servicio.uuid))
                             servicios_encontrados.append(f"{servicio.servicio} x{cantidad} (${servicio.precio} CLP)")
                         else:
                             print(f"[DEBUG] No se encontró el servicio: {nombre_servicio}")
@@ -240,12 +251,6 @@ def pago(request, terma_id=None):
             datos['extras_descripcion'] = '-'
             datos['servicios_extra_ids'] = []        
 
-        # Obtener terma
-        terma_id = datos.get('terma_id')
-        terma = None
-        if terma_id:
-            terma = Terma.objects.filter(id=terma_id).first()
-        
         # Validar datos antes de crear la compra
         if not usuario:
             datos['compra_error'] = "No se encontró el usuario para la compra. Debes iniciar sesión."
@@ -267,14 +272,14 @@ def pago(request, terma_id=None):
             # Validar que la entrada exista
         from entradas.models import EntradaTipo
         try:
-            # Primero validar que sea un ID válido
+            # Primero validar que sea un UUID válido
             entrada_id = str(datos.get('entrada_id')).strip()
             if not entrada_id:
                 datos['compra_error'] = "No se seleccionó ningún tipo de entrada."
                 return render(request, 'ventas/pago.html', datos)
 
-            # Validar que el tipo de entrada exista y pertenezca a la terma
-            entrada_tipo = EntradaTipo.objects.filter(id=entrada_id, terma=terma, estado=True).first()
+            # Validar que el tipo de entrada exista y pertenezca a la terma (buscar por UUID)
+            entrada_tipo = EntradaTipo.objects.filter(uuid=entrada_id, terma=terma, estado=True).first()
             if not entrada_tipo:
                 datos['compra_error'] = "El tipo de entrada seleccionado no es válido para esta terma."
                 return render(request, 'ventas/pago.html', datos)
@@ -320,7 +325,7 @@ def pago(request, terma_id=None):
                     raise ValueError("No se especificó el ID de la entrada o la fecha")
 
                 try:
-                    entrada_template = EntradaTipo.objects.get(id=datos['entrada_id'])
+                    entrada_template = EntradaTipo.objects.get(uuid=datos['entrada_id'])
                     fecha_visita = datetime.strptime(datos['fecha'], '%Y-%m-%d').date()
                     
                     # Obtener o crear la entrada específica para esta fecha
@@ -411,7 +416,7 @@ def pago(request, terma_id=None):
                 # Crear registros en ServicioExtraDetalle
                 for servicio_id, cantidad in servicios_conteo.items():
                     try:
-                        servicio = ServicioTerma.objects.get(id=servicio_id)
+                        servicio = ServicioTerma.objects.get(uuid=servicio_id)
                         ServicioExtraDetalle.objects.create(
                             detalle_compra=detalle,
                             servicio=servicio,
@@ -420,7 +425,7 @@ def pago(request, terma_id=None):
                         )
                         print(f"[DEBUG] ServicioExtraDetalle creado: {servicio.servicio} x{cantidad}")
                     except ServicioTerma.DoesNotExist:
-                        print(f"[DEBUG] Servicio no encontrado con ID: {servicio_id}")
+                        print(f"[DEBUG] Servicio no encontrado con UUID: {servicio_id}")
                 
                 # Guardar explícitamente
                 detalle.save()
@@ -439,7 +444,7 @@ def pago(request, terma_id=None):
                 servicio_id = request.session['servicio_extra_id']
                 print(f"\n[DEBUG] Recuperando servicio_extra_id individual de sesión: {servicio_id}")
                 
-                servicio = ServicioTerma.objects.get(id=servicio_id)
+                servicio = ServicioTerma.objects.get(uuid=servicio_id)
                 print(f"[DEBUG] Servicio encontrado para agregar: {servicio.servicio}")
                 
                 # Limpiar servicios existentes y agregar el nuevo
@@ -499,9 +504,9 @@ def pago(request, terma_id=None):
             "notification_url": f"{base_url}/ventas/webhook/mercadopago/",  
             "statement_descriptor": "TERMAS",
             "metadata": {
-                "compra_id": compra.id,
-                "usuario_id": usuario.id,
-                "terma_id": terma.id
+                "compra_uuid": str(compra.uuid),
+                "usuario_uuid": str(usuario.uuid),
+                "terma_uuid": str(terma.uuid)
             }
         }
         
@@ -515,22 +520,12 @@ def pago(request, terma_id=None):
             compra.estado_pago = "error"
             compra.save()
 
-    # Si no está en POST, buscar la terma por entrada_id en EntradaTipo
-    if request.method != 'POST' and terma_id:
-        datos['terma_id'] = terma_id
-    
-    if not datos.get('terma_id') and datos.get('entrada_id'):
-        from entradas.models import EntradaTipo
-        entrada_tipo = EntradaTipo.objects.filter(id=datos['entrada_id']).first()
-        if entrada_tipo and entrada_tipo.terma_id:
-            datos['terma_id'] = entrada_tipo.terma_id
-        else:
-            datos['terma_id'] = datos['entrada_id']
+    # Si no está en POST, no hay datos adicionales que procesar
     
     # Agregar información de duración si tenemos la entrada
     if datos.get('entrada_id'):
         from entradas.models import EntradaTipo
-        entrada_tipo = EntradaTipo.objects.filter(id=datos['entrada_id']).first()
+        entrada_tipo = EntradaTipo.objects.filter(uuid=datos['entrada_id']).first()
         if entrada_tipo:
             datos['duracion_horas'] = entrada_tipo.duracion_horas
             datos['duracion_tipo'] = entrada_tipo.get_duracion_tipo_display()
@@ -548,7 +543,8 @@ def pago(request, terma_id=None):
             else:
                 datos['duracion_texto'] = entrada_tipo.get_duracion_tipo_display()
     
-    datos['usuario'] = usuario
+    # Asignar usuario si está autenticado (para renderizar el template)
+    datos['usuario'] = request.user if request.user.is_authenticated else None
     return render(request, 'ventas/pago.html', datos)
 
 @csrf_exempt

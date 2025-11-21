@@ -229,7 +229,7 @@
                                                 <div class="text-sm text-gray-900">{{ dist.fecha_calculo|date:"d/m/Y H:i" }}</div>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap">
-                                                <a href="{% url 'termas:ver_detalle_distribucion' dist.id %}" 
+                                                                <a href="{% url 'termas:ver_detalle_distribucion' dist.uuid %}" 
                                                    class="text-blue-600 hover:text-blue-800 transition-colors duration-200" 
                                                    title="Ver detalles de la distribución">
                                                     <i class="fas fa-eye"></i>

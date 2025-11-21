@@ -1,4 +1,5 @@
 from django.db import models
+import uuid
 from termas.models import Terma
 from usuarios.models import Usuario
 
@@ -10,6 +11,7 @@ class EntradaTipo(models.Model):
         ('dia_completo', 'Día completo'),
     ]
     
+    uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False, db_index=True)
     terma = models.ForeignKey(Terma, on_delete=models.CASCADE)
     nombre = models.CharField(max_length=100)
     descripcion = models.TextField(null=True, blank=True)

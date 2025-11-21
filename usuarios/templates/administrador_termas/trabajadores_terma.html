@@ -226,7 +226,7 @@
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                     <div class="flex items-center space-x-2">
                                         <!-- Ver detalles -->
-                                        <button data-action="ver" data-id="{{ trabajador.id }}" class="text-blue-600 hover:text-blue-900 transition-colors" title="Ver detalles">
+                                        <button data-action="ver" data-id="{{ trabajador.uuid }}" class="text-blue-600 hover:text-blue-900 transition-colors" title="Ver detalles">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
@@ -234,15 +234,15 @@
                                         </button>
 
                                         <!-- Editar -->
-                                        <button data-action="editar" data-id="{{ trabajador.id }}" class="text-yellow-600 hover:text-yellow-900 transition-colors" title="Editar">
+                                        <button data-action="editar" data-id="{{ trabajador.uuid }}" class="text-yellow-600 hover:text-yellow-900 transition-colors" title="Editar">
                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                                             </svg>
                                         </button>
 
                                         <!-- Cambiar estado -->
-                                        {% if trabajador.id != usuario.id %}
-                                        <button data-action="cambiar" data-id="{{ trabajador.id }}" data-newstate="{% if trabajador.rol.nombre == 'trabajador' %}false{% else %}true{% endif %}" 
+                                        {% if trabajador.uuid != usuario.uuid %}
+                                        <button data-action="cambiar" data-id="{{ trabajador.uuid }}" data-newstate="{% if trabajador.rol.nombre == 'trabajador' %}false{% else %}true{% endif %}" 
                                                 class="{% if trabajador.rol.nombre == 'trabajador' %}text-orange-600 hover:text-orange-900{% else %}text-blue-600 hover:text-blue-900{% endif %} transition-colors" 
                                                 title="{% if trabajador.rol.nombre == 'trabajador' %}Convertir a Cliente{% else %}Convertir a Trabajador{% endif %}">
                                             {% if trabajador.rol.nombre == 'trabajador' %}

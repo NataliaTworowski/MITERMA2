@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from datetime import date
+import uuid
 from usuarios.models import Usuario
 from entradas.models import EntradaTipo
 
@@ -19,6 +20,7 @@ class Compra(models.Model):
         ("cancelado", "Cancelado"),
     ]
     
+    uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False, db_index=True)
     cantidad = models.IntegerField(default=1)
 
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
@@ -116,6 +118,7 @@ class DistribucionPago(models.Model):
         ('error', 'Error'),
     ]
     
+    uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False, db_index=True)
     compra = models.OneToOneField(Compra, on_delete=models.CASCADE, related_name='distribucion_pago')
     terma = models.ForeignKey("termas.Terma", on_delete=models.CASCADE)
     plan_utilizado = models.ForeignKey("termas.PlanSuscripcion", on_delete=models.SET_NULL, null=True)

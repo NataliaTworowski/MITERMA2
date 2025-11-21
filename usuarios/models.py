@@ -98,6 +98,7 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     """
     
     # Campos principales del usuario
+    uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False, db_index=True)
     email = models.EmailField(max_length=100, unique=True, db_index=True)
     nombre = models.CharField(max_length=50)
     apellido = models.CharField(max_length=50)
