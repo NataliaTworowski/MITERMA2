@@ -45,19 +45,19 @@ def mostrar_termas(request):
         try:
             precio_rango = int(precio_filtro)
             if precio_rango == 1:  # Hasta $20.000
-                termas_query = termas_query.filter(entradatipo__precio__lte=20000).distinct()
+                termas_query = termas_query.filter(entradatipo__precio__lte=20000)
             elif precio_rango == 2:  # $20.000 - $40.000
                 termas_query = termas_query.filter(
                     entradatipo__precio__gte=20000,
                     entradatipo__precio__lte=40000
-                ).distinct()
+                )
             elif precio_rango == 3:  # $40.000 - $60.000
                 termas_query = termas_query.filter(
                     entradatipo__precio__gte=40000,
                     entradatipo__precio__lte=60000
-                ).distinct()
+                )
             elif precio_rango == 4:  # Más de $60.000
-                termas_query = termas_query.filter(entradatipo__precio__gte=60000).distinct()
+                termas_query = termas_query.filter(entradatipo__precio__gte=60000)
         except (ValueError, TypeError):
             pass
     
@@ -68,10 +68,10 @@ def mostrar_termas(request):
         'calificacion_set',
         'comuna__region'
     ).distinct()
-    
+
     # Las termas se mostrarán independiente de la disponibilidad del día actual
     # La verificación de disponibilidad se hará al seleccionar fecha de visita
-    termas = termas_raw
+    termas = list(termas_raw)
     
     context = {
         'usuario': request.user,
@@ -79,6 +79,19 @@ def mostrar_termas(request):
         'navbar_mode': 'termas_only'
     }
     return render(request, 'mostrar_termas.html', context)
+
+
+def obtener_comunas_por_region(request):
+    """API endpoint para obtener comunas de una región específica"""
+    region_nombre = request.GET.get('region')
+    if not region_nombre:
+        return JsonResponse({'comunas': []})
+    
+    try:
+        comunas = Comuna.objects.filter(region__nombre=region_nombre).values_list('nombre', flat=True)
+        return JsonResponse({'comunas': list(comunas)})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 def home(request):

@@ -24,8 +24,6 @@ def aprobar_solicitud(request, solicitud_uuid):
     
     try:
         solicitud = get_object_or_404(SolicitudTerma, uuid=solicitud_uuid, estado='pendiente')
-        print(f"[DEBUG] Solicitud encontrada: {solicitud.nombre_terma}")
-        print(f"[DEBUG] Usuario asociado: {solicitud.usuario}")
         
         # Crear la terma
         terma = Terma.objects.create(
@@ -35,10 +33,10 @@ def aprobar_solicitud(request, solicitud_uuid):
             comuna=solicitud.comuna,
             telefono_terma=solicitud.telefono_contacto,
             email_terma=solicitud.correo_institucional,
+            rut_empresa=solicitud.rut_empresa if hasattr(solicitud, 'rut_empresa') and solicitud.rut_empresa else "",
             estado_suscripcion='activa',
             fecha_suscripcion=timezone.now().date()
         )
-        print(f"[DEBUG] Terma creada con ID: {terma.id}")
 
         # Si la solicitud incluye un plan seleccionado, asignarlo a la terma
         try:
@@ -49,10 +47,9 @@ def aprobar_solicitud(request, solicitud_uuid):
                 terma.porcentaje_comision_actual = plan_seleccionado.porcentaje_comision
                 terma.limite_fotos_actual = plan_seleccionado.limite_fotos
                 terma.save()
-                print(f"[DEBUG] Plan asignado a la terma: {plan_seleccionado.nombre} (ID {plan_seleccionado.id})")
         except Exception as e:
             # No bloquear la aprobación por un fallo al asignar plan; solo loguear
-            print(f"[DEBUG] No se pudo asignar plan a la terma automáticamente: {e}")
+            pass
 
         # Gestión del usuario administrador
         usuario_admin = None
@@ -61,12 +58,10 @@ def aprobar_solicitud(request, solicitud_uuid):
         if solicitud.usuario:
             # Ya existe un usuario asociado a la solicitud
             usuario_admin = solicitud.usuario
-            print(f"[DEBUG] Usuario existente encontrado: {usuario_admin.email}")
         else:
             # No hay usuario asociado, verificar si existe un usuario con el correo institucional
             try:
                 usuario_admin = Usuario.objects.get(email=solicitud.correo_institucional)
-                print(f"[DEBUG] Usuario encontrado por correo institucional: {usuario_admin.email}")
             except Usuario.DoesNotExist:
                 # No existe usuario, crear uno nuevo
                 try:
@@ -87,10 +82,8 @@ def aprobar_solicitud(request, solicitud_uuid):
                         terma=terma,
                         tiene_password_temporal=True
                     )
-                    print(f"[DEBUG] Nuevo usuario creado: {usuario_admin.email} con contraseña temporal")
                     
                 except Rol.DoesNotExist:
-                    print("[DEBUG] Error: Rol de administrador no encontrado")
                     return JsonResponse({
                         'success': False,
                         'message': 'Error: Rol de administrador no encontrado en el sistema.'
@@ -108,27 +101,24 @@ def aprobar_solicitud(request, solicitud_uuid):
                 # Asignar el usuario como administrador de la terma
                 terma.administrador = usuario_admin
                 terma.save()
-                print(f"[DEBUG] Usuario asignado como administrador de la terma")
                 
                 # Actualizar la solicitud para vincular el usuario si no estaba vinculado
                 if not solicitud.usuario:
                     solicitud.usuario = usuario_admin
                     
             except Rol.DoesNotExist:
-                print("[DEBUG] Error: Rol de administrador no encontrado")
                 return JsonResponse({
                     'success': False,
                     'message': 'Error: Rol de administrador no encontrado en el sistema.'
                 }, status=500)
         else:
-            print("[DEBUG] Error: No se pudo crear o encontrar usuario administrador")
+            pass
 
         # Actualizar la solicitud
         solicitud.estado = 'aceptada'
         solicitud.terma = terma
         solicitud.fecha_respuesta = timezone.now()
         solicitud.save()
-        print(f"[DEBUG] Solicitud actualizada a estado: {solicitud.estado}")
 
         # Enviar correo de aprobación
         try:
@@ -898,19 +888,24 @@ def cambiar_estado_usuario(request, usuario_uuid):
         usuario.save()
         print(f"[DEBUG] Estado cambiado de {estado_anterior} a {usuario.estado}")
         
-        # Si se desactiva un admin de terma, remover de la terma
-        if not usuario.estado and usuario.terma and usuario.rol and usuario.rol.nombre == 'administrador_terma':
-            if usuario.terma.administrador == usuario:
-                usuario.terma.administrador = None
-                usuario.terma.save()
-                print(f"[DEBUG] Administrador removido de terma: {usuario.terma.nombre_terma}")
+        # IMPORTANTE: NO remover al administrador de la terma al desactivar
+        # Las vinculaciones se preservan para poder reactivar sin perder las asignaciones
+        # Solo se desactiva el acceso, pero no se pierde la relación
         
         estado_texto = 'activado' if usuario.estado else 'desactivado'
-        print(f"[DEBUG] Usuario {estado_texto} exitosamente")
+        mensaje_vinculacion = ""
+        
+        if usuario.terma and usuario.rol and usuario.rol.nombre == 'administrador_terma':
+            if usuario.estado:
+                mensaje_vinculacion = f" Vinculación con terma '{usuario.terma.nombre_terma}' reactivada."
+            else:
+                mensaje_vinculacion = f" Vinculación con terma '{usuario.terma.nombre_terma}' preservada (inactiva)."
+        
+        print(f"[DEBUG] Usuario {estado_texto} exitosamente{mensaje_vinculacion}")
         
         return JsonResponse({
             'success': True,
-            'message': f'Usuario {estado_texto} exitosamente.',
+            'message': f'Usuario {estado_texto} exitosamente.{mensaje_vinculacion}',
             'nuevo_estado': usuario.estado
         })
         

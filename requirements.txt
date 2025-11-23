@@ -25,5 +25,8 @@ cryptography==41.0.8
 # PDF Generation
 reportlab==4.0.7
 
+# Excel file generation
+openpyxl==3.1.5
+
 # Image processing (required by qrcode and reportlab)
 Pillow==10.1.0

@@ -12,6 +12,7 @@ urlpatterns = [
     path('planes/', views.planes, name='planes'),
     path('solicitud_terma/', views.solicitud_terma, name='solicitud_terma'),
     path('api/comunas/<int:region_id>/', views.get_comunas, name='get_comunas'),
+    path('api/comunas-por-region/', views.obtener_comunas_por_region, name='obtener_comunas_por_region'),
     
     # Vistas de error personalizadas (para uso programático)
     path('error/', error_views.custom_error_page, name='custom_error'),

@@ -1,6 +1,6 @@
 {% load static %}
 {% load humanize %}
-{% load precio_filters %}
+{% load string_utils %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -63,12 +63,13 @@
                     <div class="flex gap-2">
                         <button type="submit" class="flex items-center gap-2 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg shadow transition whitespace-nowrap">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                <path d="M3 6h18M3 12h18M3 18h18"/>
+                                <circle cx="11" cy="11" r="8"/>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
                             </svg>
-                            Aplicar Filtros
+                            Buscar
                         </button>
                         {% if request.GET.nombre or request.GET.region or request.GET.comuna or request.GET.precio or request.GET.calificacion %}
-                            <a href="{% url 'core:mostrar_termas' %}" class="flex items-center gap-2 px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white font-semibold rounded-lg shadow transition whitespace-nowrap">
+                            <a href="{% url 'core:mostrar_termas' %}" class="limpiar-filtros flex items-center gap-2 px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg shadow transition whitespace-nowrap">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                     <path d="M6 18L18 6M6 6l12 12"/>
                                 </svg>
@@ -181,23 +182,93 @@
             </form>
         </div>
 
-        <!-- Grid de Termas -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {% for terma in termas %}
-                <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col">
-                    <!-- Imagen -->
-                    <div class="relative h-48 overflow-hidden">
-                        {% if terma.imagenes.first %}
-                            <img src="{{ terma.imagenes.first.url_imagen }}" alt="{{ terma.nombre_terma }}" class="w-full h-full object-cover">
+        <!-- Resultados y filtros activos -->
+        <div class="bg-white rounded-lg p-4 mb-6 shadow-sm">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div class="flex items-center gap-2">
+                    <h3 class="text-lg font-semibold text-gray-900">
+                        {% if termas %}
+                            {{ termas|length }} terma{{ termas|length|pluralize:",s" }} encontrada{{ termas|length|pluralize:",s" }}
                         {% else %}
-                            <div class="w-full h-full bg-gradient-to-br from-blue-400 to-teal-500 flex items-center justify-center">
-                                <svg class="w-20 h-20 text-white opacity-70" fill="currentColor" viewBox="0 0 24 24">
-                                    <rect x="6" y="8" width="12" height="8" rx="2" fill="#fff" fill-opacity="0.5"/>
-                                    <rect x="9" y="6" width="6" height="4" rx="1" fill="#fff" fill-opacity="0.5"/>
-                                    <rect x="11" y="10" width="2" height="2" rx="1" fill="#fff" fill-opacity="0.7"/>
-                                </svg>
-                            </div>
+                            No se encontraron termas
                         {% endif %}
+                    </h3>
+                    {% if request.GET.nombre or request.GET.region or request.GET.comuna or request.GET.precio or request.GET.calificacion %}
+                        <span class="text-sm text-gray-500">(con filtros aplicados)</span>
+                    {% endif %}
+                </div>
+                
+                <!-- Filtros activos -->
+                {% if request.GET.nombre or request.GET.region or request.GET.comuna or request.GET.precio or request.GET.calificacion %}
+                    <div class="flex flex-wrap gap-2">
+                        {% if request.GET.nombre %}
+                            <span class="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <circle cx="11" cy="11" r="8"/>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                                </svg>
+                                "{{ request.GET.nombre }}"
+                            </span>
+                        {% endif %}
+                        {% if request.GET.region %}
+                            <span class="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-800 text-sm font-medium rounded-full">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"/>
+                                </svg>
+                                {{ request.GET.region }}
+                            </span>
+                        {% endif %}
+                        {% if request.GET.comuna %}
+                            <span class="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded-full">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                                </svg>
+                                {{ request.GET.comuna }}
+                            </span>
+                        {% endif %}
+                        {% if request.GET.precio %}
+                            <span class="inline-flex items-center gap-1 px-3 py-1 bg-yellow-100 text-yellow-800 text-sm font-medium rounded-full">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                                </svg>
+                                {% if request.GET.precio == '1' %}Hasta $20.000
+                                {% elif request.GET.precio == '2' %}$20.000 - $40.000
+                                {% elif request.GET.precio == '3' %}$40.000 - $60.000
+                                {% elif request.GET.precio == '4' %}Más de $60.000
+                                {% endif %}
+                            </span>
+                        {% endif %}
+                        {% if request.GET.calificacion %}
+                            <span class="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 text-orange-800 text-sm font-medium rounded-full">
+                                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                </svg>
+                                {{ request.GET.calificacion }}+ estrellas
+                            </span>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Grid de Termas -->
+        {% if termas %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for terma in termas %}
+                    <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 flex flex-col">
+                        <!-- Imagen -->
+                        <div class="relative h-48 overflow-hidden">
+                            {% if terma.imagenes.first %}
+                                <img src="{{ terma.imagenes.first.url_imagen }}" alt="{{ terma.nombre_terma }}" class="w-full h-full object-cover">
+                            {% else %}
+                                <div class="w-full h-full bg-gradient-to-br from-blue-400 to-teal-500 flex items-center justify-center">
+                                    <svg class="w-20 h-20 text-white opacity-70" fill="currentColor" viewBox="0 0 24 24">
+                                        <rect x="6" y="8" width="12" height="8" rx="2" fill="#fff" fill-opacity="0.5"/>
+                                        <rect x="9" y="6" width="6" height="4" rx="1" fill="#fff" fill-opacity="0.5"/>
+                                        <rect x="11" y="10" width="2" height="2" rx="1" fill="#fff" fill-opacity="0.7"/>
+                                    </svg>
+                                </div>
+                            {% endif %}
                     </div>
                     <!-- Contenido -->
                     <div class="p-6 flex-1 flex flex-col">
@@ -243,12 +314,48 @@
                         </a>
                     </div>
                 </div>
-            {% empty %}
-                <div class="col-span-full text-center py-12">
-                    <p class="text-gray-600 text-lg">No hay termas disponibles en este momento.</p>
+                {% endfor %}
+            </div>
+        {% else %}
+            <!-- Mensaje cuando no hay resultados -->
+            <div class="text-center py-16">
+                <div class="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+                    <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <path d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
+                    </svg>
                 </div>
-            {% endfor %}
-        </div>
+                
+                <h3 class="text-xl font-semibold text-gray-900 mb-2">No se encontraron termas</h3>
+                
+                {% if request.GET.nombre or request.GET.region or request.GET.comuna or request.GET.precio or request.GET.calificacion %}
+                    <p class="text-gray-600 mb-6">No hay termas que coincidan con los filtros aplicados. Intenta:</p>
+                    <div class="flex flex-col sm:flex-row gap-3 justify-center items-center">
+                        <a href="{% url 'core:mostrar_termas' %}" class="inline-flex items-center gap-2 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg shadow transition">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                            Limpiar todos los filtros
+                        </a>
+                        <span class="text-gray-500 hidden sm:inline">o</span>
+                        <button onclick="document.querySelector('input[name=\"nombre\"]').value=''; document.querySelector('form').submit();" class="inline-flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800 font-medium transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <circle cx="11" cy="11" r="8"/>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                            </svg>
+                            Buscar sin filtros de ubicación
+                        </button>
+                    </div>
+                {% else %}
+                    <p class="text-gray-600 mb-6">Actualmente no hay termas disponibles en nuestro sistema.</p>
+                    <a href="{% url 'core:home' %}" class="inline-flex items-center gap-2 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg shadow transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                        </svg>
+                        Volver al inicio
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
     </main>
 
     <!-- Footer -->

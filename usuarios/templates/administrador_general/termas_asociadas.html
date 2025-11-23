@@ -224,7 +224,7 @@
 </div>
 
 <!-- Modal para crear nueva terma -->
-<div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-[9999]" id="crearTermaModal">
+<div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-[1000]" id="crearTermaModal">
     <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
         <div class="mt-3">
             <div class="flex items-center justify-between mb-4">
@@ -321,7 +321,7 @@
 </div>
 
 <!-- Modal para editar terma -->
-<div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-[9999]" id="editarTermaModal">
+<div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-[1000]" id="editarTermaModal">
     <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
         <div class="mt-3">
             <div class="flex items-center justify-between mb-4">
@@ -353,7 +353,7 @@
 </div>
 
 <!-- Modal para ver detalle de terma -->
-<div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-[9999]" id="detalleTermaModal">
+<div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-[1000]" id="detalleTermaModal">
     <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
         <div class="mt-3">
             <div class="flex items-center justify-between mb-4">
@@ -379,7 +379,7 @@
 </div>
 
 <!-- Modal para estadísticas -->
-<div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-[9999]" id="estadisticasModal">
+<div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-[1000]" id="estadisticasModal">
     <div class="relative top-5 mx-auto p-5 border w-11/12 md:w-4/5 lg:w-4/5 xl:w-3/4 shadow-lg rounded-md bg-white max-h-[95vh] overflow-y-auto">
         <div class="mt-3">
             <div class="flex items-center justify-between mb-4">
@@ -467,6 +467,52 @@ document.getElementById('region_crear').addEventListener('change', function() {
     }
 });
 
+// Validación de RUT en formulario de creación
+const rutCrearField = document.getElementById('rut_empresa');
+if (rutCrearField) {
+    rutCrearField.addEventListener('input', function() {
+        let input = this.value.replace(/[^0-9kK]/g, ''); // Solo números y K
+        
+        if (input.length > 1) {
+            // Separar número del dígito verificador
+            let numero = input.slice(0, -1);
+            let dv = input.slice(-1).toUpperCase();
+            
+            // Formatear con puntos
+            if (numero.length > 3) {
+                numero = numero.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+            }
+            
+            // Construir RUT final
+            if (numero && dv) {
+                this.value = numero + '-' + dv;
+            } else {
+                this.value = input;
+            }
+        } else {
+            this.value = input;
+        }
+        
+        // Validar formato
+        const isValid = /^\d{1,3}(\.\d{3})*-[\dkK]$/.test(this.value) || this.value === '';
+        if (this.value && !isValid) {
+            this.style.borderColor = '#ef4444';
+            this.style.backgroundColor = '#fef2f2';
+        } else {
+            this.style.borderColor = '#d1d5db';
+            this.style.backgroundColor = '#ffffff';
+        }
+    });
+    
+    rutCrearField.addEventListener('blur', function() {
+        // Validar formato final al salir del campo
+        if (this.value && !/^\d{1,3}(\.\d{3})*-[\dkK]$/.test(this.value)) {
+            this.style.borderColor = '#ef4444';
+            this.style.backgroundColor = '#fef2f2';
+        }
+    });
+}
+
 // Función para abrir modal de crear terma
 function abrirModalCrear() {
     showModal('crearTermaModal');
@@ -530,7 +576,72 @@ function editarTerma(termaId) {
                                 })
                                 .catch(error => {
                                     console.error('Error al cargar comunas:', error);
+                                    Swal.fire('Error', 'Error al cargar las comunas', 'error');
                                 });
+                        }
+                    });
+                }
+                
+                // Añadir placeholder dinámico al campo de email administrador
+                const emailAdminField = document.getElementById('email_administrador_edit');
+                if (emailAdminField) {
+                    // Mejorar la validación del email en tiempo real
+                    emailAdminField.addEventListener('input', function() {
+                        const email = this.value.trim();
+                        const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+                        
+                        if (email && !isValid) {
+                            this.style.borderColor = '#ef4444';
+                            this.style.backgroundColor = '#fef2f2';
+                        } else {
+                            this.style.borderColor = '#d1d5db';
+                            this.style.backgroundColor = '#ffffff';
+                        }
+                    });
+                }
+                
+                // Validación de RUT en formulario de edición
+                const rutField = document.getElementById('rut_empresa_edit');
+                if (rutField && !rutField.readOnly) {
+                    rutField.addEventListener('input', function() {
+                        let input = this.value.replace(/[^0-9kK]/g, ''); // Solo números y K
+                        
+                        if (input.length > 1) {
+                            // Separar número del dígito verificador
+                            let numero = input.slice(0, -1);
+                            let dv = input.slice(-1).toUpperCase();
+                            
+                            // Formatear con puntos
+                            if (numero.length > 3) {
+                                numero = numero.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                            }
+                            
+                            // Construir RUT final
+                            if (numero && dv) {
+                                this.value = numero + '-' + dv;
+                            } else {
+                                this.value = input;
+                            }
+                        } else {
+                            this.value = input;
+                        }
+                        
+                        // Validar formato
+                        const isValid = /^\d{1,3}(\.\d{3})*-[\dkK]$/.test(this.value) || this.value === '';
+                        if (this.value && !isValid) {
+                            this.style.borderColor = '#ef4444';
+                            this.style.backgroundColor = '#fef2f2';
+                        } else {
+                            this.style.borderColor = '#d1d5db';
+                            this.style.backgroundColor = '#ffffff';
+                        }
+                    });
+                    
+                    rutField.addEventListener('blur', function() {
+                        // Validar formato final al salir del campo
+                        if (this.value && !/^\d{1,3}(\.\d{3})*-[\dkK]$/.test(this.value)) {
+                            this.style.borderColor = '#ef4444';
+                            this.style.backgroundColor = '#fef2f2';
                         }
                     });
                 }
@@ -640,9 +751,15 @@ document.getElementById('formCrearTerma').addEventListener('submit', function(e)
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            Swal.fire('Éxito', data.message, 'success').then(() => {
-                location.reload();
-            });
+            // Cerrar el modal primero
+            closeModal('crearTermaModal');
+            
+            // Mostrar mensaje de éxito después de cerrar el modal
+            setTimeout(() => {
+                Swal.fire('Éxito', data.message, 'success').then(() => {
+                    location.reload();
+                });
+            }, 300); // Pequeño delay para asegurar que el modal se cierre completamente
         } else {
             Swal.fire('Error', data.message, 'error');
         }
@@ -670,9 +787,15 @@ document.getElementById('formEditarTerma').addEventListener('submit', function(e
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            Swal.fire('Éxito', data.message, 'success').then(() => {
-                location.reload();
-            });
+            // Cerrar el modal primero
+            closeModal('editarTermaModal');
+            
+            // Mostrar mensaje de éxito después de cerrar el modal
+            setTimeout(() => {
+                Swal.fire('Éxito', data.message, 'success').then(() => {
+                    location.reload();
+                });
+            }, 300); // Pequeño delay para asegurar que el modal se cierre completamente
         } else {
             Swal.fire('Error', data.message, 'error');
         }

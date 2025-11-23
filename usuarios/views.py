@@ -18,6 +18,7 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.core.exceptions import ValidationError
 from ventas.models import Compra 
 from django.utils import timezone
+from django.db.models import Sum
 from termas.models import Terma, ServicioTerma
 import logging
 
@@ -635,14 +636,15 @@ def adm_termas(request):
             # Calcular disponibilidad para hoy
             disponibilidad_hoy = calcular_disponibilidad_terma(terma.id, date.today())
             
-            # Reservas de hoy 
-            reservas_hoy = Compra.objects.filter(
-                terma=terma, 
-                fecha_visita=date.today(),
-                estado_pago='pagado'
-            ).count()
+            # Entradas vendidas para hoy (usar la misma lógica que el calendario)
+            from ventas.models import DetalleCompra
+            entradas_vendidas_hoy = DetalleCompra.objects.filter(
+                compra__terma=terma, 
+                compra__fecha_visita=date.today(),
+                compra__estado_pago='pagado'
+            ).aggregate(total=Sum('cantidad'))['total'] or 0
         else:
-            reservas_hoy = 0
+            entradas_vendidas_hoy = 0
             disponibilidad_hoy = None
         
         context = {
@@ -660,7 +662,7 @@ def adm_termas(request):
                 'estadisticas_calificaciones': terma.estadisticas_calificaciones(),
                 'servicios_populares': terma.servicios_populares(),
                 'filtro_actual': filtro_comentarios,
-                'reservas_hoy': reservas_hoy,
+                'entradas_vendidas_hoy': entradas_vendidas_hoy,
                 'disponibilidad_hoy': disponibilidad_hoy,
             })
         
@@ -1197,6 +1199,9 @@ def admin_general_crear_terma(request):
                 }, status=400)
         
         # Crear la terma
+        print(f"[DEBUG] Creando nueva terma: {nombre_terma}")
+        print(f"[DEBUG] RUT para nueva terma: '{rut_empresa}' (tipo: {type(rut_empresa)})")
+        
         terma = Terma.objects.create(
             nombre_terma=nombre_terma,
             descripcion_terma=descripcion_terma,
@@ -1209,6 +1214,8 @@ def admin_general_crear_terma(request):
             fecha_suscripcion=timezone.now().date(),
             plan_actual=plan_actual
         )
+        
+        print(f"[DEBUG] Terma creada con RUT: '{terma.rut_empresa}'")
         
         # Actualizar configuración según plan si se asignó uno
         if plan_actual:
@@ -1316,6 +1323,13 @@ def admin_general_terma_actualizar(request, terma_uuid):
         direccion_terma = request.POST.get('direccion_terma', '')
         plan_actual_id = request.POST.get('plan_actual')
         estado_suscripcion = request.POST.get('estado_suscripcion', 'inactiva')
+        email_administrador = request.POST.get('email_administrador', '').strip()
+        
+        # Debug logging
+        print(f"[DEBUG] Actualizando terma {terma_uuid}")
+        print(f"[DEBUG] RUT recibido del formulario: '{rut_empresa}' (tipo: {type(rut_empresa)})")
+        print(f"[DEBUG] RUT actual en DB: '{terma.rut_empresa}' (tipo: {type(terma.rut_empresa)})")
+        print(f"[DEBUG] Datos POST completos: {dict(request.POST)}")
         
         # Validaciones básicas
         if not nombre_terma or not email_terma or not comuna_id:
@@ -1344,6 +1358,49 @@ def admin_general_terma_actualizar(request, terma_uuid):
                     'message': 'Plan seleccionado no válido.'
                 }, status=400)
         
+        # Manejar asignación del administrador por email
+        nuevo_administrador = None
+        if email_administrador:
+            try:
+                from usuarios.models import Usuario, Rol
+                
+                # Buscar el usuario por email
+                try:
+                    nuevo_administrador = Usuario.objects.get(email=email_administrador)
+                except Usuario.DoesNotExist:
+                    return JsonResponse({
+                        'success': False,
+                        'message': f'No se encontró un usuario registrado con el email: {email_administrador}'
+                    }, status=400)
+                
+                # Verificar que el usuario tenga el rol adecuado o se le pueda asignar
+                rol_admin_terma = Rol.objects.get(nombre='administrador_terma')
+                
+                if nuevo_administrador.rol.nombre not in ['administrador_terma', 'administrador_general']:
+                    # Si no es administrador, intentar cambiar su rol
+                    if nuevo_administrador.rol.nombre == 'cliente':
+                        # Cambiar de cliente a administrador de terma
+                        nuevo_administrador.rol = rol_admin_terma
+                    else:
+                        return JsonResponse({
+                            'success': False,
+                            'message': f'El usuario {email_administrador} no puede ser asignado como administrador de terma. Rol actual: {nuevo_administrador.rol.nombre}'
+                        }, status=400)
+                
+                # Verificar que no esté administrando otra terma (excepto la actual)
+                if nuevo_administrador.terma and nuevo_administrador.terma != terma:
+                    otra_terma = nuevo_administrador.terma
+                    return JsonResponse({
+                        'success': False,
+                        'message': f'El usuario {email_administrador} ya es administrador de la terma "{otra_terma.nombre_terma}"'
+                    }, status=400)
+                
+            except Exception as e:
+                return JsonResponse({
+                    'success': False,
+                    'message': f'Error al procesar el administrador: {str(e)}'
+                }, status=500)
+        
         # Actualizar la terma
         terma.nombre_terma = nombre_terma
         terma.descripcion_terma = descripcion_terma
@@ -1351,18 +1408,55 @@ def admin_general_terma_actualizar(request, terma_uuid):
         terma.comuna = comuna
         terma.telefono_terma = telefono_terma
         terma.email_terma = email_terma
-        terma.rut_empresa = rut_empresa
+        
+        # Actualizar RUT solo si está vacío actualmente (no se puede cambiar una vez establecido)
+        # Verificar si el RUT actual está vacío, es None, o es la cadena 'None'
+        rut_actual_vacio = (
+            not terma.rut_empresa or 
+            terma.rut_empresa == '' or 
+            terma.rut_empresa == 'None' or
+            terma.rut_empresa is None or
+            str(terma.rut_empresa).strip() == ''
+        )
+        
+        if rut_actual_vacio and rut_empresa and rut_empresa.strip():
+            terma.rut_empresa = rut_empresa.strip()
+            print(f"[DEBUG] RUT actualizado para terma {terma.nombre_terma}: '{rut_empresa.strip()}'")
+        else:
+            print(f"[DEBUG] RUT NO actualizado para {terma.nombre_terma}. RUT actual: '{terma.rut_empresa}', RUT nuevo: '{rut_empresa}'")
+        
         terma.estado_suscripcion = estado_suscripcion
         terma.plan_actual = plan_actual
+        
+        # Manejar cambios en el administrador
+        mensaje_admin = ""
+        if nuevo_administrador:
+            # Remover administrador anterior de la terma (pero no desactivar usuario)
+            admin_anterior = terma.administrador
+            if admin_anterior and admin_anterior != nuevo_administrador:
+                # Solo remover la asignación de terma, NO cambiar estado ni rol
+                admin_anterior.terma = None
+                admin_anterior.save()
+                mensaje_admin += f" Administrador anterior ({admin_anterior.email}) desvinculado."
+            
+            # Asignar nuevo administrador
+            nuevo_administrador.terma = terma
+            nuevo_administrador.save()
+            
+            terma.administrador = nuevo_administrador
+            mensaje_admin += f" Nuevo administrador asignado: {nuevo_administrador.email}."
+        
         terma.save()
         
         # Actualizar configuración según plan si se cambió
         if plan_actual:
             terma.actualizar_configuracion_segun_plan()
         
+        mensaje_final = f'Terma "{nombre_terma}" actualizada exitosamente.{mensaje_admin}'
+        
         return JsonResponse({
             'success': True,
-            'message': f'Terma "{nombre_terma}" actualizada exitosamente.'
+            'message': mensaje_final
         })
         
     except Exception as e:
@@ -1391,10 +1485,21 @@ def admin_general_terma_cambiar_estado(request, terma_uuid):
                 'message': 'Estado no válido.'
             }, status=400)
         
+        # Guardar estado anterior para log
+        estado_anterior = terma.estado_suscripcion
+        
+        # Cambiar estado de la terma
         terma.estado_suscripcion = nuevo_estado
         terma.save()
         
+        # IMPORTANTE: NO cambiar el estado del administrador ni desvincularlo
+        # El administrador mantiene su vinculación y estado independientemente del estado de la terma
+        
         mensaje = f'Terma "{terma.nombre_terma}" {"activada" if nuevo_estado == "activa" else "desactivada"} exitosamente.'
+        
+        # Log del cambio (opcional)
+        if terma.administrador:
+            mensaje += f' La vinculación con el administrador {terma.administrador.email} se mantiene activa.'
         
         return JsonResponse({
             'success': True,

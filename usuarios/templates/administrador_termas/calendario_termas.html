@@ -1,149 +1,233 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="es">
-<head>
+  <head>
     <title>{{ title }}</title>
     {% include 'partials/head.html' %}
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-</head>
-<body class="flex min-h-screen bg-gray-100 font-sans">
+  </head>
+  <body class="flex min-h-screen bg-gray-100 font-sans">
     {% include 'partials/navbar_adm_termas.html' %}
 
     <main class="flex-1 md:ml-8 pl-4 pr-2 py-2">
-        <div class="bg-[#374151] border-b-2 border-gray-200 pt-6 pb-4 px-8 w-full" style="margin-top:0; border-radius:0; box-shadow:none;">
-            <h1 class="text-4xl font-extrabold text-white tracking-wide text-left">Calendario - <span class="text-orange-400">{{ terma.nombre_terma }}</span></h1>
+      <div
+        class="bg-[#374151] border-b-2 border-gray-200 pt-6 pb-4 px-8 w-full"
+        style="margin-top: 0; border-radius: 0; box-shadow: none"
+      >
+        <h1 class="text-4xl font-extrabold text-white tracking-wide text-left">
+          Calendario -
+          <span class="text-orange-400">{{ terma.nombre_terma }}</span>
+        </h1>
+      </div>
+
+      <div class="p-6">
+        <!-- Selector de mes -->
+        <div class="mb-6 flex items-center justify-between">
+          <button
+            id="prevMonth"
+            class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg transition"
+          >
+            &#8592; Mes anterior
+          </button>
+          <h2 id="currentMonth" class="text-2xl font-bold text-gray-800"></h2>
+          <button
+            id="nextMonth"
+            class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg transition"
+          >
+            Mes siguiente &#8594;
+          </button>
         </div>
 
-        <div class="p-6">
-            <!-- Selector de mes -->
-            <div class="mb-6 flex items-center justify-between">
-                <button id="prevMonth" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg transition">
-                    &#8592; Mes anterior
-                </button>
-                <h2 id="currentMonth" class="text-2xl font-bold text-gray-800"></h2>
-                <button id="nextMonth" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg transition">
-                    Mes siguiente &#8594;
-                </button>
-            </div>
-
-            <!-- Calendario -->
-            <div class="bg-white rounded-xl shadow-lg overflow-hidden">
-                <!-- Días de la semana -->
-                <div class="grid grid-cols-7 bg-gray-50 border-b">
-                    <div class="py-2 text-center font-semibold text-gray-600">Dom</div>
-                    <div class="py-2 text-center font-semibold text-gray-600">Lun</div>
-                    <div class="py-2 text-center font-semibold text-gray-600">Mar</div>
-                    <div class="py-2 text-center font-semibold text-gray-600">Mié</div>
-                    <div class="py-2 text-center font-semibold text-gray-600">Jue</div>
-                    <div class="py-2 text-center font-semibold text-gray-600">Vie</div>
-                    <div class="py-2 text-center font-semibold text-gray-600">Sáb</div>
-                </div>
-                <!-- Días del mes -->
-                <div id="calendar-grid" class="grid grid-cols-7"></div>
-            </div>
+        <!-- Leyenda de colores -->
+        <div class="mb-4 flex justify-center space-x-6">
+          <div class="flex items-center">
+            <div
+              class="w-4 h-4 bg-green-100 border border-green-300 rounded mr-2"
+            ></div>
+            <span class="text-sm text-gray-600">10+ entradas</span>
+          </div>
+          <div class="flex items-center">
+            <div
+              class="w-4 h-4 bg-yellow-100 border border-yellow-300 rounded mr-2"
+            ></div>
+            <span class="text-sm text-gray-600">5-9 entradas</span>
+          </div>
+          <div class="flex items-center">
+            <div
+              class="w-4 h-4 bg-blue-100 border border-blue-300 rounded mr-2"
+            ></div>
+            <span class="text-sm text-gray-600">1-4 entradas</span>
+          </div>
+          <div class="flex items-center">
+            <div
+              class="w-4 h-4 bg-white border border-gray-300 rounded mr-2"
+            ></div>
+            <span class="text-sm text-gray-600">Sin ventas</span>
+          </div>
         </div>
+
+        <!-- Calendario -->
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+          <!-- Días de la semana -->
+          <div class="grid grid-cols-7 bg-gray-50 border-b">
+            <div class="py-2 text-center font-semibold text-gray-600">Dom</div>
+            <div class="py-2 text-center font-semibold text-gray-600">Lun</div>
+            <div class="py-2 text-center font-semibold text-gray-600">Mar</div>
+            <div class="py-2 text-center font-semibold text-gray-600">Mié</div>
+            <div class="py-2 text-center font-semibold text-gray-600">Jue</div>
+            <div class="py-2 text-center font-semibold text-gray-600">Vie</div>
+            <div class="py-2 text-center font-semibold text-gray-600">Sáb</div>
+          </div>
+          <!-- Días del mes -->
+          <div id="calendar-grid" class="grid grid-cols-7"></div>
+        </div>
+      </div>
     </main>
 
     {{ ventas_por_dia|json_script:"ventas-data" }}
     <script>
-        // Datos de ventas desde Django (ejemplo de estructura)
-        const ventas = JSON.parse(document.getElementById('ventas-data').textContent);
-        
-        function getDaysInMonth(year, month) {
-            return new Date(year, month + 1, 0).getDate();
+      // Datos de ventas desde Django (ejemplo de estructura)
+      const ventas = JSON.parse(
+        document.getElementById("ventas-data").textContent
+      );
+
+      function getDaysInMonth(year, month) {
+        return new Date(year, month + 1, 0).getDate();
+      }
+
+      function getFirstDayOfMonth(year, month) {
+        return new Date(year, month, 1).getDay();
+      }
+
+      function formatDate(date) {
+        return date.toLocaleDateString("es-CL", {
+          year: "numeric",
+          month: "long",
+        });
+      }
+
+      function updateCalendar(year, month) {
+        const calendarGrid = document.getElementById("calendar-grid");
+        const monthTitle = document.getElementById("currentMonth");
+        calendarGrid.innerHTML = "";
+
+        // Actualizar título del mes
+        const currentDate = new Date(year, month);
+        monthTitle.textContent = formatDate(currentDate);
+
+        const daysInMonth = getDaysInMonth(year, month);
+        const firstDay = getFirstDayOfMonth(year, month);
+
+        // Agregar celdas vacías para los días antes del primer día del mes
+        for (let i = 0; i < firstDay; i++) {
+          const emptyDay = document.createElement("div");
+          emptyDay.className = "border p-4 bg-gray-50";
+          calendarGrid.appendChild(emptyDay);
         }
 
-        function getFirstDayOfMonth(year, month) {
-            return new Date(year, month, 1).getDay();
-        }
+        // Agregar los días del mes
+        for (let day = 1; day <= daysInMonth; day++) {
+          const dateKey = `${year}-${String(month + 1).padStart(
+            2,
+            "0"
+          )}-${String(day).padStart(2, "0")}`;
+          const ventasDelDia = ventas[dateKey] || 0;
 
-        function formatDate(date) {
-            return date.toLocaleDateString('es-CL', {
-                year: 'numeric',
-                month: 'long'
+          const dayElement = document.createElement("div");
+          dayElement.className =
+            "border p-4 min-h-[100px] relative transition-colors hover:bg-gray-50 cursor-pointer";
+
+          // Añadir indicador visual según la cantidad de ventas
+          if (ventasDelDia > 0) {
+            if (ventasDelDia >= 10) {
+              dayElement.classList.add("bg-green-100", "border-green-300");
+            } else if (ventasDelDia >= 5) {
+              dayElement.classList.add("bg-yellow-100", "border-yellow-300");
+            } else {
+              dayElement.classList.add("bg-blue-100", "border-blue-300");
+            }
+          }
+
+          // Número del día
+          const dayNumber = document.createElement("div");
+          dayNumber.className =
+            "absolute top-2 left-2 font-semibold text-gray-600";
+          dayNumber.textContent = day;
+
+          // Contenedor de ventas
+          const ventasContainer = document.createElement("div");
+          ventasContainer.className = "mt-6 text-center";
+
+          const ventasCount = document.createElement("div");
+          ventasCount.className = `text-lg font-bold ${
+            ventasDelDia > 0 ? "text-green-600" : "text-gray-400"
+          }`;
+          ventasCount.textContent = ventasDelDia;
+
+          const ventasLabel = document.createElement("div");
+          ventasLabel.className = "text-xs text-gray-500";
+          ventasLabel.textContent = ventasDelDia === 1 ? "entrada" : "entradas";
+
+          ventasContainer.appendChild(ventasCount);
+          ventasContainer.appendChild(ventasLabel);
+
+          dayElement.appendChild(dayNumber);
+          dayElement.appendChild(ventasContainer);
+
+          // Añadir evento click para mostrar detalles (opcional)
+          if (ventasDelDia > 0) {
+            dayElement.addEventListener("click", function () {
+              alert(`Fecha: ${dateKey}\nEntradas vendidas: ${ventasDelDia}`);
             });
+          }
+
+          calendarGrid.appendChild(dayElement);
         }
+      }
 
-        function updateCalendar(year, month) {
-            const calendarGrid = document.getElementById('calendar-grid');
-            const monthTitle = document.getElementById('currentMonth');
-            calendarGrid.innerHTML = '';
-            
-            // Actualizar título del mes
-            const currentDate = new Date(year, month);
-            monthTitle.textContent = formatDate(currentDate);
+      const serverYear = parseInt("{{ anio_actual|default:'' }}") || null;
+      const serverMonth = parseInt("{{ mes_actual|default:'' }}") || null;
 
-            const daysInMonth = getDaysInMonth(year, month);
-            const firstDay = getFirstDayOfMonth(year, month);
+      // Initialize with fallbacks
+      let currentYear = serverYear || new Date().getFullYear();
+      let currentMonth = serverMonth ? serverMonth - 1 : new Date().getMonth();
 
-            // Agregar celdas vacías para los días antes del primer día del mes
-            for (let i = 0; i < firstDay; i++) {
-                const emptyDay = document.createElement('div');
-                emptyDay.className = 'border p-4 bg-gray-50';
-                calendarGrid.appendChild(emptyDay);
-            }
+      // Inicializar calendario
+      updateCalendar(currentYear, currentMonth);
 
-            // Agregar los días del mes
-            for (let day = 1; day <= daysInMonth; day++) {
-                const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                const ventasDelDia = ventas[dateKey] || 0;
-                
-                const dayElement = document.createElement('div');
-                dayElement.className = 'border p-4 min-h-[100px] relative transition-colors hover:bg-gray-50';
-                
-                // Número del día
-                const dayNumber = document.createElement('div');
-                dayNumber.className = 'absolute top-2 left-2 font-semibold text-gray-600';
-                dayNumber.textContent = day;
-                
-                // Contenedor de ventas
-                const ventasContainer = document.createElement('div');
-                ventasContainer.className = 'mt-6 text-center';
-                
-                const ventasCount = document.createElement('div');
-                ventasCount.className = `text-lg font-bold ${ventasDelDia > 0 ? 'text-green-600' : 'text-gray-400'}`;
-                ventasCount.textContent = ventasDelDia;
-                
-                const ventasLabel = document.createElement('div');
-                ventasLabel.className = 'text-xs text-gray-500';
-                ventasLabel.textContent = 'entradas';
-                
-                ventasContainer.appendChild(ventasCount);
-                ventasContainer.appendChild(ventasLabel);
-                
-                dayElement.appendChild(dayNumber);
-                dayElement.appendChild(ventasContainer);
-                calendarGrid.appendChild(dayElement);
-            }
-        }
-
-        // Variables para mantener el estado del mes actual usando valores del contexto
-        let currentYear = {{ anio_actual }};
-        let currentMonth = {{ mes_actual }} - 1; // Ajuste porque JS usa 0-11
-        let currentDate = new Date(currentYear, currentMonth, 1);
-
-        // Inicializar calendario
-        updateCalendar(currentYear, currentMonth);
-
-        // Event listeners para los botones de navegación
-        document.getElementById('prevMonth').addEventListener('click', () => {
-            currentMonth--;
-            if (currentMonth < 0) {
-                currentMonth = 11;
-                currentYear--;
-            }
-            updateCalendar(currentYear, currentMonth);
+      // Event listeners para los botones de navegación
+      document
+        .getElementById("prevMonth")
+        .addEventListener("click", function () {
+          currentMonth--;
+          if (currentMonth < 0) {
+            currentMonth = 11;
+            currentYear--;
+          }
+          // Cargar datos del nuevo mes desde el servidor
+          loadMonthData(currentYear, currentMonth + 1);
         });
 
-        document.getElementById('nextMonth').addEventListener('click', () => {
-            currentMonth++;
-            if (currentMonth > 11) {
-                currentMonth = 0;
-                currentYear++;
-            }
-            updateCalendar(currentYear, currentMonth);
+      document
+        .getElementById("nextMonth")
+        .addEventListener("click", function () {
+          currentMonth++;
+          if (currentMonth > 11) {
+            currentMonth = 0;
+            currentYear++;
+          }
+          // Cargar datos del nuevo mes desde el servidor
+          loadMonthData(currentYear, currentMonth + 1);
         });
+
+      // Función para cargar datos de un mes específico
+      function loadMonthData(year, month) {
+        const url = new URL(window.location);
+        url.searchParams.set("anio", year);
+        url.searchParams.set("mes", month);
+        window.location.href = url.toString();
+      }
     </script>
-</body>
+  </body>
 </html>

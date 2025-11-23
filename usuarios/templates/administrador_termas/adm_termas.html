@@ -101,17 +101,36 @@
                 <!-- Disponibilidad de Entradas -->
                 <div class="bg-white rounded-xl shadow border border-gray-200 p-6 flex flex-col items-center">
                     <div class="flex items-center justify-center mb-3">
-                        <div class="bg-purple-100 rounded-full p-3 mr-2">
-                            <svg class="w-6 h-6 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                        <div class="bg-green-100 rounded-full p-3 mr-2">
+                            <svg class="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"></path>
                             </svg>
                         </div>
-                        <span class="text-base font-semibold text-gray-700">Vendidas Hoy</span>
+                        <span class="text-base font-semibold text-gray-700">Disponibilidad Hoy</span>
                     </div>
                     <div class="text-center">
                         {% if disponibilidad_hoy %}
-                            <div class="text-3xl font-bold text-gray-900 mb-1">{{ disponibilidad_hoy.vendidas }}</div>
-                            <div class="text-xs text-gray-500 font-medium">entradas vendidas</div>
+                            {% if disponibilidad_hoy.sin_limite %}
+                                <div class="text-3xl font-bold text-green-600 mb-1">{{ disponibilidad_hoy.vendidas }}</div>
+                                <div class="text-xs text-gray-500 font-medium">vendidas / sin límite</div>
+                            {% else %}
+                                <div class="text-3xl font-bold text-gray-900 mb-1">
+                                    <span class="text-green-600">{{ disponibilidad_hoy.vendidas }}</span>
+                                    <span class="text-gray-400">/</span>
+                                    <span class="text-blue-600">{{ disponibilidad_hoy.limite_diario }}</span>
+                                </div>
+                                <div class="text-xs text-gray-500 font-medium">vendidas / disponibles</div>
+                                <!-- Barra de progreso -->
+                                <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+                                    {% widthratio disponibilidad_hoy.vendidas disponibilidad_hoy.limite_diario 100 as porcentaje %}
+                                    <div class="bg-green-500 h-2 rounded-full transition-all duration-300" 
+                                         style="width: {% if porcentaje > 100 %}100{% else %}{{ porcentaje }}{% endif %}%"></div>
+                                </div>
+                                <div class="text-xs text-gray-400 mt-1">
+                                    {% widthratio disponibilidad_hoy.vendidas disponibilidad_hoy.limite_diario 100 as porcentaje %}
+                                    {{ porcentaje }}% ocupado
+                                </div>
+                            {% endif %}
                         {% else %}
                             <div class="text-2xl font-bold text-gray-400">Sin datos</div>
                             <div class="text-xs text-gray-500">No hay información disponible</div>
@@ -214,8 +233,8 @@
                         <div class="text-xs text-gray-500">Hoy</div>
                     </div>
                     <div class="mb-2 text-center">
-                        <div class="text-2xl font-bold text-green-600">{{ reservas_hoy|default:'0' }}</div>
-                        <div class="text-xs text-gray-600">Reservas para hoy</div>
+                        <div class="text-2xl font-bold text-green-600">{{ entradas_vendidas_hoy|default:'0' }}</div>
+                        <div class="text-xs text-gray-600">Entradas vendidas hoy</div>
                     </div>
                 </div>
             </div>

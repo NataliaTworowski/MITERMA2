@@ -252,70 +252,47 @@ def subir_fotos(request):
         messages.error(request, 'Sesión inválida.')
         return redirect('core:home')
 
+@admin_terma_required
+@require_http_methods(["POST"])
 def eliminar_foto(request, foto_uuid):
-    """Vista para eliminar una foto de la terma."""
+    """Vista para eliminar una foto de la terma - Migrada a Django Auth."""
+    # El decorador ya verificó que el usuario está autenticado y es admin_terma
+    usuario = request.user
+    terma = usuario.terma
     
-    # Verificar si el usuario está logueado
-    if 'usuario_id' not in request.session:
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            return JsonResponse({'success': False, 'message': 'Debes iniciar sesión para acceder.'})
-        messages.error(request, 'Debes iniciar sesión para acceder.')
-        return redirect('core:home')
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     
-    # Verificar si el usuario tiene el rol correcto (ID=2)
-    if request.session.get('usuario_rol') != 2:
-        error_msg = 'No tienes permisos para realizar esta acción.'
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+    try:
+        # Obtener la imagen y verificar que pertenezca a la terma del usuario
+        imagen = get_object_or_404(ImagenTerma, uuid=foto_uuid, terma=terma)
+        
+        # Eliminar el archivo físico si existe
+        try:
+            from django.core.files.storage import default_storage
+            # Extraer el path del archivo desde la URL
+            file_path = imagen.url_imagen.replace('/media/', '')
+            if default_storage.exists(file_path):
+                default_storage.delete(file_path)
+        except Exception as e:
+            logger.error(f"Error al eliminar archivo físico: {e}")
+        
+        # Eliminar el registro de la base de datos
+        imagen.delete()
+        
+        success_msg = 'Foto eliminada exitosamente.'
+        logger.info(f"Usuario {usuario.nombre} (ID: {usuario.id}) eliminó foto {foto_uuid} de terma {terma.nombre_terma}")
+        
+        if is_ajax:
+            return JsonResponse({'success': True, 'message': success_msg})
+        messages.success(request, success_msg)
+        
+    except Exception as e:
+        error_msg = f'Error al eliminar la foto: {str(e)}'
+        logger.error(f"Error al eliminar foto {foto_uuid}: {str(e)}")
+        
+        if is_ajax:
             return JsonResponse({'success': False, 'message': error_msg})
         messages.error(request, error_msg)
-        return redirect('usuarios:inicio')
-    
-    if request.method == 'POST':
-        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-        
-        try:
-            usuario = Usuario.objects.get(id=request.session['usuario_id'])
-            
-            # Verificar que el usuario tenga una terma asignada
-            if not usuario.terma:
-                error_msg = 'No tienes una terma asignada.'
-                if is_ajax:
-                    return JsonResponse({'success': False, 'message': error_msg})
-                messages.error(request, error_msg)
-                return redirect('usuarios:adm_termas')
-            
-            # Obtener la imagen y verificar que pertenezca a la terma del usuario
-            imagen = get_object_or_404(ImagenTerma, uuid=foto_uuid, terma=usuario.terma)
-            
-            # Eliminar el archivo físico si existe
-            try:
-                from django.core.files.storage import default_storage
-                # Extraer el path del archivo desde la URL
-                file_path = imagen.url_imagen.replace('/media/', '')
-                if default_storage.exists(file_path):
-                    default_storage.delete(file_path)
-            except Exception as e:
-                print(f"Error al eliminar archivo físico: {e}")
-            
-            # Eliminar el registro de la base de datos
-            imagen.delete()
-            
-            success_msg = 'Foto eliminada exitosamente.'
-            if is_ajax:
-                return JsonResponse({'success': True, 'message': success_msg})
-            messages.success(request, success_msg)
-            
-        except Usuario.DoesNotExist:
-            error_msg = 'Sesión inválida.'
-            if is_ajax:
-                return JsonResponse({'success': False, 'message': error_msg})
-            messages.error(request, error_msg)
-            return redirect('core:home')
-        except Exception as e:
-            error_msg = f'Error al eliminar la foto: {str(e)}'
-            if is_ajax:
-                return JsonResponse({'success': False, 'message': error_msg})
-            messages.error(request, error_msg)
     
     return redirect('termas:subir_fotos')
 
@@ -699,14 +676,18 @@ def editar_entrada(request, entrada_uuid):
                 'title': 'Editar Tipo de Entrada',
                 'entrada': entrada,
                 'servicios_disponibles': servicios_disponibles,
-                'servicios_seleccionados': entrada.servicios.values_list('id', flat=True),
+                'servicios_seleccionados': entrada.servicios.values_list('uuid', flat=True),
                 'messages': error_messages
             }
             return render(request, 'administrador_termas/editar_entrada.html', context)
         
         entrada.save()
         servicios_ids = request.POST.getlist('servicios')
-        entrada.servicios.set(servicios_ids)
+        if servicios_ids:
+            servicios = ServicioTerma.objects.filter(uuid__in=servicios_ids)
+            entrada.servicios.set(servicios)
+        else:
+            entrada.servicios.clear()
         
         if request.headers.get('x-requested-with') == 'XMLHttpRequest':
             # Respuesta simple para AJAX
@@ -721,7 +702,7 @@ def editar_entrada(request, entrada_uuid):
         'title': 'Editar Tipo de Entrada',
         'entrada': entrada,
         'servicios_disponibles': servicios_disponibles,
-        'servicios_seleccionados': entrada.servicios.values_list('id', flat=True)
+        'servicios_seleccionados': entrada.servicios.values_list('uuid', flat=True)
     }
     return render(request, 'administrador_termas/editar_entrada.html', context)
 
@@ -795,7 +776,7 @@ def gestionar_servicios_entrada(request, entrada_uuid):
         # Limpiar servicios actuales y agregar los nuevos
         entrada.servicios.clear()
         if servicios_ids:
-            servicios = entrada.terma.servicios.filter(id__in=servicios_ids)
+            servicios = entrada.terma.servicios.filter(uuid__in=servicios_ids)
             entrada.servicios.set(servicios)
         
         messages.success(request, f'Servicios actualizados para "{entrada.nombre}".')
@@ -816,6 +797,7 @@ def gestionar_servicios_entrada(request, entrada_uuid):
     return render(request, 'administrador_termas/gestionar_servicios_entrada.html', context)
 
 @admin_terma_required
+@admin_terma_required
 def calendario_termas(request):
     """Vista para mostrar el calendario de la terma - Migrada a Django Auth."""
     try:
@@ -832,49 +814,45 @@ def calendario_termas(request):
         mes = int(request.GET.get('mes', datetime.now().month))
         anio = int(request.GET.get('anio', datetime.now().year))
         
-        # Obtener todas las ventas del mes seleccionado agrupadas por fecha_visita
-        ventas_mes = Compra.objects.filter(
-            terma=terma,
-            estado_pago='pagado',
-            fecha_visita__year=anio,
-            fecha_visita__month=mes
-        ).values('fecha_visita').annotate(
+        # Obtener todas las ventas del mes seleccionado usando la misma lógica que el dashboard
+        from ventas.models import DetalleCompra
+        
+        # Usar la misma lógica que calcular_entradas_vendidas_por_dia para consistencia
+        ventas_mes = DetalleCompra.objects.filter(
+            compra__terma=terma,
+            compra__estado_pago='pagado',
+            compra__fecha_visita__year=anio,
+            compra__fecha_visita__month=mes
+        ).values('compra__fecha_visita').annotate(
             total_entradas=Sum('cantidad')
         )
         
         # Convertir a diccionario con formato YYYY-MM-DD
         ventas_por_dia = {}
         
-        # Primero obtenemos todas las compras pagadas del mes
-        compras_mes = Compra.objects.filter(
-            terma=terma,
-            estado_pago='pagado',
-            fecha_visita__year=anio,
-            fecha_visita__month=mes
-        )
-        
         # Convertir las ventas a un diccionario con formato YYYY-MM-DD
         for venta in ventas_mes:
-            fecha = venta['fecha_visita']
+            fecha = venta['compra__fecha_visita']
             total = venta['total_entradas']
             ventas_por_dia[fecha.strftime('%Y-%m-%d')] = total
         
-        # Imprimir para debug
-        print(f"Mes: {mes}, Año: {anio}")
-        print("Ventas encontradas:", ventas_por_dia)
+        # Log para debug - ahora mostrando entradas reales, no compras
+        logger.info(f"Calendario - Mes: {mes}, Año: {anio}, Total días con ventas: {len(ventas_por_dia)}")
+        logger.info(f"Entradas vendidas por día: {ventas_por_dia}")
         
         context = {
             'title': 'Calendario de la Terma - MiTerma',
             'usuario': usuario,
             'terma': terma,
-            'ventas_por_dia': ventas_por_dia,  # Ya no necesitamos json.dumps aquí porque usamos json_script en el template
+            'ventas_por_dia': ventas_por_dia,  # Ahora contiene el número real de entradas vendidas
             'mes_actual': mes,
             'anio_actual': anio
         }
         return render(request, 'administrador_termas/calendario_termas.html', context)
-    except Usuario.DoesNotExist:
-        messages.error(request, 'Sesión inválida.')
-        return redirect('core:home')
+    except Exception as e:
+        logger.error(f"Error en calendario_termas: {str(e)}")
+        messages.error(request, 'Error al cargar el calendario.')
+        return redirect('termas:analisis_terma')
     
 def vista_termas(request):
     """Vista para mostrar la terma del administrador."""
@@ -1484,7 +1462,7 @@ def crear_trabajador(request):
 
 
 @admin_terma_required
-def editar_trabajador(request, trabajador_id):
+def editar_trabajador(request, trabajador_uuid):
     """Vista para editar trabajador."""
     try:
         from usuarios.models import Usuario, Rol

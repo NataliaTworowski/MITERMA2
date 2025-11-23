@@ -38,6 +38,8 @@ urlpatterns = [
     # URLs para reportes premium
     path('reportes-premium/', views_reportes.reportes_premium, name='reportes_premium'),
     path('exportar-reporte-csv/', views_reportes.exportar_reporte_csv, name='exportar_reporte_csv'),
+    path('exportar-reporte-excel/', views_reportes.exportar_reporte_excel, name='exportar_reporte_excel'),
+    path('exportar-reporte-pdf/', views_reportes.exportar_reporte_pdf, name='exportar_reporte_pdf'),
     
     # URLs para trabajadores/operadores
     path('trabajador/', views_trabajador.inicio_trabajador, name='inicio_trabajador'),
